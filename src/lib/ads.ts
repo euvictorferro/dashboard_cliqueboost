@@ -23,4 +23,4 @@ export function getAdsSnapshot(_clientId: string): AdsSnapshot {
   };
 }
 
-export const WHATSAPP_LINK = "https://wa.me/5500000000000"; // FILL: número real da Clique Boost
+export const WHATSAPP_LINK = "https://wa.me/12398214737";

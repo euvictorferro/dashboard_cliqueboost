@@ -48,6 +48,7 @@
   --color-brand-danger: hsl(var(--brand-danger));
 
   --font-sans: var(--font-inter);
+  --font-display: var(--font-fraunces);
   --radius-card: var(--radius);
 }
 

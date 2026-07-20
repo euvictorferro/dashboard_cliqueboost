@@ -1,14 +1,44 @@
+function ChangeBadge({ pct }: { pct: number | null }) {
+  if (pct === null) {
+    return <span className="text-xs font-medium text-muted-foreground">novo</span>;
+  }
+  const isUp = pct >= 0;
+  return (
+    <span
+      className={`text-xs font-medium tabular-nums ${
+        isUp ? "text-brand-success" : "text-brand-danger"
+      }`}
+    >
+      {isUp ? "▲" : "▼"} {Math.abs(pct).toFixed(1)}%
+    </span>
+  );
+}
+
 export function MetricCard({
   label,
   description,
   value,
+  changePct,
+  onClick,
+  active,
 }: {
   label: string;
   description: string;
   value: string;
+  changePct?: number | null;
+  onClick?: () => void;
+  active?: boolean;
 }) {
   return (
-    <div className="rounded-[var(--radius-card)] border border-border bg-card p-4 shadow-[var(--shadow-soft)]">
+    <div
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={onClick ? (e) => (e.key === "Enter" || e.key === " ") && onClick() : undefined}
+      className={`self-start rounded-[var(--radius-card)] border bg-card p-4 shadow-[var(--shadow-soft)] ${
+        onClick ? "cursor-pointer text-left" : ""
+      } ${active ? "border-brand-primary" : "border-border"}`}
+    >
       <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <span>{label}</span>
         <span className="group relative inline-flex">
@@ -20,7 +50,10 @@ export function MetricCard({
           </span>
         </span>
       </div>
-      <p className="mt-1 text-2xl font-semibold text-card-foreground">{value}</p>
+      <div className="mt-1 flex items-baseline gap-2">
+        <p className="text-2xl font-semibold text-card-foreground">{value}</p>
+        {changePct !== undefined && <ChangeBadge pct={changePct} />}
+      </div>
     </div>
   );
 }

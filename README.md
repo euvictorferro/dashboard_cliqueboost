@@ -12,11 +12,16 @@ npm run dev
 
 ## Estado atual (v1)
 
-- Dados **mockados** (`src/lib/metrics.ts`, `src/lib/ads.ts`) — determinísticos por cliente/período, prontos para trocar pela chamada real assim que as credenciais existirem.
+- **Cada cliente tem sua própria URL** — `/[client]` (ex: `/debora`, `/lais`), sem seletor trocando entre clientes. `/` é só um índice interno (uso do Victor) listando os 6 links, não é a home do produto.
+- Dados **mockados** (`src/lib/metrics.ts`, `src/lib/ads.ts`) — determinísticos por cliente/período, com período anterior calculado pra gerar a variação %, prontos para trocar pela chamada real assim que as credenciais existirem.
 - 6 clientes fixos em `src/lib/clients.ts` (Débora, Laís, Sam, Nelson, Tiago, Bela). Nenhum tem `adsActive: true` ainda — mude a flag quando a conta de Ads do cliente estiver rodando de verdade.
+- Filtro de período é um dropdown (ícone de filtro), não mais uma barra de botões.
+- Cada métrica orgânica mostra a variação % vs. o período anterior equivalente.
 - Aba Ads mostra o overlay de "sem anúncios ativos" (blur + cadeado + CTA WhatsApp) quando `adsActive` é `false`.
 - TikTok ainda não tem integração nem espaço próprio no dashboard — combinado com o Victor que não é prioridade agora (clientes usam pouco).
 - Botão "Baixar relatório (PDF)" é um stub (`src/components/ExportPdfButton.tsx`) — falta desenhar o layout do relatório antes de implementar a geração real.
+- Design usa a skill `frontend-design` (instalada em `.claude/skills/`, `.agents/skills/`): fonte Fraunces (serif) para hero/eyebrows + Inter pro resto, hero stat de "Seguidores líquidos" como elemento de destaque, métricas agrupadas por Audiência/Engajamento/Conteúdo em vez de grid única.
+- **Sem autenticação ainda** — a URL de cada cliente não é secreta nem protegida. Antes de mandar o link pro cliente final, avaliar se precisa de algo (token na URL, login simples) pra não vazar dado de um cliente pro outro.
 
 ## Pendências para sair do mock
 

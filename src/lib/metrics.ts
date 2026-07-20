@@ -1,10 +1,10 @@
 export const DATE_RANGES = [
-  { id: "1d", label: "1 dia", days: 1 },
-  { id: "7d", label: "1 semana", days: 7 },
-  { id: "14d", label: "14 dias", days: 14 },
-  { id: "30d", label: "1 mês", days: 30 },
-  { id: "60d", label: "60 dias", days: 60 },
-  { id: "90d", label: "90 dias", days: 90 },
+  { id: "1d", label: "Hoje", days: 1 },
+  { id: "7d", label: "Últimos 7 dias", days: 7 },
+  { id: "14d", label: "Últimos 14 dias", days: 14 },
+  { id: "30d", label: "Últimos 30 dias", days: 30 },
+  { id: "60d", label: "Últimos 60 dias", days: 60 },
+  { id: "90d", label: "Últimos 90 dias", days: 90 },
 ] as const;
 
 export type DateRangeId = (typeof DATE_RANGES)[number]["id"];
@@ -71,6 +71,8 @@ export type TopVideo = {
 
 export type OrganicSnapshot = {
   metrics: Record<OrganicMetricKey, number>;
+  /** variação % vs. período anterior de mesma duração; null quando não dá pra calcular (base 0) */
+  changePct: Record<OrganicMetricKey, number | null>;
   trend: { date: string; value: number }[];
   topVideos: TopVideo[];
 };
@@ -86,10 +88,8 @@ function seededRandom(seed: string) {
   };
 }
 
-export function getOrganicSnapshot(clientId: string, range: DateRangeId): OrganicSnapshot {
-  const days = DATE_RANGES.find((r) => r.id === range)!.days;
-  const rand = seededRandom(`${clientId}-${range}`);
-
+function generateMetrics(seed: string, days: number): Record<OrganicMetricKey, number> {
+  const rand = seededRandom(seed);
   const newFollowers = Math.round(20 * days * (0.6 + rand()));
   const lostFollowers = Math.round(6 * days * (0.4 + rand()));
   const reach = Math.round(400 * days * (0.7 + rand()));
@@ -99,31 +99,48 @@ export function getOrganicSnapshot(clientId: string, range: DateRangeId): Organi
   const saves = Math.round(views * 0.01 * (0.6 + rand()));
   const shares = Math.round(views * 0.006 * (0.6 + rand()));
 
+  return {
+    newFollowers,
+    lostFollowers,
+    netFollowers: newFollowers - lostFollowers,
+    reach,
+    views,
+    comments,
+    likes,
+    saves,
+    shares,
+  };
+}
+
+function pctChange(current: number, previous: number): number | null {
+  if (previous === 0) return null;
+  return ((current - previous) / previous) * 100;
+}
+
+export function getOrganicSnapshot(clientId: string, range: DateRangeId): OrganicSnapshot {
+  const days = DATE_RANGES.find((r) => r.id === range)!.days;
+  const metrics = generateMetrics(`${clientId}-${range}`, days);
+  const previous = generateMetrics(`${clientId}-${range}-prev`, days);
+  const rand = seededRandom(`${clientId}-${range}-trend`);
+
+  const changePct = Object.fromEntries(
+    (Object.keys(metrics) as OrganicMetricKey[]).map((key) => [
+      key,
+      pctChange(metrics[key], previous[key]),
+    ])
+  ) as Record<OrganicMetricKey, number | null>;
+
   const trend = Array.from({ length: Math.min(days, 30) }, (_, i) => ({
     date: `D${i + 1}`,
-    value: Math.round((reach / Math.min(days, 30)) * (0.6 + rand())),
+    value: Math.round((metrics.reach / Math.min(days, 30)) * (0.6 + rand())),
   }));
 
   const topVideos: TopVideo[] = Array.from({ length: 5 }, (_, i) => ({
     id: `${clientId}-video-${i + 1}`,
     title: `Vídeo #${i + 1}`,
-    views: Math.round((views / 5) * (0.7 + rand())),
+    views: Math.round((metrics.views / 5) * (0.7 + rand())),
     thumbnailColor: ["#7c3aed", "#0080ff", "#00c896", "#ff5c4d", "#8b5cf6"][i],
   })).sort((a, b) => b.views - a.views);
 
-  return {
-    metrics: {
-      newFollowers,
-      lostFollowers,
-      netFollowers: newFollowers - lostFollowers,
-      reach,
-      views,
-      comments,
-      likes,
-      saves,
-      shares,
-    },
-    trend,
-    topVideos,
-  };
+  return { metrics, changePct, trend, topVideos };
 }

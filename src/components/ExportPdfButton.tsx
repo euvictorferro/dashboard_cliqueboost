@@ -1,5 +1,3 @@
-"use client";
-
 function DownloadIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -14,16 +12,21 @@ function DownloadIcon() {
   );
 }
 
-// ponytail: stub — o Victor quer um relatório em PDF com layout próprio (não print de tela).
-// Precisa do design do documento antes de implementar a geração real.
+// ponytail: stub — relatório em PDF com análise real será feito depois (layout + IA em definição).
+// Botão fica desabilitado com aviso no hover em vez de disparar uma ação que não faz nada de fato.
 export function ExportPdfButton() {
   return (
-    <button
-      onClick={() => alert("Relatório em PDF ainda em desenvolvimento — layout do documento em definição.")}
-      className="flex items-center gap-2 rounded-xl bg-card px-4 py-2.5 text-sm font-medium text-card-foreground shadow-[var(--shadow-soft)] hover:bg-muted"
-    >
-      <DownloadIcon />
-      Baixar relatório
-    </button>
+    <span className="group relative inline-flex">
+      <button
+        disabled
+        className="flex cursor-not-allowed items-center gap-2 rounded-xl bg-card px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-[var(--shadow-soft)] opacity-70"
+      >
+        <DownloadIcon />
+        Baixar relatório
+      </button>
+      <span className="pointer-events-none absolute right-0 top-full z-10 mt-2 w-56 rounded-md bg-foreground px-3 py-2 text-xs text-background opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+        Estamos atualizando essa funcionalidade. Em breve ela volta a funcionar.
+      </span>
+    </span>
   );
 }

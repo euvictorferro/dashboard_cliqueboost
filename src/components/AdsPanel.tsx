@@ -4,7 +4,7 @@ import { MetricCard } from "./MetricCard";
 export function AdsPanel({ clientId, active }: { clientId: string; active: boolean }) {
   if (!active) {
     return (
-      <div className="relative overflow-hidden rounded-[var(--radius-card)] border border-border">
+      <div className="relative overflow-hidden rounded-[var(--radius-card)] bg-card shadow-[var(--shadow-soft)]">
         <div className="pointer-events-none grid grid-cols-2 gap-3 p-4 blur-sm sm:grid-cols-4">
           {Object.values(ADS_METRICS).map((m) => (
             <MetricCard key={m.label} label={m.label} description={m.description} value="—" />
@@ -52,7 +52,7 @@ export function AdsPanel({ clientId, active }: { clientId: string; active: boole
           />
         ))}
       </div>
-      <div className="rounded-[var(--radius-card)] border border-border bg-card p-4 shadow-[var(--shadow-soft)]">
+      <div className="rounded-[var(--radius-card)] bg-card p-4 shadow-[var(--shadow-soft)]">
         <h3 className="text-sm font-medium text-card-foreground">Melhor criativo</h3>
         <p className="mt-1 text-sm text-muted-foreground">
           {bestCreative.name} — {bestCreative.result}

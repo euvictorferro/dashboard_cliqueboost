@@ -4,7 +4,7 @@ import {
   type DateRangeId,
   type OrganicMetricKey,
   type OrganicSnapshot,
-  type TopVideo,
+  type TopPost,
 } from "./metrics";
 
 // ponytail: server-only — nunca importar isto de um componente "use client" (usa o token secreto).
@@ -127,34 +127,42 @@ async function fetchRange(igId: string, since: number, until: number) {
   }));
 }
 
-async function fetchTopVideos(igId: string, since: number, until: number): Promise<TopVideo[]> {
+function titleFromCaption(caption: string | undefined, fallback: string): string {
+  if (!caption) return fallback;
+  const firstLine = caption.split("\n")[0].trim();
+  return firstLine.length > 70 ? `${firstLine.slice(0, 67)}…` : firstLine || fallback;
+}
+
+async function fetchTopVideos(igId: string, since: number, until: number): Promise<TopPost[]> {
   const mediaRes = await safeGraphGet(`${igId}/media`, {
-    fields: "media_type,like_count",
+    fields: "media_type,like_count,thumbnail_url,media_url,caption,permalink",
     since: String(since),
     until: String(until),
     limit: "25",
   });
 
-  const videos: { id: string; like_count?: number }[] = (mediaRes.data ?? []).filter(
-    (m: { media_type: string }) => m.media_type === "VIDEO"
-  );
-  const topByLikes = videos.sort((a, b) => (b.like_count ?? 0) - (a.like_count ?? 0)).slice(0, 5);
   const palette = ["#7c3aed", "#0080ff", "#00c896", "#ff5c4d", "#8b5cf6"];
+  type Media = {
+    id: string;
+    media_type: string;
+    like_count?: number;
+    thumbnail_url?: string;
+    media_url?: string;
+    caption?: string;
+    permalink?: string;
+  };
 
-  const withViews = await Promise.all(
-    topByLikes.map(async (m, i) => {
-      let views = m.like_count ?? 0;
-      try {
-        const insightsRes = await graphGet(`${m.id}/insights`, { metric: "views" });
-        views = insightsRes.data?.[0]?.values?.[0]?.value ?? views;
-      } catch {
-        // ponytail: se a métrica de views por vídeo falhar, cai pro like_count como proxy.
-      }
-      return { id: m.id, title: `Vídeo #${i + 1}`, views, thumbnailColor: palette[i % palette.length] };
-    })
-  );
+  const posts: Media[] = mediaRes.data ?? [];
+  const topByLikes = posts.sort((a, b) => (b.like_count ?? 0) - (a.like_count ?? 0)).slice(0, 5);
 
-  return withViews.sort((a, b) => b.views - a.views);
+  return topByLikes.map((m, i) => ({
+    id: m.id,
+    title: titleFromCaption(m.caption, `Publicação #${i + 1}`),
+    likes: m.like_count ?? 0,
+    thumbnailUrl: m.thumbnail_url ?? m.media_url,
+    thumbnailColor: palette[i % palette.length],
+    permalink: m.permalink,
+  }));
 }
 
 function pctChange(current: number, previous: number): number | null {
@@ -174,7 +182,7 @@ export async function fetchOrganicSnapshotLive(igId: string, range: DateRangeId)
   const prevUntil = since;
   const prevSince = since - days * 86400;
 
-  const [current, previous, topVideos] = await Promise.all([
+  const [current, previous, topPosts] = await Promise.all([
     fetchRange(igId, since, until),
     fetchRange(igId, prevSince, prevUntil),
     fetchTopVideos(igId, since, until),
@@ -188,5 +196,5 @@ export async function fetchOrganicSnapshotLive(igId: string, range: DateRangeId)
     changePct[key] = pctChange(current[key], previous[key]);
   }
 
-  return { metrics, changePct, trend: current.trend, topVideos };
+  return { metrics, changePct, trend: current.trend, topPosts };
 }

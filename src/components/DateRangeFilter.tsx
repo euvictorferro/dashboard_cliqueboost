@@ -3,15 +3,10 @@
 import { useState } from "react";
 import { DATE_RANGES, type DateRangeId } from "@/lib/metrics";
 
-function FilterIcon() {
+function ChevronIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path
-        d="M2 3h12l-4.5 5.5V13l-3 1.5V8.5L2 3z"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinejoin="round"
-      />
+    <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+      <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -30,10 +25,11 @@ export function DateRangeFilter({
     <div className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 rounded-[var(--radius-card)] border border-border bg-card px-3 py-2 text-sm font-medium text-card-foreground"
+        className="flex items-center gap-2 rounded-xl bg-card px-4 py-2.5 text-sm shadow-[var(--shadow-soft)]"
       >
-        <FilterIcon />
-        {current.label}
+        <span className="text-muted-foreground">Período:</span>
+        <span className="font-semibold text-card-foreground">{current.label}</span>
+        <ChevronIcon />
       </button>
 
       {open && (
@@ -43,7 +39,7 @@ export function DateRangeFilter({
             className="fixed inset-0 z-40 cursor-default"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute left-0 z-50 mt-1.5 w-44 overflow-hidden rounded-[var(--radius-card)] border border-border bg-card py-1 shadow-[var(--shadow-soft)]">
+          <div className="absolute right-0 z-50 mt-1.5 w-48 overflow-hidden rounded-xl bg-card py-1 shadow-[var(--shadow-soft)]">
             {DATE_RANGES.map((r) => (
               <button
                 key={r.id}
@@ -51,10 +47,8 @@ export function DateRangeFilter({
                   onChange(r.id);
                   setOpen(false);
                 }}
-                className={`block w-full px-3 py-2 text-left text-sm ${
-                  r.id === value
-                    ? "bg-brand-primary/10 font-medium text-brand-primary"
-                    : "text-card-foreground hover:bg-muted"
+                className={`block w-full px-4 py-2 text-left text-sm ${
+                  r.id === value ? "font-semibold text-brand-primary" : "text-card-foreground hover:bg-muted"
                 }`}
               >
                 {r.label}

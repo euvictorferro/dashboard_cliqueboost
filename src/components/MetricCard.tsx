@@ -1,14 +1,22 @@
+import { LineChart, Line, ResponsiveContainer } from "recharts";
+
+function Sparkline({ data }: { data: { value: number }[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={32}>
+      <LineChart data={data} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
+        <Line type="monotone" dataKey="value" stroke="hsl(var(--brand-accent))" strokeWidth={2} dot={false} />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
 function ChangeBadge({ pct }: { pct: number | null }) {
   if (pct === null) {
     return <span className="text-xs font-medium text-muted-foreground">novo</span>;
   }
   const isUp = pct >= 0;
   return (
-    <span
-      className={`text-xs font-medium tabular-nums ${
-        isUp ? "text-brand-success" : "text-brand-danger"
-      }`}
-    >
+    <span className={`text-xs font-medium tabular-nums ${isUp ? "text-brand-success" : "text-brand-danger"}`}>
       {isUp ? "▲" : "▼"} {Math.abs(pct).toFixed(1)}%
     </span>
   );
@@ -19,26 +27,16 @@ export function MetricCard({
   description,
   value,
   changePct,
-  onClick,
-  active,
+  sparkline,
 }: {
   label: string;
   description: string;
   value: string;
   changePct?: number | null;
-  onClick?: () => void;
-  active?: boolean;
+  sparkline?: { value: number }[];
 }) {
   return (
-    <div
-      role={onClick ? "button" : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      onClick={onClick}
-      onKeyDown={onClick ? (e) => (e.key === "Enter" || e.key === " ") && onClick() : undefined}
-      className={`self-start rounded-[var(--radius-card)] border bg-card p-4 shadow-[var(--shadow-soft)] ${
-        onClick ? "cursor-pointer text-left" : ""
-      } ${active ? "border-brand-primary" : "border-border"}`}
-    >
+    <div className="rounded-[var(--radius-card)] bg-card p-4 shadow-[var(--shadow-soft)]">
       <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <span>{label}</span>
         <span className="group relative inline-flex">
@@ -54,6 +52,9 @@ export function MetricCard({
         <p className="text-2xl font-semibold text-card-foreground">{value}</p>
         {changePct !== undefined && <ChangeBadge pct={changePct} />}
       </div>
+      {sparkline && <div className="mt-2">
+        <Sparkline data={sparkline} />
+      </div>}
     </div>
   );
 }

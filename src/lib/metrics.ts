@@ -62,11 +62,13 @@ export const ORGANIC_METRICS: Record<
   },
 };
 
-export type TopVideo = {
+export type TopPost = {
   id: string;
   title: string;
-  views: number;
+  likes: number;
+  thumbnailUrl?: string;
   thumbnailColor: string;
+  permalink?: string;
 };
 
 export type OrganicSnapshot = {
@@ -74,7 +76,7 @@ export type OrganicSnapshot = {
   /** variação % vs. período anterior de mesma duração; null quando não dá pra calcular (base 0) */
   changePct: Record<OrganicMetricKey, number | null>;
   trend: { date: string; value: number }[];
-  topVideos: TopVideo[];
+  topPosts: TopPost[];
 };
 
 // ponytail: mock determinístico (seed = clientId+range) até a Meta App existir. Trocar por
@@ -135,12 +137,19 @@ export function getOrganicSnapshot(clientId: string, range: DateRangeId): Organi
     value: Math.round((metrics.reach / Math.min(days, 30)) * (0.6 + rand())),
   }));
 
-  const topVideos: TopVideo[] = Array.from({ length: 5 }, (_, i) => ({
-    id: `${clientId}-video-${i + 1}`,
-    title: `Vídeo #${i + 1}`,
-    views: Math.round((metrics.views / 5) * (0.7 + rand())),
+  const mockTitles = [
+    "Vídeo #1",
+    "Publicação #2",
+    "Reel #3",
+    "Publicação #4",
+    "Vídeo #5",
+  ];
+  const topPosts: TopPost[] = Array.from({ length: 5 }, (_, i) => ({
+    id: `${clientId}-post-${i + 1}`,
+    title: mockTitles[i],
+    likes: Math.round((metrics.likes / 5) * (0.7 + rand())),
     thumbnailColor: ["#7c3aed", "#0080ff", "#00c896", "#ff5c4d", "#8b5cf6"][i],
-  })).sort((a, b) => b.views - a.views);
+  })).sort((a, b) => b.likes - a.likes);
 
-  return { metrics, changePct, trend, topVideos };
+  return { metrics, changePct, trend, topPosts };
 }

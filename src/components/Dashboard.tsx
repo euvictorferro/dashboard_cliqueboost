@@ -1,43 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LineChart, Line, ResponsiveContainer } from "recharts";
 import type { Client } from "@/lib/clients";
-import {
-  ORGANIC_METRICS,
-  getOrganicSnapshot,
-  type DateRangeId,
-  type OrganicMetricKey,
-  type OrganicSnapshot,
-} from "@/lib/metrics";
+import { ORGANIC_METRICS, getOrganicSnapshot, type DateRangeId, type OrganicSnapshot } from "@/lib/metrics";
 import { DateRangeFilter } from "./DateRangeFilter";
 import { MetricCard } from "./MetricCard";
-import { TrendChart } from "./TrendChart";
+import { ReachBarChart } from "./ReachBarChart";
 import { TopVideosList } from "./TopVideosList";
 import { AdsPanel } from "./AdsPanel";
 import { ExportPdfButton } from "./ExportPdfButton";
 
 type Tab = "organic" | "ads";
 
-const GROUPS: { title: string; keys: OrganicMetricKey[] }[] = [
-  { title: "Audiência", keys: ["newFollowers", "lostFollowers", "reach"] },
-  { title: "Engajamento", keys: ["comments", "likes", "saves", "shares"] },
-];
-
-function HeroSparkline({ data }: { data: { value: number }[] }) {
-  return (
-    <ResponsiveContainer width="100%" height={64}>
-      <LineChart data={data}>
-        <Line type="monotone" dataKey="value" stroke="hsl(var(--brand-accent))" strokeWidth={2} dot={false} />
-      </LineChart>
-    </ResponsiveContainer>
-  );
-}
-
 export function Dashboard({ client, accessKey }: { client: Client; accessKey: string }) {
   const [range, setRange] = useState<DateRangeId>("30d");
   const [tab, setTab] = useState<Tab>("organic");
-  const [chartMetric, setChartMetric] = useState<OrganicMetricKey>("reach");
   // ponytail: mock síncrono cobre o 1º render; o fetch troca por dado real (ou mock do servidor) assim que chega.
   const [snapshot, setSnapshot] = useState<OrganicSnapshot>(() => getOrganicSnapshot(client.id, range));
   const [snapshotKey, setSnapshotKey] = useState(`${client.id}:${range}`);
@@ -63,20 +40,18 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
     };
   }, [client.id, range, accessKey]);
 
+  const m = snapshot.metrics;
+  const c = snapshot.changePct;
+
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-8">
-      <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-[0.14em] text-brand-accent">Clique Boost</p>
-          <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl italic text-foreground">
-            {client.name}
-          </h1>
-        </div>
+    <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-8">
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold text-foreground">{client.name}</h1>
         <ExportPdfButton />
       </header>
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <nav className="flex w-fit gap-1 rounded-[var(--radius-card)] border border-border bg-card p-1">
+        <nav className="flex w-fit gap-1 rounded-xl bg-card p-1 shadow-[var(--shadow-soft)]">
           {([
             ["organic", "Orgânico"],
             ["ads", "Ads"],
@@ -84,7 +59,7 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
             <button
               key={id}
               onClick={() => setTab(id)}
-              className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+              className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-colors ${
                 tab === id ? "bg-brand-primary text-white" : "text-muted-foreground hover:text-card-foreground"
               }`}
             >
@@ -101,75 +76,76 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
       </div>
 
       {tab === "organic" ? (
-        <div className="space-y-10">
-          <section className="rounded-[var(--radius-card)] border border-border bg-card p-6 shadow-[var(--shadow-soft)]">
-            <div className="flex flex-wrap items-end justify-between gap-6">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                  {ORGANIC_METRICS.netFollowers.label}
-                </p>
-                <div className="mt-1 flex items-baseline gap-3">
-                  <span className="font-[family-name:var(--font-display)] text-5xl text-card-foreground">
-                    {snapshot.metrics.netFollowers.toLocaleString("pt-BR")}
-                  </span>
-                  <span
-                    className={`text-sm font-medium ${
-                      (snapshot.changePct.netFollowers ?? 0) >= 0 ? "text-brand-success" : "text-brand-danger"
-                    }`}
-                  >
-                    {snapshot.changePct.netFollowers === null
-                      ? "novo"
-                      : `${snapshot.changePct.netFollowers >= 0 ? "▲" : "▼"} ${Math.abs(
-                          snapshot.changePct.netFollowers
-                        ).toFixed(1)}%`}
-                  </span>
-                </div>
-              </div>
-              <div className="w-40">
-                <HeroSparkline data={snapshot.trend} />
-              </div>
-            </div>
-          </section>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[repeat(3,minmax(0,1fr))_1.6fr]">
+            <MetricCard
+              label={ORGANIC_METRICS.newFollowers.label}
+              description={ORGANIC_METRICS.newFollowers.description}
+              value={m.newFollowers.toLocaleString("pt-BR")}
+            />
+            <MetricCard
+              label={ORGANIC_METRICS.lostFollowers.label}
+              description={ORGANIC_METRICS.lostFollowers.description}
+              value={m.lostFollowers.toLocaleString("pt-BR")}
+            />
+            <MetricCard
+              label={ORGANIC_METRICS.netFollowers.label}
+              description={ORGANIC_METRICS.netFollowers.description}
+              value={m.netFollowers.toLocaleString("pt-BR")}
+            />
 
-          {GROUPS.map((group) => (
-            <div key={group.title}>
-              <h2 className="mb-3 font-[family-name:var(--font-display)] text-sm italic text-muted-foreground">
-                {group.title}
-              </h2>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {group.keys.map((key) => (
-                  <MetricCard
-                    key={key}
-                    label={ORGANIC_METRICS[key].label}
-                    description={ORGANIC_METRICS[key].description}
-                    value={snapshot.metrics[key].toLocaleString("pt-BR")}
-                    changePct={snapshot.changePct[key]}
-                    onClick={() => setChartMetric(key)}
-                    active={chartMetric === key}
-                  />
-                ))}
+            <div className="rounded-[var(--radius-card)] bg-card p-5 shadow-[var(--shadow-soft)] lg:row-span-2">
+              <h3 className="mb-4 text-sm font-medium text-muted-foreground">Alcance</h3>
+              <div className="h-56">
+                <ReachBarChart data={snapshot.trend} />
               </div>
             </div>
-          ))}
 
-          <div>
-            <h2 className="mb-3 font-[family-name:var(--font-display)] text-sm italic text-muted-foreground">
-              Conteúdo
-            </h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <MetricCard
-                label={ORGANIC_METRICS.views.label}
-                description={ORGANIC_METRICS.views.description}
-                value={snapshot.metrics.views.toLocaleString("pt-BR")}
-                changePct={snapshot.changePct.views}
-                onClick={() => setChartMetric("views")}
-                active={chartMetric === "views"}
-              />
-              <TopVideosList videos={snapshot.topVideos} />
-            </div>
+            <MetricCard
+              label={ORGANIC_METRICS.reach.label}
+              description={ORGANIC_METRICS.reach.description}
+              value={m.reach.toLocaleString("pt-BR")}
+              changePct={c.reach}
+              sparkline={snapshot.trend}
+            />
+            <MetricCard
+              label={ORGANIC_METRICS.views.label}
+              description={ORGANIC_METRICS.views.description}
+              value={m.views.toLocaleString("pt-BR")}
+              changePct={c.views}
+              sparkline={snapshot.trend}
+            />
+            <MetricCard
+              label={ORGANIC_METRICS.likes.label}
+              description={ORGANIC_METRICS.likes.description}
+              value={m.likes.toLocaleString("pt-BR")}
+              changePct={c.likes}
+              sparkline={snapshot.trend}
+            />
           </div>
 
-          <TrendChart data={snapshot.trend} metricLabel={ORGANIC_METRICS[chartMetric].label} />
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            <MetricCard
+              label={ORGANIC_METRICS.comments.label}
+              description={ORGANIC_METRICS.comments.description}
+              value={m.comments.toLocaleString("pt-BR")}
+              changePct={c.comments}
+            />
+            <MetricCard
+              label={ORGANIC_METRICS.saves.label}
+              description={ORGANIC_METRICS.saves.description}
+              value={m.saves.toLocaleString("pt-BR")}
+              changePct={c.saves}
+            />
+            <MetricCard
+              label={ORGANIC_METRICS.shares.label}
+              description={ORGANIC_METRICS.shares.description}
+              value={m.shares.toLocaleString("pt-BR")}
+              changePct={c.shares}
+            />
+          </div>
+
+          <TopVideosList posts={snapshot.topPosts} />
         </div>
       ) : (
         <AdsPanel clientId={client.id} active={client.adsActive} />

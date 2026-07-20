@@ -9,6 +9,7 @@ import { ReachBarChart } from "./ReachBarChart";
 import { TopVideosList } from "./TopVideosList";
 import { AdsPanel } from "./AdsPanel";
 import { ExportPdfButton } from "./ExportPdfButton";
+import { Logo } from "./Logo";
 
 type Tab = "organic" | "ads";
 
@@ -46,7 +47,10 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-8">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-foreground">{client.name}</h1>
+        <div>
+          <Logo />
+          <h1 className="mt-2 text-2xl font-bold text-foreground">{client.name}</h1>
+        </div>
         <ExportPdfButton />
       </header>
 

@@ -41,9 +41,16 @@ export function TopVideosList({ posts }: { posts: TopPost[] }) {
                 href={p.permalink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="-m-2 flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-muted"
+                className="group relative -m-2 flex items-center gap-3 rounded-lg p-2"
               >
-                <PostRow post={p} max={max} />
+                <div className="flex flex-1 items-center gap-3 transition-[filter] duration-150 group-hover:blur-[2px]">
+                  <PostRow post={p} max={max} />
+                </div>
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg bg-card/60 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+                  <span className="rounded-full bg-foreground px-3 py-1.5 text-xs font-semibold text-background">
+                    Ver post →
+                  </span>
+                </div>
               </a>
             </li>
           ) : (

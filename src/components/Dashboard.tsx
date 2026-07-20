@@ -1,9 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import type { Client } from "@/lib/clients";
-import { ORGANIC_METRICS, getOrganicSnapshot, type DateRangeId, type OrganicMetricKey } from "@/lib/metrics";
+import {
+  ORGANIC_METRICS,
+  getOrganicSnapshot,
+  type DateRangeId,
+  type OrganicMetricKey,
+  type OrganicSnapshot,
+} from "@/lib/metrics";
 import { DateRangeFilter } from "./DateRangeFilter";
 import { MetricCard } from "./MetricCard";
 import { TrendChart } from "./TrendChart";
@@ -32,8 +38,30 @@ export function Dashboard({ client }: { client: Client }) {
   const [range, setRange] = useState<DateRangeId>("30d");
   const [tab, setTab] = useState<Tab>("organic");
   const [chartMetric, setChartMetric] = useState<OrganicMetricKey>("reach");
+  // ponytail: mock síncrono cobre o 1º render; o fetch troca por dado real (ou mock do servidor) assim que chega.
+  const [snapshot, setSnapshot] = useState<OrganicSnapshot>(() => getOrganicSnapshot(client.id, range));
+  const [snapshotKey, setSnapshotKey] = useState(`${client.id}:${range}`);
+  const loading = snapshotKey !== `${client.id}:${range}`;
 
-  const snapshot = useMemo(() => getOrganicSnapshot(client.id, range), [client.id, range]);
+  useEffect(() => {
+    let cancelled = false;
+    const key = `${client.id}:${range}`;
+    fetch(`/api/organic/${client.id}?range=${range}`)
+      .then((res) => res.json())
+      .then((data: OrganicSnapshot) => {
+        if (cancelled) return;
+        setSnapshot(data);
+        setSnapshotKey(key);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSnapshot(getOrganicSnapshot(client.id, range));
+        setSnapshotKey(key);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [client.id, range]);
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-8">
@@ -64,7 +92,12 @@ export function Dashboard({ client }: { client: Client }) {
             </button>
           ))}
         </nav>
-        {tab === "organic" && <DateRangeFilter value={range} onChange={setRange} />}
+        {tab === "organic" && (
+          <div className="flex items-center gap-2">
+            {loading && <span className="text-xs text-muted-foreground">Atualizando…</span>}
+            <DateRangeFilter value={range} onChange={setRange} />
+          </div>
+        )}
       </div>
 
       {tab === "organic" ? (

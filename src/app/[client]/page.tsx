@@ -1,19 +1,23 @@
 import { notFound } from "next/navigation";
 import { CLIENTS } from "@/lib/clients";
 import { Dashboard } from "@/components/Dashboard";
-
-export function generateStaticParams() {
-  return CLIENTS.map((c) => ({ client: c.id }));
-}
+import { AccessDenied } from "@/components/AccessDenied";
+import { verifyClientToken } from "@/lib/access";
 
 export default async function ClientPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ client: string }>;
+  searchParams: Promise<{ key?: string }>;
 }) {
   const { client } = await params;
+  const { key } = await searchParams;
   const found = CLIENTS.find((c) => c.id === client);
   if (!found) notFound();
 
-  return <Dashboard client={found} />;
+  const authorized = await verifyClientToken(found.id, key);
+  if (!authorized) return <AccessDenied />;
+
+  return <Dashboard client={found} accessKey={key!} />;
 }

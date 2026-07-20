@@ -34,7 +34,7 @@ function HeroSparkline({ data }: { data: { value: number }[] }) {
   );
 }
 
-export function Dashboard({ client }: { client: Client }) {
+export function Dashboard({ client, accessKey }: { client: Client; accessKey: string }) {
   const [range, setRange] = useState<DateRangeId>("30d");
   const [tab, setTab] = useState<Tab>("organic");
   const [chartMetric, setChartMetric] = useState<OrganicMetricKey>("reach");
@@ -46,7 +46,7 @@ export function Dashboard({ client }: { client: Client }) {
   useEffect(() => {
     let cancelled = false;
     const key = `${client.id}:${range}`;
-    fetch(`/api/organic/${client.id}?range=${range}`)
+    fetch(`/api/organic/${client.id}?range=${range}&key=${encodeURIComponent(accessKey)}`)
       .then((res) => res.json())
       .then((data: OrganicSnapshot) => {
         if (cancelled) return;
@@ -61,7 +61,7 @@ export function Dashboard({ client }: { client: Client }) {
     return () => {
       cancelled = true;
     };
-  }, [client.id, range]);
+  }, [client.id, range, accessKey]);
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-8">

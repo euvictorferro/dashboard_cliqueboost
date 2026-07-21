@@ -10,8 +10,9 @@ import { TopVideosList } from "./TopVideosList";
 import { AdsPanel } from "./AdsPanel";
 import { ExportPdfButton } from "./ExportPdfButton";
 import { Logo } from "./Logo";
+import { AudiencePanel } from "./AudiencePanel";
 
-type Tab = "organic" | "ads";
+type Tab = "organic" | "ads" | "audience";
 
 export function Dashboard({ client, accessKey }: { client: Client; accessKey: string }) {
   const [range, setRange] = useState<DateRangeId>("30d");
@@ -59,6 +60,7 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
           {([
             ["organic", "Orgânico"],
             ["ads", "Ads"],
+            ["audience", "Público"],
           ] as const).map(([id, label]) => (
             <button
               key={id}
@@ -79,7 +81,7 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
         )}
       </div>
 
-      {tab === "organic" ? (
+      {tab === "organic" && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[repeat(3,minmax(0,1fr))_1.6fr]">
             <MetricCard
@@ -151,8 +153,10 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
 
           <TopVideosList posts={snapshot.topPosts} />
         </div>
-      ) : (
-        <AdsPanel clientId={client.id} active={client.adsActive} />
+      )}
+      {tab === "ads" && <AdsPanel clientId={client.id} active={client.adsActive} />}
+      {tab === "audience" && (
+        <AudiencePanel clientId={client.id} accessKey={accessKey} reachBreakdown={snapshot.reachBreakdown} />
       )}
     </div>
   );

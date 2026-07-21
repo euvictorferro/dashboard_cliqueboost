@@ -7,11 +7,16 @@ import { fetchOrganicSnapshotLive, fetchAudienceSnapshotLive, hasMetaCredentials
 import { verifyClientToken } from "@/lib/access";
 import { ReportDocument } from "@/lib/pdf-report";
 
+const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
 function formatPeriod(days: number): string {
   const until = new Date();
   const since = new Date(until.getTime() - days * 86400000);
-  const fmt = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" });
-  return `${fmt.format(since)} – ${fmt.format(until)}`.replace(/\./g, "");
+  const pad = (n: number) => String(n).padStart(2, "0");
+  if (since.getMonth() === until.getMonth() && since.getFullYear() === until.getFullYear()) {
+    return `${pad(since.getDate())}–${pad(until.getDate())} ${MONTHS[until.getMonth()]} ${until.getFullYear()}`;
+  }
+  return `${pad(since.getDate())} ${MONTHS[since.getMonth()]} – ${pad(until.getDate())} ${MONTHS[until.getMonth()]} ${until.getFullYear()}`;
 }
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ client: string }> }) {

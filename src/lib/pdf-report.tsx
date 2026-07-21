@@ -216,61 +216,6 @@ function PageHeader({ eyebrow, client, period }: { eyebrow: string; client: stri
   );
 }
 
-function CoverPage({ client, period, netFollowers }: { client: string; period: string; netFollowers: number }) {
-  return (
-    <Page size="A4">
-      <View
-        style={{
-          flex: 1,
-          position: "relative",
-          overflow: "hidden",
-          padding: 45,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-        }}
-      >
-        <GradientRect id="coverGrad" />
-        <View style={{ position: "relative" }}>
-          <Image
-            src={path.join(process.cwd(), "public/logo-dark.png")}
-            style={{ width: 120, height: 32, objectFit: "contain" }}
-          />
-          <Text
-            style={{
-              marginTop: 40,
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: 1.5,
-              textTransform: "uppercase",
-              color: COLORS.white,
-              opacity: 0.8,
-              fontFamily: "Roboto",
-            }}
-          >
-            Relatório Mensal
-          </Text>
-          <Text style={{ marginTop: 8, fontSize: 26, fontWeight: 700, color: COLORS.white, fontFamily: "Montserrat" }}>
-            {client}
-          </Text>
-        </View>
-        <View>
-          <Text style={{ fontSize: 56, fontWeight: 800, color: COLORS.white, fontFamily: "Montserrat" }}>
-            {netFollowers >= 0 ? "+" : ""}
-            {netFollowers.toLocaleString("pt-BR")}
-          </Text>
-          <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", fontFamily: "Roboto" }}>
-            seguidores líquidos no período
-          </Text>
-          <Text style={{ marginTop: 10, fontSize: 11, color: "rgba(255,255,255,0.6)", fontFamily: "Roboto" }}>
-            {period}
-          </Text>
-        </View>
-      </View>
-    </Page>
-  );
-}
-
 function PostsMediaPage({ client, period, snapshot }: { client: string; period: string; snapshot: OrganicSnapshot }) {
   const m = snapshot.metrics;
   const maxLikes = Math.max(1, ...snapshot.topPosts.map((p) => p.likes));
@@ -375,7 +320,14 @@ function PostsMediaPage({ client, period, snapshot }: { client: string; period: 
               borderTopColor: COLORS.grey100,
             }}
           >
-            <View style={{ width: 30, height: 30, borderRadius: 6, backgroundColor: COLORS.sunken }} />
+            {post.thumbnailUrl ? (
+              <Image
+                src={post.thumbnailUrl}
+                style={{ width: 34, height: 34, borderRadius: 6, objectFit: "cover" }}
+              />
+            ) : (
+              <View style={{ width: 34, height: 34, borderRadius: 6, backgroundColor: post.thumbnailColor }} />
+            )}
             <Text style={{ flex: 1, fontSize: 10, fontWeight: 600 }}>{stripEmoji(post.title)}</Text>
             <Svg width={90} height={5}>
               <Defs>
@@ -469,6 +421,14 @@ function AudiencePage({
               key={c.key}
               style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 5, borderTopWidth: 1, borderTopColor: COLORS.grey100 }}
             >
+              {c.key === "__others" ? (
+                <View style={{ width: 16, height: 12 }} />
+              ) : (
+                <Image
+                  src={`https://flagcdn.com/w40/${c.key.toLowerCase()}.png`}
+                  style={{ width: 16, height: 12, borderRadius: 2, objectFit: "cover" }}
+                />
+              )}
               <Text style={{ flex: 1, fontSize: 11, fontWeight: 600 }}>{c.label}</Text>
               <Text style={{ fontSize: 11, fontWeight: 700 }}>{c.pct}%</Text>
             </View>
@@ -555,7 +515,6 @@ export function ReportDocument({
 }) {
   return (
     <Document>
-      <CoverPage client={client.name} period={period} netFollowers={organic.metrics.netFollowers} />
       <PostsMediaPage client={client.name} period={period} snapshot={organic} />
       <AudiencePage client={client.name} period={period} audience={audience} reachBreakdown={organic.reachBreakdown} />
     </Document>

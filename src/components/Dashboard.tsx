@@ -52,7 +52,7 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
           <Logo />
           <h1 className="mt-2 text-2xl font-bold text-foreground">{client.name}</h1>
         </div>
-        <ExportPdfButton />
+        <ExportPdfButton clientId={client.id} range={range} accessKey={accessKey} />
       </header>
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">

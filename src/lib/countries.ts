@@ -36,3 +36,12 @@ export const COUNTRY_NAMES: Record<string, string> = {
 export function countryName(code: string): string {
   return COUNTRY_NAMES[code.toUpperCase()] ?? code;
 }
+
+// ponytail: bandeira via Regional Indicator Symbols (par de codepoints Unicode a partir do
+// código ISO alpha-2) — não precisa de imagem nem lib externa.
+export function countryFlag(code: string): string {
+  const upper = code.toUpperCase();
+  if (upper.length !== 2) return "";
+  const codePoints = [...upper].map((c) => 0x1f1e6 + (c.charCodeAt(0) - 65));
+  return String.fromCodePoint(...codePoints);
+}

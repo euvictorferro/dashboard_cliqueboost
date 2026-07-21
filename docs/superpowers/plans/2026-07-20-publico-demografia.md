@@ -35,6 +35,7 @@
   - `DemographicSet = {gender, age, country, city: DemographicSlice[]}` — de `audience.ts`
   - `AudienceSnapshot = {followers: DemographicSet; engaged: DemographicSet; hasEnoughData: boolean}` — de `audience.ts`
   - `getAudienceSnapshot(clientId: string, timeframe: AudienceTimeframeId): AudienceSnapshot` — de `audience.ts`
+  - `roundToPercentages(values: number[]): number[]` — de `audience.ts` (arredondamento "maior resto", usado pelo mock aqui e pelo fetch real na Task 2)
 
 - [ ] **Step 1: Criar o dicionário de países**
 
@@ -130,6 +131,25 @@ function seededRandom(seed: string) {
   };
 }
 
+// ponytail: arredondamento "maior resto" — garante que as % de um conjunto sempre somem
+// exatamente 100 (arredondar cada fatia isoladamente pode fechar em 99 ou 101). Usado aqui
+// no mock e reaproveitado no fetch real da Graph API (Task 2).
+export function roundToPercentages(values: number[]): number[] {
+  const total = values.reduce((a, b) => a + b, 0);
+  if (total === 0) return values.map(() => 0);
+  const raw = values.map((v) => (v / total) * 100);
+  const floors = raw.map(Math.floor);
+  const remainder = 100 - floors.reduce((a, b) => a + b, 0);
+  const order = raw
+    .map((v, i) => ({ i, frac: v - Math.floor(v) }))
+    .sort((a, b) => b.frac - a.frac);
+  const result = [...floors];
+  for (let k = 0; k < remainder; k++) {
+    result[order[k].i] += 1;
+  }
+  return result;
+}
+
 function mockSet(seed: string): DemographicSet {
   const rand = seededRandom(seed);
 
@@ -141,25 +161,21 @@ function mockSet(seed: string): DemographicSet {
 
   const ageBrackets = ["13-17", "18-24", "25-34", "35-44", "45-54", "55-64", "65+"];
   const ageRaw = ageBrackets.map(() => rand());
-  const ageSum = ageRaw.reduce((a, b) => a + b, 0);
-  const age: DemographicSlice[] = ageBrackets.map((key, i) => ({
-    key,
-    label: key,
-    pct: Math.round((ageRaw[i] / ageSum) * 100),
-  }));
+  const agePcts = roundToPercentages(ageRaw);
+  const age: DemographicSlice[] = ageBrackets.map((key, i) => ({ key, label: key, pct: agePcts[i] }));
 
   const countries = ["BR", "US", "PT", "AR"];
   const countryRaw = countries.map((_, i) => rand() * (countries.length - i));
-  const countrySum = countryRaw.reduce((a, b) => a + b, 0);
+  const countryPcts = roundToPercentages(countryRaw);
   const country: DemographicSlice[] = countries
-    .map((code, i) => ({ key: code, label: countryName(code), pct: Math.round((countryRaw[i] / countrySum) * 100) }))
+    .map((code, i) => ({ key: code, label: countryName(code), pct: countryPcts[i] }))
     .sort((a, b) => b.pct - a.pct);
 
   const cities = ["São Paulo", "Rio de Janeiro", "Orlando", "Miami", "Lisboa"];
   const cityRaw = cities.map((_, i) => rand() * (cities.length - i));
-  const citySum = cityRaw.reduce((a, b) => a + b, 0);
+  const cityPcts = roundToPercentages(cityRaw);
   const city: DemographicSlice[] = cities
-    .map((label, i) => ({ key: label, label, pct: Math.round((cityRaw[i] / citySum) * 100) }))
+    .map((label, i) => ({ key: label, label, pct: cityPcts[i] }))
     .sort((a, b) => b.pct - a.pct)
     .slice(0, 5);
 
@@ -197,7 +213,7 @@ git commit -m "Adiciona camada de dados de audiência (tipos, países, mock)"
 - Modify: `src/lib/meta.ts` (novas funções `fetchAudienceSnapshotLive` e `fetchReachBreakdown`, mais wiring em `fetchOrganicSnapshotLive`)
 
 **Interfaces:**
-- Consumes: `AudienceTimeframeId`, `AudienceSnapshot`, `DemographicSlice` (Task 1); `countryName` (Task 1); `genderLabel` (Task 1); `safeGraphGet`, `graphGet`, `chunkWindows` (já existem em `meta.ts`)
+- Consumes: `AudienceTimeframeId`, `AudienceSnapshot`, `DemographicSlice` (Task 1); `countryName` (Task 1); `genderLabel` (Task 1); `roundToPercentages` (Task 1); `safeGraphGet`, `graphGet`, `chunkWindows` (já existem em `meta.ts`)
 - Produces:
   - `ReachBreakdown = {byFollowType: {follower, nonFollower, unknown}; byMediaType: {post, story, reel, ad}}` — de `metrics.ts`
   - `OrganicSnapshot.reachBreakdown?: ReachBreakdown` — campo novo, opcional
@@ -294,7 +310,13 @@ import {
   type ReachBreakdown,
   type TopPost,
 } from "./metrics";
-import { genderLabel, type AudienceSnapshot, type AudienceTimeframeId, type DemographicSlice } from "./audience";
+import {
+  genderLabel,
+  roundToPercentages,
+  type AudienceSnapshot,
+  type AudienceTimeframeId,
+  type DemographicSlice,
+} from "./audience";
 import { countryName } from "./countries";
 ```
 
@@ -329,14 +351,17 @@ async function fetchDemographicBreakdown(
 
   const results: { dimension_values: string[]; value: number }[] =
     res.data?.[0]?.total_value?.breakdowns?.[0]?.results ?? [];
-  const total = results.reduce((sum: number, r: { value: number }) => sum + r.value, 0);
-  if (total === 0) return [];
+  if (results.length === 0) return [];
 
+  // ponytail: arredondamento "maior resto" (roundToPercentages, de audience.ts) em vez de
+  // arredondar cada fatia isoladamente — garante que a soma feche em 100% mesmo antes do corte
+  // top-5 de país/cidade (ver Task 1: mesmo problema existia no mock e foi corrigido lá).
+  const pcts = roundToPercentages(results.map((r) => r.value));
   const limit = breakdown === "country" || breakdown === "city" ? 5 : results.length;
   return results
-    .map((r) => {
+    .map((r, i) => {
       const rawKey = r.dimension_values[r.dimension_values.length - 1];
-      return { key: rawKey, label: labelFor(breakdown, rawKey), pct: Math.round((r.value / total) * 100) };
+      return { key: rawKey, label: labelFor(breakdown, rawKey), pct: pcts[i] };
     })
     .sort((a, b) => b.pct - a.pct)
     .slice(0, limit);

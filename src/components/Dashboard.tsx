@@ -12,7 +12,7 @@ import { ExportPdfButton } from "./ExportPdfButton";
 import { Logo } from "./Logo";
 import { AudiencePanel } from "./AudiencePanel";
 
-type Tab = "organic" | "ads" | "audience";
+type Tab = "organic" | "ads";
 
 export function Dashboard({ client, accessKey }: { client: Client; accessKey: string }) {
   const [range, setRange] = useState<DateRangeId>("30d");
@@ -60,7 +60,6 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
           {([
             ["organic", "Orgânico"],
             ["ads", "Ads"],
-            ["audience", "Público"],
           ] as const).map(([id, label]) => (
             <button
               key={id}
@@ -152,12 +151,11 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
           </div>
 
           <TopVideosList posts={snapshot.topPosts} />
+
+          <AudiencePanel clientId={client.id} accessKey={accessKey} reachBreakdown={snapshot.reachBreakdown} />
         </div>
       )}
       {tab === "ads" && <AdsPanel clientId={client.id} active={client.adsActive} />}
-      {tab === "audience" && (
-        <AudiencePanel clientId={client.id} accessKey={accessKey} reachBreakdown={snapshot.reachBreakdown} />
-      )}
     </div>
   );
 }

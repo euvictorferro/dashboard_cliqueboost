@@ -15,7 +15,7 @@
 - Trabalhar sempre na branch `staging` (já existe e está com `git checkout` feito). Nunca commitar direto na `main`.
 - Depois de cada task: `npx tsc --noEmit` deve passar sem erro antes do commit.
 - Não rodar `vercel --prod` nesse plano — só `vercel` (preview) quando o Victor pedir pra ver. Produção só depois de aprovação explícita.
-- A API da Meta usa `breakdowns` (plural) para as métricas demográficas (`follower_demographics`/`engaged_audience_demographics`) e `breakdown` (singular) para `reach`/`views` — confirmado no exemplo oficial da documentação, não são o mesmo parâmetro. Não confundir os dois.
+- **CORREÇÃO (pós-Task 3):** a documentação oficial mostra um exemplo com `breakdowns` (plural) pras métricas demográficas, mas isso está **errado** — testado direto contra a Graph API real (v21.0, conta da Laís): `breakdowns=gender` retorna erro "(#100) A breakdown parameter must be inputted", enquanto `breakdown=gender` (singular) retorna dado real. O parâmetro é `breakdown` (singular) pra TODAS as métricas de insight, incluindo as demográficas — não existe um "plural" de verdade nessa versão da API.
 
 ---
 
@@ -339,13 +339,14 @@ async function fetchDemographicBreakdown(
   breakdown: DemographicBreakdownName,
   timeframe: AudienceTimeframeId
 ): Promise<DemographicSlice[]> {
-  // ponytail: métricas demográficas usam "breakdowns" (plural) — diferente do "breakdown"
-  // (singular) usado por reach/views. Confirmado no exemplo oficial da doc da Graph API.
+  // ponytail: o parâmetro é "breakdown" (singular) — igual ao usado por reach/views. Testado
+  // direto contra a Graph API real: "breakdowns" (plural, como um exemplo da doc oficial sugeria)
+  // retorna erro "(#100) A breakdown parameter must be inputted". Não usar plural aqui.
   const res = await safeGraphGet(`${igId}/insights`, {
     metric,
     period: "lifetime",
     timeframe,
-    breakdowns: breakdown,
+    breakdown,
     metric_type: "total_value",
   });
 

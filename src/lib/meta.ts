@@ -4,8 +4,17 @@ import {
   type DateRangeId,
   type OrganicMetricKey,
   type OrganicSnapshot,
+  type ReachBreakdown,
   type TopPost,
 } from "./metrics";
+import {
+  genderLabel,
+  roundToPercentages,
+  type AudienceSnapshot,
+  type AudienceTimeframeId,
+  type DemographicSlice,
+} from "./audience";
+import { countryName } from "./countries";
 
 // ponytail: server-only — nunca importar isto de um componente "use client" (usa o token secreto).
 const GRAPH_API = "https://graph.facebook.com/v21.0";
@@ -165,6 +174,124 @@ async function fetchTopVideos(igId: string, since: number, until: number): Promi
   }));
 }
 
+type DemographicBreakdownName = "age" | "gender" | "city" | "country";
+
+function labelFor(breakdown: DemographicBreakdownName, rawKey: string): string {
+  if (breakdown === "country") return countryName(rawKey);
+  if (breakdown === "gender") return genderLabel(rawKey);
+  return rawKey; // age e city já vêm como texto legível da Meta
+}
+
+async function fetchDemographicBreakdown(
+  igId: string,
+  metric: "follower_demographics" | "engaged_audience_demographics",
+  breakdown: DemographicBreakdownName,
+  timeframe: AudienceTimeframeId
+): Promise<DemographicSlice[]> {
+  // ponytail: métricas demográficas usam "breakdowns" (plural) — diferente do "breakdown"
+  // (singular) usado por reach/views. Confirmado no exemplo oficial da doc da Graph API.
+  const res = await safeGraphGet(`${igId}/insights`, {
+    metric,
+    period: "lifetime",
+    timeframe,
+    breakdowns: breakdown,
+    metric_type: "total_value",
+  });
+
+  const results: { dimension_values: string[]; value: number }[] =
+    res.data?.[0]?.total_value?.breakdowns?.[0]?.results ?? [];
+  if (results.length === 0) return [];
+
+  // ponytail: arredondamento "maior resto" (roundToPercentages, de audience.ts) em vez de
+  // arredondar cada fatia isoladamente — garante que a soma feche em 100% mesmo antes do corte
+  // top-5 de país/cidade (ver Task 1: mesmo problema existia no mock e foi corrigido lá).
+  const pcts = roundToPercentages(results.map((r) => r.value));
+  const limit = breakdown === "country" || breakdown === "city" ? 5 : results.length;
+  return results
+    .map((r, i) => {
+      const rawKey = r.dimension_values[r.dimension_values.length - 1];
+      return { key: rawKey, label: labelFor(breakdown, rawKey), pct: pcts[i] };
+    })
+    .sort((a, b) => b.pct - a.pct)
+    .slice(0, limit);
+}
+
+const DEMOGRAPHIC_BREAKDOWNS = ["age", "gender", "country", "city"] as const;
+
+export async function fetchAudienceSnapshotLive(
+  igId: string,
+  timeframe: AudienceTimeframeId
+): Promise<AudienceSnapshot> {
+  await graphGet(igId, { fields: "id" });
+
+  const [followersResults, engagedResults] = await Promise.all([
+    Promise.all(DEMOGRAPHIC_BREAKDOWNS.map((b) => fetchDemographicBreakdown(igId, "follower_demographics", b, timeframe))),
+    Promise.all(
+      DEMOGRAPHIC_BREAKDOWNS.map((b) => fetchDemographicBreakdown(igId, "engaged_audience_demographics", b, timeframe))
+    ),
+  ]);
+
+  const [followersAge, followersGender, followersCountry, followersCity] = followersResults;
+  const [engagedAge, engagedGender, engagedCountry, engagedCity] = engagedResults;
+
+  const hasEnoughData = [...followersResults, ...engagedResults].some((slice) => slice.length > 0);
+
+  return {
+    followers: { age: followersAge, gender: followersGender, country: followersCountry, city: followersCity },
+    engaged: { age: engagedAge, gender: engagedGender, country: engagedCountry, city: engagedCity },
+    hasEnoughData,
+  };
+}
+
+async function fetchReachBreakdownChunk(
+  igId: string,
+  since: number,
+  until: number,
+  breakdown: "follow_type" | "media_product_type"
+): Promise<Record<string, number>> {
+  const res = await safeGraphGet(`${igId}/insights`, {
+    metric: "reach",
+    period: "day",
+    since: String(since),
+    until: String(until),
+    metric_type: "total_value",
+    breakdown,
+  });
+  const results: { dimension_values: string[]; value: number }[] =
+    res.data?.[0]?.total_value?.breakdowns?.[0]?.results ?? [];
+  const totals: Record<string, number> = {};
+  for (const r of results) {
+    const key = r.dimension_values[r.dimension_values.length - 1];
+    totals[key] = (totals[key] ?? 0) + r.value;
+  }
+  return totals;
+}
+
+export async function fetchReachBreakdown(igId: string, since: number, until: number): Promise<ReachBreakdown> {
+  const windows = chunkWindows(since, until);
+  const [followTypeChunks, mediaTypeChunks] = await Promise.all([
+    Promise.all(windows.map(([s, u]) => fetchReachBreakdownChunk(igId, s, u, "follow_type"))),
+    Promise.all(windows.map(([s, u]) => fetchReachBreakdownChunk(igId, s, u, "media_product_type"))),
+  ]);
+
+  const sumKey = (chunks: Record<string, number>[], key: string) =>
+    chunks.reduce((sum, c) => sum + (c[key] ?? 0), 0);
+
+  return {
+    byFollowType: {
+      follower: sumKey(followTypeChunks, "FOLLOWER"),
+      nonFollower: sumKey(followTypeChunks, "NON_FOLLOWER"),
+      unknown: sumKey(followTypeChunks, "UNKNOWN"),
+    },
+    byMediaType: {
+      post: sumKey(mediaTypeChunks, "POST") + sumKey(mediaTypeChunks, "CAROUSEL_CONTAINER"),
+      story: sumKey(mediaTypeChunks, "STORY"),
+      reel: sumKey(mediaTypeChunks, "REEL") + sumKey(mediaTypeChunks, "REELS"),
+      ad: sumKey(mediaTypeChunks, "AD"),
+    },
+  };
+}
+
 function pctChange(current: number, previous: number): number | null {
   if (previous === 0) return null;
   return ((current - previous) / previous) * 100;
@@ -182,10 +309,11 @@ export async function fetchOrganicSnapshotLive(igId: string, range: DateRangeId)
   const prevUntil = since;
   const prevSince = since - days * 86400;
 
-  const [current, previous, topPosts] = await Promise.all([
+  const [current, previous, topPosts, reachBreakdown] = await Promise.all([
     fetchRange(igId, since, until),
     fetchRange(igId, prevSince, prevUntil),
     fetchTopVideos(igId, since, until),
+    fetchReachBreakdown(igId, since, until),
   ]);
 
   const keys = Object.keys(ORGANIC_METRICS) as OrganicMetricKey[];
@@ -196,5 +324,5 @@ export async function fetchOrganicSnapshotLive(igId: string, range: DateRangeId)
     changePct[key] = pctChange(current[key], previous[key]);
   }
 
-  return { metrics, changePct, trend: current.trend, topPosts };
+  return { metrics, changePct, trend: current.trend, topPosts, reachBreakdown };
 }

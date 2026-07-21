@@ -71,12 +71,18 @@ export type TopPost = {
   permalink?: string;
 };
 
+export type ReachBreakdown = {
+  byFollowType: { follower: number; nonFollower: number; unknown: number };
+  byMediaType: { post: number; story: number; reel: number; ad: number };
+};
+
 export type OrganicSnapshot = {
   metrics: Record<OrganicMetricKey, number>;
   /** variação % vs. período anterior de mesma duração; null quando não dá pra calcular (base 0) */
   changePct: Record<OrganicMetricKey, number | null>;
   trend: { date: string; value: number }[];
   topPosts: TopPost[];
+  reachBreakdown?: ReachBreakdown;
 };
 
 // ponytail: mock determinístico (seed = clientId+range) até a Meta App existir. Trocar por
@@ -151,5 +157,20 @@ export function getOrganicSnapshot(clientId: string, range: DateRangeId): Organi
     thumbnailColor: ["#7c3aed", "#0080ff", "#00c896", "#ff5c4d", "#8b5cf6"][i],
   })).sort((a, b) => b.likes - a.likes);
 
-  return { metrics, changePct, trend, topPosts };
+  const followerShare = 0.55 + rand() * 0.2; // 55–75% do alcance vem de quem já segue
+  const reachBreakdown: ReachBreakdown = {
+    byFollowType: {
+      follower: Math.round(metrics.reach * followerShare),
+      nonFollower: Math.round(metrics.reach * (1 - followerShare) * 0.85),
+      unknown: Math.round(metrics.reach * (1 - followerShare) * 0.15),
+    },
+    byMediaType: {
+      post: Math.round(metrics.reach * 0.35),
+      story: Math.round(metrics.reach * 0.3),
+      reel: Math.round(metrics.reach * 0.3),
+      ad: Math.round(metrics.reach * 0.05),
+    },
+  };
+
+  return { metrics, changePct, trend, topPosts, reachBreakdown };
 }

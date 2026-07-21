@@ -37,6 +37,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# brainstorming visual companion (mockups locais, não faz parte do app)
+.superpowers/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

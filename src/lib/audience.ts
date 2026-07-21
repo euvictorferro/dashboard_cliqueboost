@@ -42,6 +42,25 @@ function seededRandom(seed: string) {
   };
 }
 
+// ponytail: arredondamento "maior resto" — garante que as % de um conjunto sempre somem
+// exatamente 100 (arredondar cada fatia isoladamente pode fechar em 99 ou 101). Usado aqui
+// no mock e reaproveitado no fetch real da Graph API (Task 2).
+export function roundToPercentages(values: number[]): number[] {
+  const total = values.reduce((a, b) => a + b, 0);
+  if (total === 0) return values.map(() => 0);
+  const raw = values.map((v) => (v / total) * 100);
+  const floors = raw.map(Math.floor);
+  const remainder = 100 - floors.reduce((a, b) => a + b, 0);
+  const order = raw
+    .map((v, i) => ({ i, frac: v - Math.floor(v) }))
+    .sort((a, b) => b.frac - a.frac);
+  const result = [...floors];
+  for (let k = 0; k < remainder; k++) {
+    result[order[k].i] += 1;
+  }
+  return result;
+}
+
 function mockSet(seed: string): DemographicSet {
   const rand = seededRandom(seed);
 
@@ -53,25 +72,21 @@ function mockSet(seed: string): DemographicSet {
 
   const ageBrackets = ["13-17", "18-24", "25-34", "35-44", "45-54", "55-64", "65+"];
   const ageRaw = ageBrackets.map(() => rand());
-  const ageSum = ageRaw.reduce((a, b) => a + b, 0);
-  const age: DemographicSlice[] = ageBrackets.map((key, i) => ({
-    key,
-    label: key,
-    pct: Math.round((ageRaw[i] / ageSum) * 100),
-  }));
+  const agePcts = roundToPercentages(ageRaw);
+  const age: DemographicSlice[] = ageBrackets.map((key, i) => ({ key, label: key, pct: agePcts[i] }));
 
   const countries = ["BR", "US", "PT", "AR"];
   const countryRaw = countries.map((_, i) => rand() * (countries.length - i));
-  const countrySum = countryRaw.reduce((a, b) => a + b, 0);
+  const countryPcts = roundToPercentages(countryRaw);
   const country: DemographicSlice[] = countries
-    .map((code, i) => ({ key: code, label: countryName(code), pct: Math.round((countryRaw[i] / countrySum) * 100) }))
+    .map((code, i) => ({ key: code, label: countryName(code), pct: countryPcts[i] }))
     .sort((a, b) => b.pct - a.pct);
 
   const cities = ["São Paulo", "Rio de Janeiro", "Orlando", "Miami", "Lisboa"];
   const cityRaw = cities.map((_, i) => rand() * (cities.length - i));
-  const citySum = cityRaw.reduce((a, b) => a + b, 0);
+  const cityPcts = roundToPercentages(cityRaw);
   const city: DemographicSlice[] = cities
-    .map((label, i) => ({ key: label, label, pct: Math.round((cityRaw[i] / citySum) * 100) }))
+    .map((label, i) => ({ key: label, label, pct: cityPcts[i] }))
     .sort((a, b) => b.pct - a.pct)
     .slice(0, 5);
 

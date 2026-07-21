@@ -188,13 +188,14 @@ async function fetchDemographicBreakdown(
   breakdown: DemographicBreakdownName,
   timeframe: AudienceTimeframeId
 ): Promise<DemographicSlice[]> {
-  // ponytail: métricas demográficas usam "breakdowns" (plural) — diferente do "breakdown"
-  // (singular) usado por reach/views. Confirmado no exemplo oficial da doc da Graph API.
+  // ponytail: o parâmetro é "breakdown" (singular) — igual ao usado por reach/views. Testado
+  // direto contra a Graph API real: "breakdowns" (plural, como um exemplo da doc oficial sugeria)
+  // retorna erro "(#100) A breakdown parameter must be inputted". Não usar plural aqui.
   const res = await safeGraphGet(`${igId}/insights`, {
     metric,
     period: "lifetime",
     timeframe,
-    breakdowns: breakdown,
+    breakdown,
     metric_type: "total_value",
   });
 

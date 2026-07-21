@@ -3,7 +3,6 @@ import { countryName } from "./countries";
 export const AUDIENCE_TIMEFRAMES = [
   { id: "this_week", label: "Esta semana" },
   { id: "this_month", label: "Este mês" },
-  { id: "last_30_days", label: "Últimos 30 dias" },
   { id: "last_90_days", label: "Últimos 90 dias" },
 ] as const;
 

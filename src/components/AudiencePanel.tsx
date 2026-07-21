@@ -69,7 +69,7 @@ export function AudiencePanel({
   accessKey: string;
   reachBreakdown?: ReachBreakdown;
 }) {
-  const [timeframe, setTimeframe] = useState<AudienceTimeframeId>("last_30_days");
+  const [timeframe, setTimeframe] = useState<AudienceTimeframeId>("this_month");
   const [snapshot, setSnapshot] = useState<AudienceSnapshot>(() => getAudienceSnapshot(clientId, timeframe));
 
   useEffect(() => {

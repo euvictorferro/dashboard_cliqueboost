@@ -10,7 +10,7 @@ function PostRow({ post, max }: { post: TopPost; max: number }) {
         <span className="h-11 w-11 shrink-0 rounded-lg" style={{ backgroundColor: post.thumbnailColor }} />
       )}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm text-card-foreground">{post.title}</p>
+        <p className="line-clamp-2 text-sm text-card-foreground sm:line-clamp-1">{post.title}</p>
         <div className="mt-1.5 flex items-center gap-3">
           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-brand-track">
             <div

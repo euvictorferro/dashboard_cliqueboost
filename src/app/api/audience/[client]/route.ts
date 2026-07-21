@@ -6,7 +6,7 @@ import { verifyClientToken } from "@/lib/access";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ client: string }> }) {
   const { client: clientId } = await params;
-  const timeframe = (request.nextUrl.searchParams.get("timeframe") ?? "last_30_days") as AudienceTimeframeId;
+  const timeframe = (request.nextUrl.searchParams.get("timeframe") ?? "this_month") as AudienceTimeframeId;
   const key = request.nextUrl.searchParams.get("key") ?? undefined;
 
   if (!AUDIENCE_TIMEFRAMES.some((t) => t.id === timeframe)) {

@@ -37,6 +37,12 @@ Font.register({
   })),
 });
 
+// ponytail: o HTML de referência foi desenhado em px de navegador (96dpi). O react-pdf trata
+// número solto como pt (72dpi) — por isso setamos dpi=96 em cada <Page> e escrevemos toda medida
+// vinda da referência como string "Npx" (deixa o react-pdf converter certinho), em vez de copiar
+// o número cru como se fosse pt. Sem isso, tudo que não foi manualmente reduzido fica ~33% maior.
+const DPI = 96;
+
 const COLORS = {
   purple: "#8A2BE2",
   blue: "#007BFF",
@@ -60,27 +66,39 @@ function topWithOthers(slices: DemographicSlice[], n: number, othersLabel: strin
   return rest > 0 ? [...top, { key: "__others", label: othersLabel, pct: rest }] : top;
 }
 
-function sparklinePoints(trend: { value: number }[]): string {
-  if (trend.length === 0) return "0,54 400,54";
+function sparklineCoords(trend: { value: number }[]): { x: number; y: number }[] {
+  if (trend.length === 0) return [{ x: 0, y: 54 }, { x: 400, y: 54 }];
   const max = Math.max(1, ...trend.map((t) => t.value));
   const min = Math.min(...trend.map((t) => t.value));
   const range = Math.max(1, max - min);
   const stepX = 400 / Math.max(1, trend.length - 1);
-  return trend
-    .map((t, i) => `${(i * stepX).toFixed(1)},${(54 - ((t.value - min) / range) * 48).toFixed(1)}`)
-    .join(" ");
+  return trend.map((t, i) => ({ x: i * stepX, y: 54 - ((t.value - min) / range) * 48 }));
+}
+
+// ponytail: gradiente em stroke não é confiável entre leitores de PDF (confirmado — some ou vira
+// preto). Em vez disso, desenha o sparkline como vários segmentos sólidos com cor interpolada
+// roxo→azul — mesmo efeito visual do gradiente, só com recursos 100% suportados (fill/stroke sólido).
+function interpolateColor(from: string, to: string, t: number): string {
+  const a = parseInt(from.slice(1), 16);
+  const b = parseInt(to.slice(1), 16);
+  const ar = (a >> 16) & 255, ag = (a >> 8) & 255, ab = a & 255;
+  const br = (b >> 16) & 255, bg = (b >> 8) & 255, bb = b & 255;
+  const r = Math.round(ar + (br - ar) * t);
+  const g = Math.round(ag + (bg - ag) * t);
+  const bl = Math.round(ab + (bb - ab) * t);
+  return `#${((1 << 24) + (r << 16) + (g << 8) + bl).toString(16).slice(1)}`;
 }
 
 // ponytail: Montserrat/Roboto não têm glyph de emoji, e o react-pdf não faz fallback pra outra
 // fonte — emoji real vindo da legenda do post (ex: 🎆✨) vira caractere quebrado no PDF.
 function stripEmoji(text: string): string {
   return text
-    .replace(/[\u{1F1E6}-\u{1FFFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\uFE0F\u200D]/gu, "")
+    .replace(/[\u{1F1E6}-\u{1FFFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}️‍]/gu, "")
     .replace(/\s{2,}/g, " ")
     .trim();
 }
 
-function GradientRect({ id, radius = 0 }: { id: string; radius?: number }) {
+function GradientRect({ id, radius = "0px" }: { id: string; radius?: string }) {
   return (
     <Svg
       style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
@@ -98,15 +116,15 @@ function GradientRect({ id, radius = 0 }: { id: string; radius?: number }) {
   );
 }
 
-function Donut({ size, slices }: { size: number; slices: { pct: number; color: string }[] }) {
-  const r = size * 0.4;
-  const cx = size / 2;
-  const cy = size / 2;
+function Donut({ sizePx, slices }: { sizePx: number; slices: { pct: number; color: string }[] }) {
+  const r = sizePx * 0.4;
+  const cx = sizePx / 2;
+  const cy = sizePx / 2;
   const circumference = 2 * Math.PI * r;
   let offset = 0;
   return (
-    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <Circle cx={cx} cy={cy} r={r} fill="none" stroke={COLORS.grey100} strokeWidth={size * 0.16} />
+    <Svg width={`${sizePx}px`} height={`${sizePx}px`} viewBox={`0 0 ${sizePx} ${sizePx}`}>
+      <Circle cx={cx} cy={cy} r={r} fill="none" stroke={COLORS.grey100} strokeWidth={sizePx * 0.16} />
       {slices.map((s, i) => {
         const len = Math.max(0.01, (s.pct / 100) * circumference);
         // ponytail: react-pdf (via pdfkit) não suporta strokeDashoffset e rejeita valores 0 no
@@ -121,7 +139,7 @@ function Donut({ size, slices }: { size: number; slices: { pct: number; color: s
             r={r}
             fill="none"
             stroke={s.color}
-            strokeWidth={size * 0.16}
+            strokeWidth={sizePx * 0.16}
             strokeDasharray={`${len} ${Math.max(0.01, circumference - len)}`}
             transform={`rotate(${startAngle} ${cx} ${cy})`}
           />
@@ -133,14 +151,22 @@ function Donut({ size, slices }: { size: number; slices: { pct: number; color: s
   );
 }
 
-function Legend({ items }: { items: { label: string; pct: number; color: string }[] }) {
+function Legend({
+  items,
+  fontSize = "13px",
+  dot = "10px",
+}: {
+  items: { label: string; pct: number; color: string }[];
+  fontSize?: string;
+  dot?: string;
+}) {
   return (
-    <View style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
+    <View style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1 }}>
       {items.map((it) => (
-        <View key={it.label} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <View style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: it.color }} />
-          <Text style={{ flex: 1, fontSize: 11, fontFamily: "Roboto" }}>{it.label}</Text>
-          <Text style={{ fontSize: 11, fontFamily: "Roboto", fontWeight: 700 }}>{it.pct}%</Text>
+        <View key={it.label} style={{ flexDirection: "row", alignItems: "center", gap: "8px" }}>
+          <View style={{ width: dot, height: dot, borderRadius: "3px", backgroundColor: it.color }} />
+          <Text style={{ flex: 1, fontSize, fontFamily: "Roboto" }}>{it.label}</Text>
+          <Text style={{ fontSize, fontFamily: "Roboto", fontWeight: 700 }}>{it.pct}%</Text>
         </View>
       ))}
     </View>
@@ -152,13 +178,13 @@ function Card({ children, style }: { children: React.ReactNode; style?: object }
     <View
       style={{
         flex: 1,
-        borderRadius: 12,
-        padding: 14,
-        borderWidth: 1,
+        borderRadius: "14px",
+        padding: "20px",
+        borderWidth: "1px",
         borderColor: COLORS.grey100,
         display: "flex",
         flexDirection: "column",
-        gap: 8,
+        gap: "14px",
         ...style,
       }}
     >
@@ -167,16 +193,17 @@ function Card({ children, style }: { children: React.ReactNode; style?: object }
   );
 }
 
-function Eyebrow({ children }: { children: React.ReactNode }) {
+function Eyebrow({ children, style }: { children: React.ReactNode; style?: object }) {
   return (
     <Text
       style={{
-        fontSize: 12,
+        fontSize: "12px",
         fontWeight: 600,
-        letterSpacing: 0.4,
+        letterSpacing: "0.4px",
         textTransform: "uppercase",
         color: COLORS.grey700,
         fontFamily: "Roboto",
+        ...style,
       }}
     >
       {children}
@@ -191,17 +218,17 @@ function PageHeader({ eyebrow, client, period }: { eyebrow: string; client: stri
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "flex-end",
-        borderBottomWidth: 1,
+        borderBottomWidth: "1px",
         borderBottomColor: COLORS.grey100,
-        paddingBottom: 14,
+        paddingBottom: "14px",
       }}
     >
-      <View style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <View style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
         <Text
           style={{
-            fontSize: 12,
+            fontSize: "12px",
             fontWeight: 700,
-            letterSpacing: 1.5,
+            letterSpacing: "1.5px",
             textTransform: "uppercase",
             color: COLORS.purple,
             fontFamily: "Montserrat",
@@ -209,9 +236,11 @@ function PageHeader({ eyebrow, client, period }: { eyebrow: string; client: stri
         >
           {eyebrow}
         </Text>
-        <Text style={{ fontSize: 18, fontWeight: 700, fontFamily: "Montserrat" }}>{client}</Text>
+        <Text style={{ fontSize: "18px", fontWeight: 700, fontFamily: "Montserrat" }}>{client}</Text>
       </View>
-      <Text style={{ fontSize: 13, fontWeight: 500, color: COLORS.grey700, fontFamily: "Roboto" }}>{period}</Text>
+      <Text style={{ fontSize: "13px", fontWeight: 500, color: COLORS.grey700, fontFamily: "Roboto" }}>
+        {period}
+      </Text>
     </View>
   );
 }
@@ -219,31 +248,36 @@ function PageHeader({ eyebrow, client, period }: { eyebrow: string; client: stri
 function PostsMediaPage({ client, period, snapshot }: { client: string; period: string; snapshot: OrganicSnapshot }) {
   const m = snapshot.metrics;
   const maxLikes = Math.max(1, ...snapshot.topPosts.map((p) => p.likes));
+  const coords = sparklineCoords(snapshot.trend);
 
   return (
-    <Page size="A4" style={{ padding: 32, display: "flex", flexDirection: "column", gap: 12, fontFamily: "Roboto" }}>
+    <Page
+      size="A4"
+      dpi={DPI}
+      style={{ padding: "16mm 14mm", display: "flex", flexDirection: "column", gap: "8mm", fontFamily: "Roboto" }}
+    >
       <PageHeader eyebrow="Posts e Mídia" client={client} period={period} />
 
-      <View style={{ flexDirection: "row", gap: 10 }}>
-        <View style={{ flex: 1, borderRadius: 12, padding: 12, backgroundColor: COLORS.sunken }}>
+      <View style={{ flexDirection: "row", gap: "14px" }}>
+        <View style={{ flex: 1, borderRadius: "14px", padding: "20px", backgroundColor: COLORS.sunken }}>
           <Eyebrow>Novos seguidores</Eyebrow>
-          <Text style={{ fontSize: 22, fontWeight: 800, marginTop: 5, fontFamily: "Montserrat" }}>
+          <Text style={{ fontSize: "32px", fontWeight: 800, marginTop: "8px", fontFamily: "Montserrat" }}>
             {m.newFollowers.toLocaleString("pt-BR")}
           </Text>
         </View>
-        <View style={{ flex: 1, borderRadius: 12, padding: 12, backgroundColor: COLORS.sunken }}>
+        <View style={{ flex: 1, borderRadius: "14px", padding: "20px", backgroundColor: COLORS.sunken }}>
           <Eyebrow>Seguidores perdidos</Eyebrow>
-          <Text style={{ fontSize: 22, fontWeight: 800, marginTop: 5, fontFamily: "Montserrat" }}>
+          <Text style={{ fontSize: "32px", fontWeight: 800, marginTop: "8px", fontFamily: "Montserrat" }}>
             {m.lostFollowers.toLocaleString("pt-BR")}
           </Text>
         </View>
-        <View style={{ flex: 1, position: "relative", borderRadius: 12, padding: 12, overflow: "hidden" }}>
-          <GradientRect id="netCardGrad" radius={12} />
+        <View style={{ flex: 1, position: "relative", borderRadius: "14px", padding: "20px", overflow: "hidden" }}>
+          <GradientRect id="netCardGrad" radius="14px" />
           <View style={{ position: "relative" }}>
-            <Text style={{ fontSize: 11, fontWeight: 600, letterSpacing: 0.4, textTransform: "uppercase", color: COLORS.white, opacity: 0.85 }}>
-              Seguidores líquidos
-            </Text>
-            <Text style={{ fontSize: 22, fontWeight: 800, marginTop: 5, color: COLORS.white, fontFamily: "Montserrat" }}>
+            <Eyebrow style={{ color: COLORS.white, opacity: 0.85 }}>Seguidores líquidos</Eyebrow>
+            <Text
+              style={{ fontSize: "32px", fontWeight: 800, marginTop: "8px", color: COLORS.white, fontFamily: "Montserrat" }}
+            >
               {m.netFollowers.toLocaleString("pt-BR")}
             </Text>
           </View>
@@ -253,29 +287,44 @@ function PostsMediaPage({ client, period, snapshot }: { client: string; period: 
       <Card>
         <View>
           <Eyebrow>Alcance</Eyebrow>
-          <View style={{ flexDirection: "row", alignItems: "baseline", gap: 10, marginTop: 5 }}>
-            <Text style={{ fontSize: 24, fontWeight: 800, fontFamily: "Montserrat" }}>{m.reach.toLocaleString("pt-BR")}</Text>
+          <View style={{ flexDirection: "row", alignItems: "baseline", gap: "12px", marginTop: "8px" }}>
+            <Text style={{ fontSize: "34px", fontWeight: 800, fontFamily: "Montserrat" }}>
+              {m.reach.toLocaleString("pt-BR")}
+            </Text>
             {snapshot.changePct.reach !== null && (
-              <Text style={{ fontSize: 12, fontWeight: 700, color: snapshot.changePct.reach >= 0 ? COLORS.green : COLORS.red }}>
+              <Text
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 700,
+                  color: snapshot.changePct.reach >= 0 ? COLORS.green : COLORS.red,
+                }}
+              >
                 {snapshot.changePct.reach >= 0 ? "+" : "-"}
                 {Math.abs(snapshot.changePct.reach).toFixed(0)}%
               </Text>
             )}
           </View>
         </View>
-        <Svg viewBox="0 0 400 60" width="100%" height={32}>
-          <Polyline
-            points={sparklinePoints(snapshot.trend)}
-            fill="none"
-            stroke={COLORS.blue}
-            strokeWidth={3}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+        <Svg viewBox="0 0 400 60" width="100%" height="60px" preserveAspectRatio="none">
+          {coords.slice(1).map((pt, i) => {
+            const prev = coords[i];
+            const t = i / Math.max(1, coords.length - 2);
+            return (
+              <Polyline
+                key={i}
+                points={`${prev.x},${prev.y} ${pt.x},${pt.y}`}
+                fill="none"
+                stroke={interpolateColor(COLORS.purple, COLORS.blue, t)}
+                strokeWidth="3px"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            );
+          })}
         </Svg>
       </Card>
 
-      <View style={{ flexDirection: "row", borderRadius: 12, padding: 14, backgroundColor: COLORS.sunken }}>
+      <View style={{ flexDirection: "row", borderRadius: "14px", padding: "20px", backgroundColor: COLORS.sunken }}>
         {[
           { label: "Views", value: m.views },
           { label: "Curtidas", value: m.likes },
@@ -286,20 +335,34 @@ function PostsMediaPage({ client, period, snapshot }: { client: string; period: 
             key={stat.label}
             style={{
               flex: 1,
-              paddingLeft: i > 0 ? 14 : 0,
-              marginLeft: i > 0 ? 14 : 0,
-              borderLeftWidth: i > 0 ? 1 : 0,
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px",
+              paddingLeft: i > 0 ? "20px" : "0px",
+              marginLeft: i > 0 ? "20px" : "0px",
+              borderLeftWidth: i > 0 ? "1px" : "0px",
               borderLeftColor: COLORS.grey100,
             }}
           >
-            <Text style={{ fontSize: 17, fontWeight: 800, fontFamily: "Montserrat" }}>{stat.value.toLocaleString("pt-BR")}</Text>
-            <Text style={{ fontSize: 10, color: COLORS.grey700, marginTop: 3 }}>{stat.label}</Text>
+            <Text style={{ fontSize: "22px", fontWeight: 800, fontFamily: "Montserrat" }}>
+              {stat.value.toLocaleString("pt-BR")}
+            </Text>
+            <Text style={{ fontSize: "12px", fontWeight: 500, color: COLORS.grey700 }}>{stat.label}</Text>
           </View>
         ))}
       </View>
 
-      <Card>
-        <Text style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.3, textTransform: "uppercase", fontFamily: "Montserrat" }}>
+      <Card style={{ gap: "4px" }}>
+        <Text
+          style={{
+            fontSize: "14px",
+            fontWeight: 700,
+            letterSpacing: "0.3px",
+            textTransform: "uppercase",
+            fontFamily: "Montserrat",
+            marginBottom: "6px",
+          }}
+        >
           Top 5 posts
         </Text>
         {snapshot.topPosts.map((post, i) => (
@@ -308,35 +371,37 @@ function PostsMediaPage({ client, period, snapshot }: { client: string; period: 
             style={{
               flexDirection: "row",
               alignItems: "center",
-              gap: 10,
-              paddingVertical: 5,
-              borderTopWidth: 1,
+              gap: "14px",
+              paddingVertical: "10px",
+              borderTopWidth: "1px",
               borderTopColor: COLORS.grey100,
             }}
           >
             {post.thumbnailUrl ? (
               <Image
                 src={post.thumbnailUrl}
-                style={{ width: 34, height: 34, borderRadius: 6, objectFit: "cover" }}
+                style={{ width: "44px", height: "44px", borderRadius: "8px", objectFit: "cover" }}
               />
             ) : (
-              <View style={{ width: 34, height: 34, borderRadius: 6, backgroundColor: post.thumbnailColor }} />
+              <View
+                style={{ width: "44px", height: "44px", borderRadius: "8px", backgroundColor: post.thumbnailColor }}
+              />
             )}
-            <Text style={{ flex: 1, fontSize: 10, fontWeight: 600 }}>{stripEmoji(post.title)}</Text>
-            <Svg width={90} height={5}>
+            <Text style={{ flex: 1, fontSize: "14px", fontWeight: 600 }}>{stripEmoji(post.title)}</Text>
+            <Svg width="150px" height="6px">
               <Defs>
                 <LinearGradient id={`barGrad${i}`} x1="0" y1="0" x2="1" y2="0">
                   <Stop offset="0%" stopColor={COLORS.purple} />
                   <Stop offset="100%" stopColor={COLORS.blue} />
                 </LinearGradient>
               </Defs>
-              <Rect x={0} y={0} width={90} height={5} rx={2.5} fill={COLORS.sunken} />
+              <Rect x={0} y={0} width={150} height={6} rx={3} fill={COLORS.sunken} />
               <Rect
                 x={0}
                 y={0}
-                width={Math.max(5, (post.likes / maxLikes) * 90)}
-                height={5}
-                rx={2.5}
+                width={Math.max(8, (post.likes / maxLikes) * 150)}
+                height={6}
+                rx={3}
                 fill={`url(#barGrad${i})`}
               />
             </Svg>
@@ -375,117 +440,135 @@ function AudiencePage({
   const mediaPcts = mediaType ? roundToPercentages([mediaType.post, mediaType.story, mediaType.reel]) : [0, 0, 0];
 
   return (
-    <Page size="A4" style={{ padding: 32, display: "flex", flexDirection: "column", gap: 12, fontFamily: "Roboto" }}>
+    <Page
+      size="A4"
+      dpi={DPI}
+      style={{ padding: "16mm 14mm", display: "flex", flexDirection: "column", gap: "8mm", fontFamily: "Roboto" }}
+    >
       <PageHeader eyebrow="Público" client={client} period={period} />
 
-      <View style={{ flexDirection: "row", gap: 10 }}>
+      <View style={{ flexDirection: "row", gap: "14px" }}>
         <Card>
           <Eyebrow>Gênero</Eyebrow>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-            <Donut size={72} slices={gender.map((g) => ({ pct: g.pct, color: g.color }))} />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: "20px" }}>
+            <Donut sizePx={96} slices={gender.map((g) => ({ pct: g.pct, color: g.color }))} />
             <Legend items={gender.map((g) => ({ label: g.label, pct: g.pct, color: g.color }))} />
           </View>
         </Card>
         <Card>
           <Eyebrow>Idade</Eyebrow>
-          <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 6, height: 58 }}>
+          <View style={{ flexDirection: "row", alignItems: "flex-end", gap: "8px", height: "96px" }}>
             {ageSlices.map((s, i) => (
-              <View key={s.key} style={{ flex: 1, alignItems: "center", justifyContent: "flex-end", height: 58 }}>
+              <View key={s.key} style={{ flex: 1, alignItems: "center", justifyContent: "flex-end", height: "96px", gap: "6px" }}>
                 <View
                   style={{
                     width: "100%",
-                    height: Math.max(2, (s.pct / maxAge) * 44),
+                    height: `${Math.max(2, (s.pct / maxAge) * 80)}px`,
                     backgroundColor: AGE_BAR_COLORS[i],
-                    borderTopLeftRadius: 2,
-                    borderTopRightRadius: 2,
+                    borderTopLeftRadius: "4px",
+                    borderTopRightRadius: "4px",
                   }}
                 />
-                <Text style={{ fontSize: 6.5, color: COLORS.grey700, marginTop: 4 }}>{s.key}</Text>
+                <Text style={{ fontSize: "9px", color: COLORS.grey700 }}>{s.key}</Text>
               </View>
             ))}
           </View>
         </Card>
       </View>
 
-      <View style={{ flexDirection: "row", gap: 10 }}>
-        <Card style={{ gap: 2 }}>
-          <Eyebrow>Países</Eyebrow>
+      <View style={{ flexDirection: "row", gap: "14px" }}>
+        <Card style={{ gap: "4px" }}>
+          <Eyebrow style={{ marginBottom: "6px" }}>Países</Eyebrow>
           {countries.map((c) => (
             <View
               key={c.key}
-              style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 5, borderTopWidth: 1, borderTopColor: COLORS.grey100 }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: "10px",
+                paddingVertical: "8px",
+                borderTopWidth: "1px",
+                borderTopColor: COLORS.grey100,
+              }}
             >
               {c.key === "__others" ? (
-                <View style={{ width: 16, height: 12 }} />
+                <View style={{ width: "16px", height: "16px" }} />
               ) : (
                 <Image
                   src={`https://flagcdn.com/w40/${c.key.toLowerCase()}.png`}
-                  style={{ width: 16, height: 12, borderRadius: 2, objectFit: "cover" }}
+                  style={{ width: "16px", height: "12px", borderRadius: "2px", objectFit: "cover" }}
                 />
               )}
-              <Text style={{ flex: 1, fontSize: 11, fontWeight: 600 }}>{c.label}</Text>
-              <Text style={{ fontSize: 11, fontWeight: 700 }}>{c.pct}%</Text>
+              <Text style={{ flex: 1, fontSize: "13px", fontWeight: 600 }}>{c.label}</Text>
+              <Text style={{ fontSize: "13px", fontWeight: 700 }}>{c.pct}%</Text>
             </View>
           ))}
         </Card>
-        <Card style={{ gap: 2 }}>
-          <Eyebrow>Cidades</Eyebrow>
+        <Card style={{ gap: "4px" }}>
+          <Eyebrow style={{ marginBottom: "6px" }}>Cidades</Eyebrow>
           {cities.map((c) => (
             <View
               key={c.key}
-              style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 5, borderTopWidth: 1, borderTopColor: COLORS.grey100 }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: "10px",
+                paddingVertical: "8px",
+                borderTopWidth: "1px",
+                borderTopColor: COLORS.grey100,
+              }}
             >
-              <Text style={{ flex: 1, fontSize: 11, fontWeight: 600 }}>{c.label}</Text>
-              <Text style={{ fontSize: 11, fontWeight: 700 }}>{c.pct}%</Text>
+              <Text style={{ flex: 1, fontSize: "13px", fontWeight: 600 }}>{c.label}</Text>
+              <Text style={{ fontSize: "13px", fontWeight: 700 }}>{c.pct}%</Text>
             </View>
           ))}
         </Card>
       </View>
 
       {reachBreakdown && (
-        <View style={{ flexDirection: "row", gap: 10 }}>
-          <Card style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+        <View style={{ flexDirection: "row", gap: "14px" }}>
+          <Card style={{ flexDirection: "row", alignItems: "center", gap: "20px" }}>
             <Donut
-              size={62}
+              sizePx={80}
               slices={[
                 { pct: followPcts[0], color: COLORS.blue },
                 { pct: followPcts[1], color: COLORS.purple },
               ]}
             />
-            <View style={{ gap: 5 }}>
-              <Eyebrow>Seguidor vs. não-seguidor</Eyebrow>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: COLORS.blue }} />
-                <Text style={{ fontSize: 11 }}>Seguidor</Text>
-                <Text style={{ fontSize: 11, fontWeight: 700, marginLeft: "auto" }}>{followPcts[0]}%</Text>
+            <View style={{ gap: "8px" }}>
+              <Eyebrow style={{ marginBottom: "2px" }}>Seguidor vs. não-seguidor</Eyebrow>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: "8px" }}>
+                <View style={{ width: "10px", height: "10px", borderRadius: "3px", backgroundColor: COLORS.blue }} />
+                <Text style={{ fontSize: "13px" }}>Seguidor</Text>
+                <Text style={{ fontSize: "13px", fontWeight: 700, marginLeft: "auto" }}>{followPcts[0]}%</Text>
               </View>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: COLORS.purple }} />
-                <Text style={{ fontSize: 11 }}>Não-seguidor</Text>
-                <Text style={{ fontSize: 11, fontWeight: 700, marginLeft: "auto" }}>{followPcts[1]}%</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: "8px" }}>
+                <View style={{ width: "10px", height: "10px", borderRadius: "3px", backgroundColor: COLORS.purple }} />
+                <Text style={{ fontSize: "13px" }}>Não-seguidor</Text>
+                <Text style={{ fontSize: "13px", fontWeight: 700, marginLeft: "auto" }}>{followPcts[1]}%</Text>
               </View>
             </View>
           </Card>
-          <Card style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+          <Card style={{ flexDirection: "row", alignItems: "center", gap: "20px" }}>
             <Donut
-              size={62}
+              sizePx={80}
               slices={[
                 { pct: mediaPcts[0], color: COLORS.purple },
                 { pct: mediaPcts[1], color: COLORS.blue },
                 { pct: mediaPcts[2], color: COLORS.green },
               ]}
             />
-            <View style={{ gap: 4 }}>
-              <Eyebrow>Tipo de conteúdo</Eyebrow>
+            <View style={{ gap: "6px" }}>
+              <Eyebrow style={{ marginBottom: "2px" }}>Tipo de conteúdo</Eyebrow>
               {[
                 { label: "Posts", pct: mediaPcts[0], color: COLORS.purple },
                 { label: "Stories", pct: mediaPcts[1], color: COLORS.blue },
                 { label: "Reels", pct: mediaPcts[2], color: COLORS.green },
               ].map((it) => (
-                <View key={it.label} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  <View style={{ width: 7, height: 7, borderRadius: 2, backgroundColor: it.color }} />
-                  <Text style={{ fontSize: 10 }}>{it.label}</Text>
-                  <Text style={{ fontSize: 10, fontWeight: 700, marginLeft: "auto" }}>{it.pct}%</Text>
+                <View key={it.label} style={{ flexDirection: "row", alignItems: "center", gap: "8px" }}>
+                  <View style={{ width: "9px", height: "9px", borderRadius: "2px", backgroundColor: it.color }} />
+                  <Text style={{ fontSize: "12px" }}>{it.label}</Text>
+                  <Text style={{ fontSize: "12px", fontWeight: 700, marginLeft: "auto" }}>{it.pct}%</Text>
                 </View>
               ))}
             </View>

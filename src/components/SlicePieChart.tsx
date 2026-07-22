@@ -1,13 +1,25 @@
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { InfoTooltip } from "./InfoTooltip";
 
 const PALETTE = ["#7c3aed", "#0080ff", "#00c896", "#ff5c4d", "#8b5cf6", "#c4b5fd"];
 
-export function SlicePieChart({ label, data }: { label: string; data: { name: string; value: number }[] }) {
+export function SlicePieChart({
+  label,
+  data,
+  tooltip,
+}: {
+  label: string;
+  data: { name: string; value: number }[];
+  tooltip?: string;
+}) {
   const total = data.reduce((sum, d) => sum + d.value, 0);
 
   return (
     <div>
-      <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+        {tooltip && <InfoTooltip text={tooltip} />}
+      </p>
       <div className="flex items-center gap-4">
         <div className="h-24 w-24 shrink-0">
           <ResponsiveContainer width="100%" height="100%">

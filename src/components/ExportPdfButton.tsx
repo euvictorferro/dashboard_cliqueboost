@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 function DownloadIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -12,6 +16,19 @@ function DownloadIcon() {
   );
 }
 
+function SpinnerIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" className="animate-spin">
+      <path
+        d="M13 7A6 6 0 1 1 7 1"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export function ExportPdfButton({
   clientId,
   range,
@@ -21,13 +38,37 @@ export function ExportPdfButton({
   range: string;
   accessKey: string;
 }) {
+  const [downloading, setDownloading] = useState(false);
+
+  async function handleClick() {
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      const res = await fetch(`/api/report/${clientId}?range=${range}&key=${encodeURIComponent(accessKey)}`);
+      if (!res.ok) throw new Error("falha ao gerar relatório");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `relatorio-${clientId}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // ponytail: se a geração falhar, só volta ao estado normal — sem toast/retry automático,
+      // o cliente pode clicar de novo.
+    } finally {
+      setDownloading(false);
+    }
+  }
+
   return (
-    <a
-      href={`/api/report/${clientId}?range=${range}&key=${encodeURIComponent(accessKey)}`}
-      className="flex items-center gap-2 rounded-xl bg-card px-4 py-2.5 text-sm font-medium text-card-foreground shadow-[var(--shadow-soft)] hover:bg-muted"
+    <button
+      onClick={handleClick}
+      disabled={downloading}
+      className="flex items-center gap-2 rounded-xl bg-card px-4 py-2.5 text-sm font-medium text-card-foreground shadow-[var(--shadow-soft)] hover:bg-muted disabled:cursor-wait"
     >
-      <DownloadIcon />
-      Baixar relatório
-    </a>
+      {downloading ? <SpinnerIcon /> : <DownloadIcon />}
+      {downloading ? "Baixando..." : "Baixar relatório"}
+    </button>
   );
 }

@@ -7,29 +7,51 @@ import { AudienceTimeframeFilter } from "./AudienceTimeframeFilter";
 import { SlicePieChart } from "./SlicePieChart";
 import { AgeBarChart } from "./AgeBarChart";
 import { GeoRankList } from "./GeoRankList";
+import { InfoTooltip } from "./InfoTooltip";
 
-function AudienceCard({ title, children }: { title: string; children: React.ReactNode }) {
+function AudienceCard({
+  title,
+  tooltip,
+  children,
+}: {
+  title: string;
+  tooltip?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="rounded-[var(--radius-card)] bg-card p-5 shadow-[var(--shadow-soft)]">
-      <h3 className="mb-4 text-sm font-medium text-muted-foreground">{title}</h3>
+      <h3 className="mb-4 flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+        {title}
+        {tooltip && <InfoTooltip text={tooltip} />}
+      </h3>
       {children}
     </div>
   );
 }
 
+function EmptyEngaged() {
+  return (
+    <div className="flex min-h-[120px] items-center justify-center rounded-lg border border-dashed border-border p-4 text-center">
+      <p className="text-xs text-muted-foreground">
+        Não há dado suficiente. Selecione outro período pra ver esse dado.
+      </p>
+    </div>
+  );
+}
+
 function TwoColumn({
-  showEngaged,
+  hasEngaged,
   followers,
   engaged,
 }: {
-  showEngaged: boolean;
+  hasEngaged: boolean;
   followers: React.ReactNode;
   engaged: React.ReactNode;
 }) {
   return (
-    <div className={showEngaged ? "grid grid-cols-1 gap-6 sm:grid-cols-2" : ""}>
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
       {followers}
-      {showEngaged && engaged}
+      {hasEngaged ? engaged : <EmptyEngaged />}
     </div>
   );
 }
@@ -47,10 +69,21 @@ function ReachBreakdownCard({ breakdown }: { breakdown: ReachBreakdown }) {
   ];
 
   return (
-    <AudienceCard title="Alcance por origem e tipo de conteúdo (período principal do dashboard)">
+    <AudienceCard
+      title="Alcance por origem e tipo de conteúdo (período principal do dashboard)"
+      tooltip="Mostra quanto do alcance do período principal veio de quem já te segue vs. de quem ainda não segue, e como esse alcance se distribui entre posts, stories e reels."
+    >
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-        <SlicePieChart label="Seguidor vs. não-seguidor" data={followData} />
-        <SlicePieChart label="Tipo de conteúdo" data={mediaData} />
+        <SlicePieChart
+          label="Seguidor vs. não-seguidor"
+          data={followData}
+          tooltip="Quanto do alcance veio de contas que já te seguem e quanto veio de contas que ainda não seguem."
+        />
+        <SlicePieChart
+          label="Tipo de conteúdo"
+          data={mediaData}
+          tooltip="Como o alcance se distribui entre posts, stories e reels."
+        />
       </div>
     </AudienceCard>
   );
@@ -102,16 +135,12 @@ export function AudiencePanel({
         </div>
       ) : (
         <>
-          {!engagedHasData && (
-            <p className="text-xs text-muted-foreground">
-              Ainda não temos engajamento suficiente no período pra mostrar a demografia de quem interagiu — só
-              seguidores por enquanto.
-            </p>
-          )}
-
-          <AudienceCard title="Gênero">
+          <AudienceCard
+            title="Gênero"
+            tooltip="Distribuição de gênero informada pelos seguidores e por quem interagiu com o conteúdo no período."
+          >
             <TwoColumn
-              showEngaged={engagedHasData}
+              hasEngaged={engagedHasData}
               followers={
                 <SlicePieChart
                   label="Seguidores"
@@ -127,25 +156,34 @@ export function AudiencePanel({
             />
           </AudienceCard>
 
-          <AudienceCard title="Idade">
+          <AudienceCard
+            title="Idade"
+            tooltip="Distribuição por faixa etária dos seguidores e de quem interagiu com o conteúdo no período."
+          >
             <TwoColumn
-              showEngaged={engagedHasData}
+              hasEngaged={engagedHasData}
               followers={<AgeBarChart label="Seguidores" slices={snapshot.followers.age} />}
               engaged={<AgeBarChart label="Engajados" slices={snapshot.engaged.age} />}
             />
           </AudienceCard>
 
-          <AudienceCard title="Países">
+          <AudienceCard
+            title="Países"
+            tooltip="De quais países vem o seu público, do maior para o menor percentual."
+          >
             <TwoColumn
-              showEngaged={engagedHasData}
+              hasEngaged={engagedHasData}
               followers={<GeoRankList label="Seguidores" slices={snapshot.followers.country} showFlag />}
               engaged={<GeoRankList label="Engajados" slices={snapshot.engaged.country} showFlag />}
             />
           </AudienceCard>
 
-          <AudienceCard title="Cidades">
+          <AudienceCard
+            title="Cidades"
+            tooltip="De quais cidades vem o seu público, do maior para o menor percentual."
+          >
             <TwoColumn
-              showEngaged={engagedHasData}
+              hasEngaged={engagedHasData}
               followers={<GeoRankList label="Seguidores" slices={snapshot.followers.city} />}
               engaged={<GeoRankList label="Engajados" slices={snapshot.engaged.city} />}
             />

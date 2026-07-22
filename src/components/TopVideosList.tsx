@@ -1,4 +1,5 @@
 import type { TopPost } from "@/lib/metrics";
+import { InfoTooltip } from "./InfoTooltip";
 
 function PostRow({ post, max }: { post: TopPost; max: number }) {
   return (
@@ -32,7 +33,10 @@ export function TopVideosList({ posts }: { posts: TopPost[] }) {
 
   return (
     <div className="rounded-[var(--radius-card)] bg-card p-5 shadow-[var(--shadow-soft)]">
-      <h3 className="mb-4 text-sm font-medium text-muted-foreground">Top 5 posts</h3>
+      <h3 className="mb-4 flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+        Top 5 posts
+        <InfoTooltip text="Essa seção mostra suas 5 melhores postagens no período que você selecionou no filtro." />
+      </h3>
       <ol className="space-y-4">
         {posts.map((p) =>
           p.permalink ? (

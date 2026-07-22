@@ -264,16 +264,10 @@ function PostsMediaPage({ client, period, snapshot }: { client: string; period: 
           </View>
         </View>
         <Svg viewBox="0 0 400 60" width="100%" height={32}>
-          <Defs>
-            <LinearGradient id="sparkGrad" x1="0" y1="0" x2="1" y2="0">
-              <Stop offset="0%" stopColor={COLORS.purple} />
-              <Stop offset="100%" stopColor={COLORS.blue} />
-            </LinearGradient>
-          </Defs>
           <Polyline
             points={sparklinePoints(snapshot.trend)}
             fill="none"
-            stroke="url(#sparkGrad)"
+            stroke={COLORS.blue}
             strokeWidth={3}
             strokeLinecap="round"
             strokeLinejoin="round"

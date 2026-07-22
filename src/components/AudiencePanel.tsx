@@ -29,29 +29,19 @@ function AudienceCard({
   );
 }
 
-function EmptyEngaged() {
-  return (
-    <div className="flex min-h-[120px] items-center justify-center rounded-lg border border-dashed border-border p-4 text-center">
-      <p className="text-xs text-muted-foreground">
-        Não há dado suficiente. Selecione outro período pra ver esse dado.
-      </p>
-    </div>
-  );
-}
-
 function TwoColumn({
-  hasEngaged,
+  showEngaged,
   followers,
   engaged,
 }: {
-  hasEngaged: boolean;
+  showEngaged: boolean;
   followers: React.ReactNode;
   engaged: React.ReactNode;
 }) {
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+    <div className={showEngaged ? "grid grid-cols-1 gap-6 sm:grid-cols-2" : ""}>
       {followers}
-      {hasEngaged ? engaged : <EmptyEngaged />}
+      {showEngaged && engaged}
     </div>
   );
 }
@@ -135,12 +125,19 @@ export function AudiencePanel({
         </div>
       ) : (
         <>
+          {!engagedHasData && (
+            <p className="text-xs text-muted-foreground">
+              Ainda não temos engajamento suficiente no período pra mostrar a demografia de quem interagiu — só
+              seguidores por enquanto.
+            </p>
+          )}
+
           <AudienceCard
             title="Gênero"
             tooltip="Distribuição de gênero informada pelos seguidores e por quem interagiu com o conteúdo no período."
           >
             <TwoColumn
-              hasEngaged={engagedHasData}
+              showEngaged={engagedHasData}
               followers={
                 <SlicePieChart
                   label="Seguidores"
@@ -161,7 +158,7 @@ export function AudiencePanel({
             tooltip="Distribuição por faixa etária dos seguidores e de quem interagiu com o conteúdo no período."
           >
             <TwoColumn
-              hasEngaged={engagedHasData}
+              showEngaged={engagedHasData}
               followers={<AgeBarChart label="Seguidores" slices={snapshot.followers.age} />}
               engaged={<AgeBarChart label="Engajados" slices={snapshot.engaged.age} />}
             />
@@ -172,7 +169,7 @@ export function AudiencePanel({
             tooltip="De quais países vem o seu público, do maior para o menor percentual."
           >
             <TwoColumn
-              hasEngaged={engagedHasData}
+              showEngaged={engagedHasData}
               followers={<GeoRankList label="Seguidores" slices={snapshot.followers.country} showFlag />}
               engaged={<GeoRankList label="Engajados" slices={snapshot.engaged.country} showFlag />}
             />
@@ -183,7 +180,7 @@ export function AudiencePanel({
             tooltip="De quais cidades vem o seu público, do maior para o menor percentual."
           >
             <TwoColumn
-              hasEngaged={engagedHasData}
+              showEngaged={engagedHasData}
               followers={<GeoRankList label="Seguidores" slices={snapshot.followers.city} />}
               engaged={<GeoRankList label="Engajados" slices={snapshot.engaged.city} />}
             />

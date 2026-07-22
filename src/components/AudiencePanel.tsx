@@ -93,10 +93,11 @@ export function AudiencePanel({
   reachBreakdown?: ReachBreakdown;
 }) {
   const [timeframe, setTimeframe] = useState<AudienceTimeframeId>("this_month");
-  const [snapshot, setSnapshot] = useState<AudienceSnapshot>(() => getAudienceSnapshot(clientId, timeframe));
+  const [snapshot, setSnapshot] = useState<AudienceSnapshot | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    setSnapshot(null); // ponytail: nunca mostra o mock por cima do período antigo enquanto o novo carrega
     fetch(`/api/audience/${clientId}?timeframe=${timeframe}&key=${encodeURIComponent(accessKey)}`)
       .then((res) => res.json())
       .then((data: AudienceSnapshot) => {
@@ -109,6 +110,20 @@ export function AudiencePanel({
       cancelled = true;
     };
   }, [clientId, timeframe, accessKey]);
+
+  if (!snapshot) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-foreground">Público</h2>
+          <AudienceTimeframeFilter value={timeframe} onChange={setTimeframe} />
+        </div>
+        <div className="rounded-[var(--radius-card)] bg-card p-8 text-center shadow-[var(--shadow-soft)]">
+          <p className="text-sm text-muted-foreground">Carregando dados de público...</p>
+        </div>
+      </div>
+    );
+  }
 
   const engagedHasData = hasAnyData(snapshot.engaged);
 

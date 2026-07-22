@@ -260,7 +260,9 @@ function PostsMediaPage({ client, period, snapshot }: { client: string; period: 
           </Text>
         </View>
         <View style={{ flex: 1, position: "relative", borderRadius: "14px", padding: "20px", overflow: "hidden" }}>
-          <GradientRect id="netCardGrad" radius="14px" />
+          {/* ponytail: sem radius aqui — o Rect não é quadrado, então rx/ry ficariam elípticos.
+              O corte redondo já vem do overflow:hidden + borderRadius do View pai (igual aos outros cards). */}
+          <GradientRect id="netCardGrad" />
           <View style={{ position: "relative" }}>
             <Eyebrow style={{ color: COLORS.white, opacity: 0.85 }}>Seguidores líquidos</Eyebrow>
             <Text

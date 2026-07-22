@@ -75,20 +75,6 @@ function sparklineCoords(trend: { value: number }[]): { x: number; y: number }[]
   return trend.map((t, i) => ({ x: i * stepX, y: 54 - ((t.value - min) / range) * 48 }));
 }
 
-// ponytail: gradiente em stroke não é confiável entre leitores de PDF (confirmado — some ou vira
-// preto). Em vez disso, desenha o sparkline como vários segmentos sólidos com cor interpolada
-// roxo→azul — mesmo efeito visual do gradiente, só com recursos 100% suportados (fill/stroke sólido).
-function interpolateColor(from: string, to: string, t: number): string {
-  const a = parseInt(from.slice(1), 16);
-  const b = parseInt(to.slice(1), 16);
-  const ar = (a >> 16) & 255, ag = (a >> 8) & 255, ab = a & 255;
-  const br = (b >> 16) & 255, bg = (b >> 8) & 255, bb = b & 255;
-  const r = Math.round(ar + (br - ar) * t);
-  const g = Math.round(ag + (bg - ag) * t);
-  const bl = Math.round(ab + (bb - ab) * t);
-  return `#${((1 << 24) + (r << 16) + (g << 8) + bl).toString(16).slice(1)}`;
-}
-
 // ponytail: Montserrat/Roboto não têm glyph de emoji, e o react-pdf não faz fallback pra outra
 // fonte — emoji real vindo da legenda do post (ex: 🎆✨) vira caractere quebrado no PDF.
 function stripEmoji(text: string): string {
@@ -173,11 +159,13 @@ function Legend({
   );
 }
 
+// ponytail: sem flex:1 aqui de propósito — um Card sozinho numa coluna (Alcance, Top 5 posts)
+// não deve esticar pra ocupar a altura sobrando da página. Quem usa Card lado a lado numa linha
+// (Gênero/Idade, Países/Cidades, mini-donuts) passa flex:1 explicitamente via style.
 function Card({ children, style }: { children: React.ReactNode; style?: object }) {
   return (
     <View
       style={{
-        flex: 1,
         borderRadius: "14px",
         padding: "20px",
         borderWidth: "1px",
@@ -306,21 +294,14 @@ function PostsMediaPage({ client, period, snapshot }: { client: string; period: 
           </View>
         </View>
         <Svg viewBox="0 0 400 60" width="100%" height="60px" preserveAspectRatio="none">
-          {coords.slice(1).map((pt, i) => {
-            const prev = coords[i];
-            const t = i / Math.max(1, coords.length - 2);
-            return (
-              <Polyline
-                key={i}
-                points={`${prev.x},${prev.y} ${pt.x},${pt.y}`}
-                fill="none"
-                stroke={interpolateColor(COLORS.purple, COLORS.blue, t)}
-                strokeWidth="3px"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            );
-          })}
+          <Polyline
+            points={coords.map((p) => `${p.x},${p.y}`).join(" ")}
+            fill="none"
+            stroke={COLORS.blue}
+            strokeWidth="3px"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </Svg>
       </Card>
 
@@ -388,7 +369,7 @@ function PostsMediaPage({ client, period, snapshot }: { client: string; period: 
               />
             )}
             <Text style={{ flex: 1, fontSize: "14px", fontWeight: 600 }}>{stripEmoji(post.title)}</Text>
-            <Svg width="150px" height="6px">
+            <Svg width="150px" height="6px" viewBox="0 0 150 6" preserveAspectRatio="none">
               <Defs>
                 <LinearGradient id={`barGrad${i}`} x1="0" y1="0" x2="1" y2="0">
                   <Stop offset="0%" stopColor={COLORS.purple} />
@@ -448,14 +429,14 @@ function AudiencePage({
       <PageHeader eyebrow="Público" client={client} period={period} />
 
       <View style={{ flexDirection: "row", gap: "14px" }}>
-        <Card>
+        <Card style={{ flex: 1 }}>
           <Eyebrow>Gênero</Eyebrow>
           <View style={{ flexDirection: "row", alignItems: "center", gap: "20px" }}>
             <Donut sizePx={96} slices={gender.map((g) => ({ pct: g.pct, color: g.color }))} />
             <Legend items={gender.map((g) => ({ label: g.label, pct: g.pct, color: g.color }))} />
           </View>
         </Card>
-        <Card>
+        <Card style={{ flex: 1 }}>
           <Eyebrow>Idade</Eyebrow>
           <View style={{ flexDirection: "row", alignItems: "flex-end", gap: "8px", height: "96px" }}>
             {ageSlices.map((s, i) => (
@@ -477,7 +458,7 @@ function AudiencePage({
       </View>
 
       <View style={{ flexDirection: "row", gap: "14px" }}>
-        <Card style={{ gap: "4px" }}>
+        <Card style={{ flex: 1, gap: "4px" }}>
           <Eyebrow style={{ marginBottom: "6px" }}>Países</Eyebrow>
           {countries.map((c) => (
             <View
@@ -504,7 +485,7 @@ function AudiencePage({
             </View>
           ))}
         </Card>
-        <Card style={{ gap: "4px" }}>
+        <Card style={{ flex: 1, gap: "4px" }}>
           <Eyebrow style={{ marginBottom: "6px" }}>Cidades</Eyebrow>
           {cities.map((c) => (
             <View
@@ -527,7 +508,7 @@ function AudiencePage({
 
       {reachBreakdown && (
         <View style={{ flexDirection: "row", gap: "14px" }}>
-          <Card style={{ flexDirection: "row", alignItems: "center", gap: "20px" }}>
+          <Card style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: "20px" }}>
             <Donut
               sizePx={80}
               slices={[
@@ -549,7 +530,7 @@ function AudiencePage({
               </View>
             </View>
           </Card>
-          <Card style={{ flexDirection: "row", alignItems: "center", gap: "20px" }}>
+          <Card style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: "20px" }}>
             <Donut
               sizePx={80}
               slices={[

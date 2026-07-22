@@ -81,6 +81,8 @@ export type OrganicSnapshot = {
   /** variação % vs. período anterior de mesma duração; null quando não dá pra calcular (base 0) */
   changePct: Record<OrganicMetricKey, number | null>;
   trend: { date: string; value: number }[];
+  viewsTrend: { date: string; value: number }[];
+  likesTrend: { date: string; value: number }[];
   topPosts: TopPost[];
   reachBreakdown?: ReachBreakdown;
 };
@@ -138,9 +140,18 @@ export function getOrganicSnapshot(clientId: string, range: DateRangeId): Organi
     ])
   ) as Record<OrganicMetricKey, number | null>;
 
-  const trend = Array.from({ length: Math.min(days, 30) }, (_, i) => ({
+  const points = Math.min(days, 30);
+  const trend = Array.from({ length: points }, (_, i) => ({
     date: `D${i + 1}`,
-    value: Math.round((metrics.reach / Math.min(days, 30)) * (0.6 + rand())),
+    value: Math.round((metrics.reach / points) * (0.6 + rand())),
+  }));
+  const viewsTrend = Array.from({ length: points }, (_, i) => ({
+    date: `D${i + 1}`,
+    value: Math.round((metrics.views / points) * (0.6 + rand())),
+  }));
+  const likesTrend = Array.from({ length: points }, (_, i) => ({
+    date: `D${i + 1}`,
+    value: Math.round((metrics.likes / points) * (0.6 + rand())),
   }));
 
   const mockTitles = [
@@ -172,5 +183,5 @@ export function getOrganicSnapshot(clientId: string, range: DateRangeId): Organi
     },
   };
 
-  return { metrics, changePct, trend, topPosts, reachBreakdown };
+  return { metrics, changePct, trend, viewsTrend, likesTrend, topPosts, reachBreakdown };
 }

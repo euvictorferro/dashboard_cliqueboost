@@ -15,6 +15,7 @@ import {
   type DemographicSlice,
 } from "./audience";
 import { countryName } from "./countries";
+import { getSupabaseAdmin } from "./supabase";
 
 // ponytail: server-only — nunca importar isto de um componente "use client" (usa o token secreto).
 const GRAPH_API = "https://graph.facebook.com/v21.0";
@@ -134,6 +135,74 @@ async function fetchRange(igId: string, since: number, until: number) {
     shares: acc.shares + chunk.shares,
     trend: [...acc.trend, ...chunk.trend],
   }));
+}
+
+function dateKey(unixSeconds: number): string {
+  return new Date(unixSeconds * 1000).toISOString().slice(0, 10); // YYYY-MM-DD
+}
+
+function dayStarts(since: number, until: number): number[] {
+  const oneDay = 86400;
+  const days: number[] = [];
+  for (let start = Math.floor(since / oneDay) * oneDay; start < until; start += oneDay) {
+    days.push(start);
+  }
+  return days;
+}
+
+async function fetchSingleDayTotal(igId: string, metric: "views" | "likes", dayStart: number): Promise<number> {
+  const res = await safeGraphGet(`${igId}/insights`, {
+    metric,
+    metric_type: "total_value",
+    period: "day",
+    since: String(dayStart),
+    until: String(dayStart + 86400),
+  });
+  return totalValue(res, metric);
+}
+
+// ponytail: a Graph API só aceita "views"/"likes" com metric_type=total_value, que devolve UM
+// valor agregado por chamada — não existe endpoint de série diária pronta pra essas métricas
+// (testado direto: period=day sozinho retorna erro "should be specified with metric_type=total_value",
+// e com o parâmetro a resposta vira 1 total_value só, mesmo pedindo period=day). Pra ter um
+// sparkline real, dia é buscado um por um. Dias passados ficam em cache no Supabase (nunca mudam);
+// só hoje (parcial) e dias ainda não cacheados batem na Meta.
+async function fetchDailyMetricSeries(
+  igId: string,
+  metric: "views" | "likes",
+  since: number,
+  until: number
+): Promise<TrendPoint[]> {
+  const today = dateKey(Math.floor(Date.now() / 1000));
+  const days = dayStarts(since, until);
+  const supabase = getSupabaseAdmin();
+
+  const cached = new Map<string, number>();
+  if (supabase) {
+    const { data } = await supabase
+      .from("daily_metric_cache")
+      .select("date, value")
+      .eq("ig_id", igId)
+      .eq("metric", metric)
+      .in("date", days.map(dateKey));
+    for (const row of data ?? []) cached.set(row.date, row.value);
+  }
+
+  const missing = days.filter((d) => dateKey(d) === today || !cached.has(dateKey(d)));
+  const fetched = await Promise.all(missing.map((d) => fetchSingleDayTotal(igId, metric, d)));
+
+  const toUpsert: { ig_id: string; metric: string; date: string; value: number }[] = [];
+  missing.forEach((d, i) => {
+    const key = dateKey(d);
+    cached.set(key, fetched[i]);
+    if (key !== today) toUpsert.push({ ig_id: igId, metric, date: key, value: fetched[i] });
+  });
+
+  if (supabase && toUpsert.length > 0) {
+    await supabase.from("daily_metric_cache").upsert(toUpsert, { onConflict: "ig_id,metric,date" });
+  }
+
+  return days.map((d) => ({ date: dateKey(d).slice(5), value: cached.get(dateKey(d)) ?? 0 }));
 }
 
 function titleFromCaption(caption: string | undefined, fallback: string): string {
@@ -310,11 +379,13 @@ export async function fetchOrganicSnapshotLive(igId: string, range: DateRangeId)
   const prevUntil = since;
   const prevSince = since - days * 86400;
 
-  const [current, previous, topPosts, reachBreakdown] = await Promise.all([
+  const [current, previous, topPosts, reachBreakdown, viewsTrend, likesTrend] = await Promise.all([
     fetchRange(igId, since, until),
     fetchRange(igId, prevSince, prevUntil),
     fetchTopVideos(igId, since, until),
     fetchReachBreakdown(igId, since, until),
+    fetchDailyMetricSeries(igId, "views", since, until),
+    fetchDailyMetricSeries(igId, "likes", since, until),
   ]);
 
   const keys = Object.keys(ORGANIC_METRICS) as OrganicMetricKey[];
@@ -325,5 +396,5 @@ export async function fetchOrganicSnapshotLive(igId: string, range: DateRangeId)
     changePct[key] = pctChange(current[key], previous[key]);
   }
 
-  return { metrics, changePct, trend: current.trend, topPosts, reachBreakdown };
+  return { metrics, changePct, trend: current.trend, viewsTrend, likesTrend, topPosts, reachBreakdown };
 }

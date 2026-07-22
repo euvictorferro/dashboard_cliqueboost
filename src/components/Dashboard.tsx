@@ -118,14 +118,14 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
               description={ORGANIC_METRICS.views.description}
               value={m.views.toLocaleString("pt-BR")}
               changePct={c.views}
-              sparkline={snapshot.trend}
+              sparkline={snapshot.viewsTrend}
             />
             <MetricCard
               label={ORGANIC_METRICS.likes.label}
               description={ORGANIC_METRICS.likes.description}
               value={m.likes.toLocaleString("pt-BR")}
               changePct={c.likes}
-              sparkline={snapshot.trend}
+              sparkline={snapshot.likesTrend}
             />
           </div>
 

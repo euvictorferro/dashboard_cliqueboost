@@ -5,6 +5,9 @@ export const DATE_RANGES = [
   { id: "30d", label: "Últimos 30 dias", days: 30 },
   { id: "60d", label: "Últimos 60 dias", days: 60 },
   { id: "90d", label: "Últimos 90 dias", days: 90 },
+  // ponytail: days:0 nunca é usado de verdade — "custom" sempre é resolvido via since/until
+  // explícitos (ver fetchOrganicSnapshotForWindow), nunca por essa contagem de dias.
+  { id: "custom", label: "Personalizado", days: 0 },
 ] as const;
 
 export type DateRangeId = (typeof DATE_RANGES)[number]["id"];
@@ -76,15 +79,18 @@ export type ReachBreakdown = {
   byMediaType: { post: number; story: number; reel: number; ad: number };
 };
 
-export type OrganicSnapshot = {
+export type OrganicWindowSnapshot = {
   metrics: Record<OrganicMetricKey, number>;
-  /** variação % vs. período anterior de mesma duração; null quando não dá pra calcular (base 0) */
-  changePct: Record<OrganicMetricKey, number | null>;
   trend: { date: string; value: number }[];
   viewsTrend: { date: string; value: number }[];
   likesTrend: { date: string; value: number }[];
   topPosts: TopPost[];
   reachBreakdown?: ReachBreakdown;
+};
+
+export type OrganicSnapshot = OrganicWindowSnapshot & {
+  /** variação % vs. período anterior de mesma duração; null quando não dá pra calcular (base 0) */
+  changePct: Record<OrganicMetricKey, number | null>;
 };
 
 // ponytail: mock determinístico (seed = clientId+range) até a Meta App existir. Trocar por
@@ -122,23 +128,15 @@ function generateMetrics(seed: string, days: number): Record<OrganicMetricKey, n
   };
 }
 
-function pctChange(current: number, previous: number): number | null {
+export function pctChange(current: number, previous: number): number | null {
   if (previous === 0) return null;
   return ((current - previous) / previous) * 100;
 }
 
-export function getOrganicSnapshot(clientId: string, range: DateRangeId): OrganicSnapshot {
-  const days = DATE_RANGES.find((r) => r.id === range)!.days;
-  const metrics = generateMetrics(`${clientId}-${range}`, days);
-  const previous = generateMetrics(`${clientId}-${range}-prev`, days);
-  const rand = seededRandom(`${clientId}-${range}-trend`);
-
-  const changePct = Object.fromEntries(
-    (Object.keys(metrics) as OrganicMetricKey[]).map((key) => [
-      key,
-      pctChange(metrics[key], previous[key]),
-    ])
-  ) as Record<OrganicMetricKey, number | null>;
+export function getOrganicWindowSnapshot(clientId: string, days: number): OrganicWindowSnapshot {
+  const seed = `${clientId}-${days}d`;
+  const metrics = generateMetrics(seed, days);
+  const rand = seededRandom(`${seed}-trend`);
 
   const points = Math.min(days, 30);
   const trend = Array.from({ length: points }, (_, i) => ({
@@ -183,5 +181,20 @@ export function getOrganicSnapshot(clientId: string, range: DateRangeId): Organi
     },
   };
 
-  return { metrics, changePct, trend, viewsTrend, likesTrend, topPosts, reachBreakdown };
+  return { metrics, trend, viewsTrend, likesTrend, topPosts, reachBreakdown };
+}
+
+export function getOrganicSnapshot(clientId: string, range: DateRangeId): OrganicSnapshot {
+  const days = DATE_RANGES.find((r) => r.id === range)!.days;
+  const current = getOrganicWindowSnapshot(clientId, days);
+  const previous = getOrganicWindowSnapshot(`${clientId}-prev`, days);
+
+  const changePct = Object.fromEntries(
+    (Object.keys(current.metrics) as OrganicMetricKey[]).map((key) => [
+      key,
+      pctChange(current.metrics[key], previous.metrics[key]),
+    ])
+  ) as Record<OrganicMetricKey, number | null>;
+
+  return { ...current, changePct };
 }

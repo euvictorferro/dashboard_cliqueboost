@@ -30,43 +30,43 @@ export function CompareRangePicker({ onApply }: { onApply: (windows: CompareWind
   const valid = Boolean(daysA && bSince && bUntil);
 
   return (
-    <div className="w-80 space-y-3 p-4">
+    <div className="w-96 space-y-3 p-4">
       <div>
         <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">Período A</p>
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="w-8 shrink-0 text-xs text-muted-foreground">De</span>
-            <input
-              type="date"
-              value={aSince}
-              onChange={(e) => setASince(e.target.value)}
-              className="w-full rounded-lg border border-border bg-transparent px-2 py-1.5 text-sm"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-8 shrink-0 text-xs text-muted-foreground">Até</span>
-            <input
-              type="date"
-              value={aUntil}
-              onChange={(e) => setAUntil(e.target.value)}
-              className="w-full rounded-lg border border-border bg-transparent px-2 py-1.5 text-sm"
-            />
-          </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={aSince}
+            onChange={(e) => setASince(e.target.value)}
+            className="w-full rounded-lg border border-border bg-transparent px-2 py-1.5 text-sm"
+          />
+          <span className="shrink-0 text-xs text-muted-foreground">→</span>
+          <input
+            type="date"
+            value={aUntil}
+            onChange={(e) => setAUntil(e.target.value)}
+            className="w-full rounded-lg border border-border bg-transparent px-2 py-1.5 text-sm"
+          />
         </div>
       </div>
 
       <div>
         <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">Período B</p>
         <div className="flex items-center gap-2">
-          <span className="w-8 shrink-0 text-xs text-muted-foreground">De</span>
           <input
             type="date"
             value={bSince}
             onChange={(e) => setBSince(e.target.value)}
             className="w-full rounded-lg border border-border bg-transparent px-2 py-1.5 text-sm"
           />
+          <span className="shrink-0 text-xs text-muted-foreground">→</span>
+          <input
+            type="date"
+            value={bUntil ?? ""}
+            disabled
+            className="w-full rounded-lg border border-border bg-transparent px-2 py-1.5 text-sm opacity-50"
+          />
         </div>
-        <p className="mt-1.5 pl-10 text-xs text-muted-foreground">{bUntil ? `até ${bUntil}` : "até —"}</p>
       </div>
 
       <button

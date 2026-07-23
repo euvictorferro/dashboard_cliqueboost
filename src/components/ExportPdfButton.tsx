@@ -70,7 +70,7 @@ export function ExportPdfButton({
         <DownloadIcon />
         Baixar relatório
         <InfoTooltip
-          position="bottom"
+          position="left"
           text="O relatório em PDF não funciona no modo de comparação de datas. Volte pra um período único pra baixar."
         />
       </span>

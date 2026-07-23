@@ -124,9 +124,9 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
   const activeReachBreakdown = comparing ? compareSnapshots!.a.reachBreakdown : snapshot.reachBreakdown;
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-8">
+    <div className="mx-auto w-full max-w-[1600px] px-6 py-10 sm:px-10">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-foreground">{client.name}</h1>
+        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
         <ExportPdfButton clientId={client.id} range={range} accessKey={accessKey} disabled={compareWindows !== null} />
       </header>
 

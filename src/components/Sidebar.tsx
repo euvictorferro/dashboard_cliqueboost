@@ -37,7 +37,7 @@ export function Sidebar({
   active: "dashboard" | "tasks";
 }) {
   return (
-    <nav className="flex w-56 shrink-0 flex-col gap-6 border-r border-border bg-card px-4 py-6">
+    <nav className="sticky top-0 flex h-screen w-56 shrink-0 flex-col gap-6 overflow-y-auto border-r border-border bg-card px-4 py-6">
       <div className="px-2">
         <Logo />
       </div>

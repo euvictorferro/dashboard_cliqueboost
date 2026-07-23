@@ -394,6 +394,20 @@ export async function fetchOrganicSnapshotForWindow(
   return { metrics, trend: current.trend, viewsTrend, likesTrend, topPosts, reachBreakdown };
 }
 
+// ponytail: janela "anterior" só serve pro delta % — nunca precisou de topPosts/reachBreakdown/
+// viewsTrend/likesTrend (achado do review final: reaproveitar fetchOrganicSnapshotForWindow pras
+// duas janelas dobrava essas 4 chamadas caras em TODO carregamento normal do dashboard, não só no
+// modo comparação). Só busca o que já era buscado antes da Task 1 pra essa janela: fetchRange.
+async function fetchMetricsForWindow(igId: string, since: number, until: number): Promise<Record<OrganicMetricKey, number>> {
+  const current = await fetchRange(igId, since, until);
+  const keys = Object.keys(ORGANIC_METRICS) as OrganicMetricKey[];
+  const metrics = {} as Record<OrganicMetricKey, number>;
+  for (const key of keys) {
+    metrics[key] = current[key];
+  }
+  return metrics;
+}
+
 export async function fetchOrganicSnapshotLive(igId: string, range: DateRangeId): Promise<OrganicSnapshot> {
   const days = DATE_RANGES.find((r) => r.id === range)!.days;
   const until = Math.floor(Date.now() / 1000);
@@ -401,15 +415,15 @@ export async function fetchOrganicSnapshotLive(igId: string, range: DateRangeId)
   const prevUntil = since;
   const prevSince = since - days * 86400;
 
-  const [current, previous] = await Promise.all([
+  const [current, previousMetrics] = await Promise.all([
     fetchOrganicSnapshotForWindow(igId, since, until),
-    fetchOrganicSnapshotForWindow(igId, prevSince, prevUntil),
+    fetchMetricsForWindow(igId, prevSince, prevUntil),
   ]);
 
   const keys = Object.keys(ORGANIC_METRICS) as OrganicMetricKey[];
   const changePct = {} as Record<OrganicMetricKey, number | null>;
   for (const key of keys) {
-    changePct[key] = pctChange(current.metrics[key], previous.metrics[key]);
+    changePct[key] = pctChange(current.metrics[key], previousMetrics[key]);
   }
 
   return { ...current, changePct };

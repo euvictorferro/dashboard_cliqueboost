@@ -44,7 +44,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const days = Math.round((until - since) / 86400);
-    return Response.json({ ...getOrganicWindowSnapshot(clientId, days), source: "mock" });
+    // ponytail: achado do review final — Período A e B sempre têm a mesma duração (CompareRangePicker
+    // garante isso), então semear só por "days" faz o mock de A e B saírem idênticos no comparativo.
+    // Incluir "since" na semente diferencia as duas janelas sem tocar no seed do modo normal (preset).
+    return Response.json({ ...getOrganicWindowSnapshot(`${clientId}-${since}`, days), source: "mock" });
   }
 
   const range = (request.nextUrl.searchParams.get("range") ?? "30d") as DateRangeId;

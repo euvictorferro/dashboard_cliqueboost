@@ -78,9 +78,12 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
         // ponytail: mesma política de fallback do modo normal — se a busca real falhar
         // (rede, erro do servidor), cai pro mock em vez de travar em "Comparando…" pra sempre.
         if (cancelled) return;
+        // ponytail: achado do review final — A e B têm sempre a mesma duração, então semear só
+        // por dias faz as 2 janelas saírem idênticas no mock. Inclui o "since" de cada uma na
+        // semente pra diferenciar, igual ao fallback equivalente na rota.
         setCompareSnapshots({
-          a: getOrganicWindowSnapshot(client.id, windowDays(compareWindows.a)),
-          b: getOrganicWindowSnapshot(client.id, windowDays(compareWindows.b)),
+          a: getOrganicWindowSnapshot(`${client.id}-${compareWindows.a.since}`, windowDays(compareWindows.a)),
+          b: getOrganicWindowSnapshot(`${client.id}-${compareWindows.b.since}`, windowDays(compareWindows.b)),
         });
       });
     return () => {

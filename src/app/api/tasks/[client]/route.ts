@@ -1,0 +1,32 @@
+import { NextRequest } from "next/server";
+import { CLIENTS } from "@/lib/clients";
+import { fetchClientTasks, hasClickUpCredentials } from "@/lib/clickup";
+import { verifyClientToken } from "@/lib/access";
+
+export async function GET(request: NextRequest, { params }: { params: Promise<{ client: string }> }) {
+  const { client: clientId } = await params;
+  const key = request.nextUrl.searchParams.get("key") ?? undefined;
+
+  const client = CLIENTS.find((c) => c.id === clientId);
+  if (!client) {
+    return Response.json({ error: "unknown client" }, { status: 404 });
+  }
+
+  if (!(await verifyClientToken(clientId, key))) {
+    return Response.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  if (!client.clickupListId || !hasClickUpCredentials()) {
+    return Response.json({ error: "no_list_configured" }, { status: 404 });
+  }
+
+  try {
+    const tasks = await fetchClientTasks(client.clickupListId);
+    return Response.json({ tasks });
+  } catch (err) {
+    // ponytail: qualquer erro da API do ClickUp cai num 502 — a página trata isso com uma
+    // mensagem inline, sem fallback de mock (não existe mock natural pra tarefas).
+    console.error(`[tasks] falha ao buscar tasks pra ${clientId}:`, err);
+    return Response.json({ error: "fetch_failed" }, { status: 502 });
+  }
+}

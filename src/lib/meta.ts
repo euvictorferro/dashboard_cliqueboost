@@ -1,9 +1,11 @@
 import {
   DATE_RANGES,
   ORGANIC_METRICS,
+  pctChange,
   type DateRangeId,
   type OrganicMetricKey,
   type OrganicSnapshot,
+  type OrganicWindowSnapshot,
   type ReachBreakdown,
   type TopPost,
 } from "./metrics";
@@ -362,26 +364,21 @@ export async function fetchReachBreakdown(igId: string, since: number, until: nu
   };
 }
 
-function pctChange(current: number, previous: number): number | null {
-  if (previous === 0) return null;
-  return ((current - previous) / previous) * 100;
-}
-
-export async function fetchOrganicSnapshotLive(igId: string, range: DateRangeId): Promise<OrganicSnapshot> {
+// ponytail: núcleo reaproveitado tanto pelo caminho normal (preset -> since/until calculado
+// abaixo) quanto pelo modo comparação (since/until explícitos vindos da UI). Sem changePct aqui —
+// isso só existe quando há um "período anterior" pra comparar, que é decidido por quem chama.
+export async function fetchOrganicSnapshotForWindow(
+  igId: string,
+  since: number,
+  until: number
+): Promise<OrganicWindowSnapshot> {
   // ponytail: checagem de acesso ANTES de tentar puxar métricas — sem isso, uma conta sem
   // permissão nenhuma retorna tudo zerado (cada chamada individual é resiliente e não lançaria
   // erro) em vez de cair pro mock no chamador. Essa chamada crua não é resiliente de propósito.
   await graphGet(igId, { fields: "id" });
 
-  const days = DATE_RANGES.find((r) => r.id === range)!.days;
-  const until = Math.floor(Date.now() / 1000);
-  const since = until - days * 86400;
-  const prevUntil = since;
-  const prevSince = since - days * 86400;
-
-  const [current, previous, topPosts, reachBreakdown, viewsTrend, likesTrend] = await Promise.all([
+  const [current, topPosts, reachBreakdown, viewsTrend, likesTrend] = await Promise.all([
     fetchRange(igId, since, until),
-    fetchRange(igId, prevSince, prevUntil),
     fetchTopVideos(igId, since, until),
     fetchReachBreakdown(igId, since, until),
     fetchDailyMetricSeries(igId, "views", since, until),
@@ -390,11 +387,30 @@ export async function fetchOrganicSnapshotLive(igId: string, range: DateRangeId)
 
   const keys = Object.keys(ORGANIC_METRICS) as OrganicMetricKey[];
   const metrics = {} as Record<OrganicMetricKey, number>;
-  const changePct = {} as Record<OrganicMetricKey, number | null>;
   for (const key of keys) {
     metrics[key] = current[key];
-    changePct[key] = pctChange(current[key], previous[key]);
   }
 
-  return { metrics, changePct, trend: current.trend, viewsTrend, likesTrend, topPosts, reachBreakdown };
+  return { metrics, trend: current.trend, viewsTrend, likesTrend, topPosts, reachBreakdown };
+}
+
+export async function fetchOrganicSnapshotLive(igId: string, range: DateRangeId): Promise<OrganicSnapshot> {
+  const days = DATE_RANGES.find((r) => r.id === range)!.days;
+  const until = Math.floor(Date.now() / 1000);
+  const since = until - days * 86400;
+  const prevUntil = since;
+  const prevSince = since - days * 86400;
+
+  const [current, previous] = await Promise.all([
+    fetchOrganicSnapshotForWindow(igId, since, until),
+    fetchOrganicSnapshotForWindow(igId, prevSince, prevUntil),
+  ]);
+
+  const keys = Object.keys(ORGANIC_METRICS) as OrganicMetricKey[];
+  const changePct = {} as Record<OrganicMetricKey, number | null>;
+  for (const key of keys) {
+    changePct[key] = pctChange(current.metrics[key], previous.metrics[key]);
+  }
+
+  return { ...current, changePct };
 }

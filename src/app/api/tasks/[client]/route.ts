@@ -16,8 +16,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  if (!client.clickupListId || !hasClickUpCredentials()) {
+  if (!client.clickupListId) {
     return Response.json({ error: "no_list_configured" }, { status: 404 });
+  }
+  if (!hasClickUpCredentials()) {
+    // ponytail: distinto de "no_list_configured" — isso é config do ambiente (token faltando),
+    // não do cliente. Sem essa separação, um token ausente aparentava ser problema de todo cliente.
+    console.error("[tasks] CLICKUP_API_TOKEN não configurado");
+    return Response.json({ error: "fetch_failed" }, { status: 502 });
   }
 
   try {

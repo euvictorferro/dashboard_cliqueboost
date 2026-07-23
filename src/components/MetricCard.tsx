@@ -61,9 +61,11 @@ export function MetricCard({
 
       {compare ? (
         <>
-          <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="h-2 w-2 shrink-0 rounded-full bg-brand-primary" aria-hidden="true" />
             <p className="text-lg font-semibold text-card-foreground">{value}</p>
             <span className="text-xs text-muted-foreground">vs.</span>
+            <span className="h-2 w-2 shrink-0 rounded-full bg-brand-accent" aria-hidden="true" />
             <p className="text-lg font-semibold text-card-foreground">{compare.valueB}</p>
             <ChangeBadge pct={compare.deltaPct} />
           </div>

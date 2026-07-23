@@ -7,7 +7,7 @@ export const DATE_RANGES = [
   { id: "90d", label: "Últimos 90 dias", days: 90 },
   // ponytail: days:0 nunca é usado de verdade — "custom" sempre é resolvido via since/until
   // explícitos (ver fetchOrganicSnapshotForWindow), nunca por essa contagem de dias.
-  { id: "custom", label: "Personalizado", days: 0 },
+  { id: "custom", label: "Comparar", days: 0 },
 ] as const;
 
 export type DateRangeId = (typeof DATE_RANGES)[number]["id"];

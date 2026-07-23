@@ -24,6 +24,11 @@ import { AudiencePanel } from "./AudiencePanel";
 
 type Tab = "organic" | "ads";
 
+function formatDateBR(iso: string): string {
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
 export function Dashboard({ client, accessKey }: { client: Client; accessKey: string }) {
   const [range, setRange] = useState<DateRangeId>("30d");
   const [tab, setTab] = useState<Tab>("organic");
@@ -155,6 +160,25 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
         )}
       </div>
 
+      {tab === "organic" && compareWindows && (
+        <div className="mb-4 flex flex-wrap items-center gap-4 rounded-xl bg-card px-4 py-2.5 text-xs shadow-[var(--shadow-soft)]">
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-brand-primary" aria-hidden="true" />
+            <span className="text-muted-foreground">Período A:</span>
+            <span className="font-medium text-card-foreground">
+              {formatDateBR(compareWindows.a.since)} – {formatDateBR(compareWindows.a.until)}
+            </span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-brand-accent" aria-hidden="true" />
+            <span className="text-muted-foreground">Período B:</span>
+            <span className="font-medium text-card-foreground">
+              {formatDateBR(compareWindows.b.since)} – {formatDateBR(compareWindows.b.until)}
+            </span>
+          </span>
+        </div>
+      )}
+
       {tab === "organic" && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[repeat(3,minmax(0,1fr))_1.6fr]">
@@ -178,7 +202,19 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
             />
 
             <div className="rounded-[var(--radius-card)] bg-card p-5 shadow-[var(--shadow-soft)] lg:row-span-2">
-              <h3 className="mb-4 text-sm font-medium text-muted-foreground">Alcance</h3>
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-sm font-medium text-muted-foreground">Alcance</h3>
+                {comparing && (
+                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <span className="h-2 w-2 rounded-full bg-brand-primary" aria-hidden="true" /> A
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="h-2 w-2 rounded-full bg-brand-accent" aria-hidden="true" /> B
+                    </span>
+                  </div>
+                )}
+              </div>
               <div className="h-56">
                 <ReachBarChart data={activeTrend} dataB={comparing ? compareSnapshots!.b.trend : undefined} />
               </div>

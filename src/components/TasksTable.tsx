@@ -124,6 +124,12 @@ export function TasksTable({ tasks }: { tasks: TaskItem[] }) {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center gap-4 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <p className="flex-1">Nome</p>
+        <p className="hidden w-48 shrink-0 sm:block">Descrição</p>
+        <p className="w-24 shrink-0">Data prevista</p>
+        <p className="w-20 shrink-0">Responsável</p>
+      </div>
       {sections.map((section) => (
         <TaskSection key={section.label} section={section} />
       ))}

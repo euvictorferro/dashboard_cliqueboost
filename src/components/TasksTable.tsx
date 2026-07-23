@@ -1,41 +1,37 @@
 "use client";
 
 import { useState } from "react";
-import type { TaskItem } from "@/lib/clickup";
+import type { TaskAssignee, TaskItem } from "@/lib/clickup";
+import { TaskDetailModal } from "./TaskDetailModal";
 
 function formatDueDate(dueDate: number | null): string {
   if (dueDate === null) return "Sem prazo";
   return new Date(dueDate).toLocaleDateString("pt-BR");
 }
 
-const AVATAR_PALETTE = ["bg-brand-primary", "bg-brand-accent", "bg-brand-success", "bg-brand-danger"];
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "?";
-}
-
-// ponytail: sem foto de perfil vinda do ClickUp na nossa camada de dados — círculo com iniciais,
-// cor consistente por pessoa (hash simples do nome), evita depender de imagem externa.
-function avatarColor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
-  return AVATAR_PALETTE[hash % AVATAR_PALETTE.length];
-}
-
-function AssigneeAvatars({ assignees }: { assignees: string[] }) {
+function AssigneeAvatars({ assignees }: { assignees: TaskAssignee[] }) {
   if (assignees.length === 0) {
     return <span className="text-xs text-muted-foreground">Sem responsável</span>;
   }
   return (
     <div className="flex items-center -space-x-2">
-      {assignees.map((name) => (
+      {assignees.map((a) => (
         <span
-          key={name}
-          title={name}
-          className={`flex h-7 w-7 items-center justify-center rounded-full border-2 border-card text-[11px] font-semibold text-white ${avatarColor(name)}`}
+          key={a.name}
+          title={a.name}
+          className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full border-2 border-card"
         >
-          {initials(name)}
+          {a.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- avatar vem de URL assinada do ClickUp
+            <img src={a.avatarUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <span
+              className="flex h-full w-full items-center justify-center text-[11px] font-semibold text-white"
+              style={{ backgroundColor: a.color }}
+            >
+              {a.initials}
+            </span>
+          )}
         </span>
       ))}
     </div>
@@ -59,7 +55,7 @@ function ChevronIcon({ open }: { open: boolean }) {
 
 type TaskSectionData = { label: string; color: string; order: number; tasks: TaskItem[] };
 
-function TaskSection({ section }: { section: TaskSectionData }) {
+function TaskSection({ section, onSelectTask }: { section: TaskSectionData; onSelectTask: (task: TaskItem) => void }) {
   const [open, setOpen] = useState(true);
 
   return (
@@ -77,7 +73,11 @@ function TaskSection({ section }: { section: TaskSectionData }) {
       {open && (
         <div>
           {section.tasks.map((task) => (
-            <div key={task.id} className="flex items-center gap-4 border-t border-border px-4 py-3">
+            <button
+              key={task.id}
+              onClick={() => onSelectTask(task)}
+              className="flex w-full items-center gap-4 border-t border-border px-4 py-3 text-left transition-colors hover:bg-muted"
+            >
               <p className="flex-1 truncate text-sm text-card-foreground">{task.name}</p>
               <p className="hidden w-48 shrink-0 truncate text-xs text-muted-foreground sm:block">
                 {task.description || "—"}
@@ -86,7 +86,7 @@ function TaskSection({ section }: { section: TaskSectionData }) {
               <div className="w-20 shrink-0">
                 <AssigneeAvatars assignees={task.assignees} />
               </div>
-            </div>
+            </button>
           ))}
         </div>
       )}
@@ -95,6 +95,8 @@ function TaskSection({ section }: { section: TaskSectionData }) {
 }
 
 export function TasksTable({ tasks }: { tasks: TaskItem[] }) {
+  const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
+
   const groups = new Map<string, TaskSectionData>();
   for (const task of tasks) {
     const existing = groups.get(task.status);
@@ -131,8 +133,9 @@ export function TasksTable({ tasks }: { tasks: TaskItem[] }) {
         <p className="w-20 shrink-0">Responsável</p>
       </div>
       {sections.map((section) => (
-        <TaskSection key={section.label} section={section} />
+        <TaskSection key={section.label} section={section} onSelectTask={setSelectedTask} />
       ))}
+      {selectedTask && <TaskDetailModal task={selectedTask} onClose={() => setSelectedTask(null)} />}
     </div>
   );
 }

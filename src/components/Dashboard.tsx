@@ -5,6 +5,7 @@ import type { Client } from "@/lib/clients";
 import {
   ORGANIC_METRICS,
   getOrganicSnapshot,
+  getOrganicWindowSnapshot,
   pctChange,
   type DateRangeId,
   type OrganicMetricKey,
@@ -67,11 +68,21 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
       fetch(`/api/organic/${client.id}?since=${w.since}&until=${w.until}&key=${encodeURIComponent(accessKey)}`).then(
         (res) => res.json()
       );
-    Promise.all([fetchWindow(compareWindows.a), fetchWindow(compareWindows.b)]).then(
-      ([a, b]: [OrganicWindowSnapshot, OrganicWindowSnapshot]) => {
+    const windowDays = (w: { since: string; until: string }) =>
+      Math.round((new Date(w.until).getTime() - new Date(w.since).getTime()) / 86400000);
+    Promise.all([fetchWindow(compareWindows.a), fetchWindow(compareWindows.b)])
+      .then(([a, b]: [OrganicWindowSnapshot, OrganicWindowSnapshot]) => {
         if (!cancelled) setCompareSnapshots({ a, b });
-      }
-    );
+      })
+      .catch(() => {
+        // ponytail: mesma política de fallback do modo normal — se a busca real falhar
+        // (rede, erro do servidor), cai pro mock em vez de travar em "Comparando…" pra sempre.
+        if (cancelled) return;
+        setCompareSnapshots({
+          a: getOrganicWindowSnapshot(client.id, windowDays(compareWindows.a)),
+          b: getOrganicWindowSnapshot(client.id, windowDays(compareWindows.b)),
+        });
+      });
     return () => {
       cancelled = true;
     };

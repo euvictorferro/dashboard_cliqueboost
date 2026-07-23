@@ -2,8 +2,17 @@
 
 import { useEffect, useState } from "react";
 import type { Client } from "@/lib/clients";
-import { ORGANIC_METRICS, getOrganicSnapshot, type DateRangeId, type OrganicSnapshot } from "@/lib/metrics";
+import {
+  ORGANIC_METRICS,
+  getOrganicSnapshot,
+  pctChange,
+  type DateRangeId,
+  type OrganicMetricKey,
+  type OrganicSnapshot,
+  type OrganicWindowSnapshot,
+} from "@/lib/metrics";
 import { DateRangeFilter } from "./DateRangeFilter";
+import type { CompareWindows } from "./CompareRangePicker";
 import { MetricCard } from "./MetricCard";
 import { ReachBarChart } from "./ReachBarChart";
 import { TopVideosList } from "./TopVideosList";
@@ -22,7 +31,13 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
   const [snapshotKey, setSnapshotKey] = useState(`${client.id}:${range}`);
   const loading = snapshotKey !== `${client.id}:${range}`;
 
+  const [compareWindows, setCompareWindows] = useState<CompareWindows | null>(null);
+  const [compareSnapshots, setCompareSnapshots] = useState<{ a: OrganicWindowSnapshot; b: OrganicWindowSnapshot } | null>(
+    null
+  );
+
   useEffect(() => {
+    if (compareWindows) return; // modo comparação usa o efeito abaixo
     let cancelled = false;
     const key = `${client.id}:${range}`;
     fetch(`/api/organic/${client.id}?range=${range}&key=${encodeURIComponent(accessKey)}`)
@@ -40,10 +55,55 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
     return () => {
       cancelled = true;
     };
-  }, [client.id, range, accessKey]);
+  }, [client.id, range, accessKey, compareWindows]);
 
-  const m = snapshot.metrics;
+  useEffect(() => {
+    if (!compareWindows) {
+      setCompareSnapshots(null);
+      return;
+    }
+    let cancelled = false;
+    const fetchWindow = (w: { since: string; until: string }) =>
+      fetch(`/api/organic/${client.id}?since=${w.since}&until=${w.until}&key=${encodeURIComponent(accessKey)}`).then(
+        (res) => res.json()
+      );
+    Promise.all([fetchWindow(compareWindows.a), fetchWindow(compareWindows.b)]).then(
+      ([a, b]: [OrganicWindowSnapshot, OrganicWindowSnapshot]) => {
+        if (!cancelled) setCompareSnapshots({ a, b });
+      }
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [client.id, compareWindows, accessKey]);
+
+  function handleRangeChange(id: DateRangeId) {
+    setRange(id);
+    if (id !== "custom") setCompareWindows(null);
+  }
+
+  function handleApplyCompare(windows: CompareWindows) {
+    setRange("custom");
+    setCompareWindows(windows);
+  }
+
+  const comparing = compareWindows !== null && compareSnapshots !== null;
+  const m = comparing ? compareSnapshots!.a.metrics : snapshot.metrics;
   const c = snapshot.changePct;
+
+  function compareProp(key: OrganicMetricKey, sparklineKey?: "trend" | "viewsTrend" | "likesTrend") {
+    if (!comparing) return undefined;
+    const { a, b } = compareSnapshots!;
+    return {
+      valueB: b.metrics[key].toLocaleString("pt-BR"),
+      deltaPct: pctChange(a.metrics[key], b.metrics[key]),
+      sparklineB: sparklineKey ? b[sparklineKey] : undefined,
+    };
+  }
+
+  const activeTrend = comparing ? compareSnapshots!.a.trend : snapshot.trend;
+  const activeTopPosts = comparing ? compareSnapshots!.a.topPosts : snapshot.topPosts;
+  const activeReachBreakdown = comparing ? compareSnapshots!.a.reachBreakdown : snapshot.reachBreakdown;
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-8">
@@ -52,7 +112,7 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
           <Logo />
           <h1 className="mt-2 text-2xl font-bold text-foreground">{client.name}</h1>
         </div>
-        <ExportPdfButton clientId={client.id} range={range} accessKey={accessKey} />
+        <ExportPdfButton clientId={client.id} range={range} accessKey={accessKey} disabled={compareWindows !== null} />
       </header>
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -74,8 +134,9 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
         </nav>
         {tab === "organic" && (
           <div className="flex items-center gap-2">
-            {loading && <span className="text-xs text-muted-foreground">Atualizando…</span>}
-            <DateRangeFilter value={range} onChange={setRange} />
+            {!compareWindows && loading && <span className="text-xs text-muted-foreground">Atualizando…</span>}
+            {compareWindows && !compareSnapshots && <span className="text-xs text-muted-foreground">Comparando…</span>}
+            <DateRangeFilter value={range} onChange={handleRangeChange} onApplyCompare={handleApplyCompare} />
           </div>
         )}
       </div>
@@ -87,22 +148,25 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
               label={ORGANIC_METRICS.newFollowers.label}
               description={ORGANIC_METRICS.newFollowers.description}
               value={m.newFollowers.toLocaleString("pt-BR")}
+              compare={compareProp("newFollowers")}
             />
             <MetricCard
               label={ORGANIC_METRICS.lostFollowers.label}
               description={ORGANIC_METRICS.lostFollowers.description}
               value={m.lostFollowers.toLocaleString("pt-BR")}
+              compare={compareProp("lostFollowers")}
             />
             <MetricCard
               label={ORGANIC_METRICS.netFollowers.label}
               description={ORGANIC_METRICS.netFollowers.description}
               value={m.netFollowers.toLocaleString("pt-BR")}
+              compare={compareProp("netFollowers")}
             />
 
             <div className="rounded-[var(--radius-card)] bg-card p-5 shadow-[var(--shadow-soft)] lg:row-span-2">
               <h3 className="mb-4 text-sm font-medium text-muted-foreground">Alcance</h3>
               <div className="h-56">
-                <ReachBarChart data={snapshot.trend} />
+                <ReachBarChart data={activeTrend} dataB={comparing ? compareSnapshots!.b.trend : undefined} />
               </div>
             </div>
 
@@ -110,22 +174,25 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
               label={ORGANIC_METRICS.reach.label}
               description={ORGANIC_METRICS.reach.description}
               value={m.reach.toLocaleString("pt-BR")}
-              changePct={c.reach}
-              sparkline={snapshot.trend}
+              changePct={comparing ? undefined : c.reach}
+              sparkline={activeTrend}
+              compare={compareProp("reach", "trend")}
             />
             <MetricCard
               label={ORGANIC_METRICS.views.label}
               description={ORGANIC_METRICS.views.description}
               value={m.views.toLocaleString("pt-BR")}
-              changePct={c.views}
-              sparkline={snapshot.viewsTrend}
+              changePct={comparing ? undefined : c.views}
+              sparkline={comparing ? compareSnapshots!.a.viewsTrend : snapshot.viewsTrend}
+              compare={compareProp("views", "viewsTrend")}
             />
             <MetricCard
               label={ORGANIC_METRICS.likes.label}
               description={ORGANIC_METRICS.likes.description}
               value={m.likes.toLocaleString("pt-BR")}
-              changePct={c.likes}
-              sparkline={snapshot.likesTrend}
+              changePct={comparing ? undefined : c.likes}
+              sparkline={comparing ? compareSnapshots!.a.likesTrend : snapshot.likesTrend}
+              compare={compareProp("likes", "likesTrend")}
             />
           </div>
 
@@ -134,25 +201,28 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
               label={ORGANIC_METRICS.comments.label}
               description={ORGANIC_METRICS.comments.description}
               value={m.comments.toLocaleString("pt-BR")}
-              changePct={c.comments}
+              changePct={comparing ? undefined : c.comments}
+              compare={compareProp("comments")}
             />
             <MetricCard
               label={ORGANIC_METRICS.saves.label}
               description={ORGANIC_METRICS.saves.description}
               value={m.saves.toLocaleString("pt-BR")}
-              changePct={c.saves}
+              changePct={comparing ? undefined : c.saves}
+              compare={compareProp("saves")}
             />
             <MetricCard
               label={ORGANIC_METRICS.shares.label}
               description={ORGANIC_METRICS.shares.description}
               value={m.shares.toLocaleString("pt-BR")}
-              changePct={c.shares}
+              changePct={comparing ? undefined : c.shares}
+              compare={compareProp("shares")}
             />
           </div>
 
-          <TopVideosList posts={snapshot.topPosts} />
+          <TopVideosList posts={activeTopPosts} />
 
-          <AudiencePanel clientId={client.id} accessKey={accessKey} reachBreakdown={snapshot.reachBreakdown} />
+          <AudiencePanel clientId={client.id} accessKey={accessKey} reachBreakdown={activeReachBreakdown} />
         </div>
       )}
       {tab === "ads" && <AdsPanel clientId={client.id} active={client.adsActive} />}

@@ -1,4 +1,26 @@
-export function ReachBarChart({ data }: { data: { date: string; value: number }[] }) {
+import { LineChart, Line, ResponsiveContainer } from "recharts";
+
+export function ReachBarChart({
+  data,
+  dataB,
+}: {
+  data: { date: string; value: number }[];
+  dataB?: { date: string; value: number }[];
+}) {
+  if (dataB) {
+    // ponytail: mesma garantia de tamanho igual do MetricCard — CompareRangePicker força A e B
+    // a terem a mesma duração.
+    const merged = data.map((d, i) => ({ date: d.date, a: d.value, b: dataB[i]?.value ?? null }));
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={merged} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+          <Line type="monotone" dataKey="a" stroke="hsl(var(--brand-primary))" strokeWidth={2} dot={false} />
+          <Line type="monotone" dataKey="b" stroke="hsl(var(--brand-accent))" strokeWidth={2} dot={false} />
+        </LineChart>
+      </ResponsiveContainer>
+    );
+  }
+
   const max = Math.max(1, ...data.map((d) => d.value));
 
   return (

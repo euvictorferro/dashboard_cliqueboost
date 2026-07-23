@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { InfoTooltip } from "./InfoTooltip";
 
 function DownloadIcon() {
   return (
@@ -33,15 +34,17 @@ export function ExportPdfButton({
   clientId,
   range,
   accessKey,
+  disabled,
 }: {
   clientId: string;
   range: string;
   accessKey: string;
+  disabled?: boolean;
 }) {
   const [downloading, setDownloading] = useState(false);
 
   async function handleClick() {
-    if (downloading) return;
+    if (downloading || disabled) return;
     setDownloading(true);
     try {
       const res = await fetch(`/api/report/${clientId}?range=${range}&key=${encodeURIComponent(accessKey)}`);
@@ -59,6 +62,16 @@ export function ExportPdfButton({
     } finally {
       setDownloading(false);
     }
+  }
+
+  if (disabled) {
+    return (
+      <span className="flex items-center gap-2 rounded-xl bg-card px-4 py-2.5 text-sm font-medium text-muted-foreground opacity-60 shadow-[var(--shadow-soft)]">
+        <DownloadIcon />
+        Baixar relatório
+        <InfoTooltip text="O relatório em PDF não funciona no modo de comparação de datas. Volte pra um período único pra baixar." />
+      </span>
+    );
   }
 
   return (

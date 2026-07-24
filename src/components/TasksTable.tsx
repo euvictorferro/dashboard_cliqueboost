@@ -2,13 +2,8 @@
 
 import { useState } from "react";
 import type { TaskItem } from "@/lib/clickup";
-import { AssigneeAvatars } from "./AssigneeAvatars";
+import { TaskCard } from "./TaskCard";
 import { TaskDetailModal } from "./TaskDetailModal";
-
-function formatDueDate(dueDate: number | null): string {
-  if (dueDate === null) return "Sem prazo";
-  return new Date(dueDate).toLocaleDateString("pt-BR");
-}
 
 function ChevronIcon({ open }: { open: boolean }) {
   return (
@@ -31,7 +26,7 @@ function TaskSection({ section, onSelectTask }: { section: TaskSectionData; onSe
   const [open, setOpen] = useState(true);
 
   return (
-    <div className="overflow-hidden rounded-[var(--radius-card)] bg-card shadow-[var(--shadow-soft)]">
+    <div className="overflow-hidden rounded-[var(--radius-card)] bg-muted/60">
       <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center gap-2.5 px-4 py-3 text-left">
         <ChevronIcon open={open} />
         <span
@@ -43,22 +38,9 @@ function TaskSection({ section, onSelectTask }: { section: TaskSectionData; onSe
         <span className="text-xs font-medium text-muted-foreground">{section.tasks.length}</span>
       </button>
       {open && (
-        <div>
+        <div className="space-y-2 px-3 pb-3">
           {section.tasks.map((task) => (
-            <button
-              key={task.id}
-              onClick={() => onSelectTask(task)}
-              className="flex w-full items-center gap-4 border-t border-border px-4 py-3 text-left transition-colors hover:bg-muted"
-            >
-              <p className="flex-1 truncate text-sm text-card-foreground">{task.name}</p>
-              <p className="hidden w-48 shrink-0 truncate text-xs text-muted-foreground sm:block">
-                {task.description || "—"}
-              </p>
-              <p className="w-24 shrink-0 text-xs text-muted-foreground">{formatDueDate(task.dueDate)}</p>
-              <div className="w-20 shrink-0">
-                <AssigneeAvatars assignees={task.assignees} emptyLabel="Sem responsável" />
-              </div>
-            </button>
+            <TaskCard key={task.id} task={task} onClick={() => onSelectTask(task)} />
           ))}
         </div>
       )}
@@ -98,12 +80,6 @@ export function TasksTable({ tasks }: { tasks: TaskItem[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-4 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        <p className="flex-1">Nome</p>
-        <p className="hidden w-48 shrink-0 sm:block">Descrição</p>
-        <p className="w-24 shrink-0">Data prevista</p>
-        <p className="w-20 shrink-0">Responsável</p>
-      </div>
       {sections.map((section) => (
         <TaskSection key={section.label} section={section} onSelectTask={setSelectedTask} />
       ))}

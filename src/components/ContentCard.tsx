@@ -3,27 +3,9 @@
 
 import { useState } from "react";
 import type { ContentCard as ContentCardData } from "@/lib/trello";
+import { getDueDateDisplay } from "@/lib/dateDisplay";
 import { AssigneeAvatars } from "./AssigneeAvatars";
 import { AttachmentIcon, ChecklistIcon, ClockIcon, DescriptionIcon } from "./icons";
-
-const MONTHS_PT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-
-function getDueDateDisplay(dueDate: number): { text: string; className: string } {
-  const due = new Date(dueDate);
-  const now = new Date();
-  const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const daysDiff = Math.round((dueDay.getTime() - today.getTime()) / 86400000);
-
-  const text =
-    due.getFullYear() === now.getFullYear()
-      ? `${String(due.getDate()).padStart(2, "0")} ${MONTHS_PT[due.getMonth()]}`
-      : due.toLocaleDateString("pt-BR");
-
-  const className = daysDiff < 0 ? "text-red-400" : daysDiff <= 3 ? "text-amber-400" : "";
-
-  return { text, className };
-}
 
 export function ContentCard({
   card,

@@ -1,3 +1,4 @@
+// src/lib/trello.ts
 // ponytail: server-only — nunca importar isto de um componente "use client" (usa a API Key/Token).
 const TRELLO_API = "https://api.trello.com/1";
 
@@ -26,6 +27,7 @@ export type ContentCard = {
   dueDate: number | null;
   assignees: string[];
   attachments: { name: string; url: string }[];
+  coverImageUrl: string | null;
 };
 
 export type ContentList = {
@@ -36,7 +38,8 @@ export type ContentList = {
 
 type RawTrelloList = { id: string; name: string; pos: number };
 type RawTrelloLabel = { name: string; color: string | null };
-type RawTrelloAttachment = { name: string; url: string; fileName?: string };
+type RawTrelloPreview = { url: string; width: number; height: number; scaled: boolean };
+type RawTrelloAttachment = { id: string; name: string; url: string; fileName?: string; previews: RawTrelloPreview[] };
 type RawTrelloCard = {
   id: string;
   name: string;
@@ -44,6 +47,7 @@ type RawTrelloCard = {
   due: string | null;
   idList: string;
   idMembers: string[];
+  idAttachmentCover: string | null;
   labels: RawTrelloLabel[];
   attachments: RawTrelloAttachment[];
   pos: number;
@@ -71,12 +75,28 @@ function trelloColorToHex(color: string | null): string {
   return TRELLO_LABEL_COLORS[color] ?? "#8590a2";
 }
 
+// ponytail: capa é a maior preview não-escalada do anexo marcado como idAttachmentCover — se
+// não houver nenhuma não-escalada, cai pra maior escalada. Sem capa configurada ou anexo/preview
+// ausente (removido depois de virar capa) -> null, o card volta pro layout sem capa.
+function pickCoverImageUrl(card: RawTrelloCard): string | null {
+  if (!card.idAttachmentCover) return null;
+  const attachment = card.attachments.find((a) => a.id === card.idAttachmentCover);
+  if (!attachment || attachment.previews.length === 0) return null;
+
+  const nonScaled = attachment.previews.filter((p) => !p.scaled);
+  const pool = nonScaled.length > 0 ? nonScaled : attachment.previews;
+  return [...pool].sort((a, b) => b.width - a.width)[0].url;
+}
+
 // ponytail: busca ao vivo, sem cache — 3 chamadas em paralelo (lists, cards, members), sem loop
 // por card. "attachments=true" é obrigatório pra API devolver os anexos (testado ao vivo).
 export async function fetchClientBoard(boardId: string): Promise<ContentList[]> {
   const [rawLists, rawCards, rawMembers]: [RawTrelloList[], RawTrelloCard[], RawTrelloMember[]] = await Promise.all([
     trelloGet(`boards/${boardId}/lists`, { fields: "name,pos" }),
-    trelloGet(`boards/${boardId}/cards`, { fields: "name,desc,due,idList,idMembers,labels,pos", attachments: "true" }),
+    trelloGet(`boards/${boardId}/cards`, {
+      fields: "name,desc,due,idList,idMembers,labels,pos,idAttachmentCover",
+      attachments: "true",
+    }),
     trelloGet(`boards/${boardId}/members`, { fields: "fullName" }),
   ]);
 
@@ -92,6 +112,7 @@ export async function fetchClientBoard(boardId: string): Promise<ContentList[]> 
       dueDate: c.due ? new Date(c.due).getTime() : null,
       assignees: c.idMembers.map((id) => memberNames.get(id) ?? "Desconhecido"),
       attachments: c.attachments.map((a) => ({ name: a.name || a.fileName || a.url, url: a.url })),
+      coverImageUrl: pickCoverImageUrl(c),
     };
     const existing = cardsByList.get(c.idList) ?? [];
     existing.push(card);

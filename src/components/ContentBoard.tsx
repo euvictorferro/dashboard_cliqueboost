@@ -17,7 +17,7 @@ export function ContentBoard({ lists }: { lists: ContentList[] }) {
   }
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4">
+    <div className="flex items-start gap-4 overflow-x-auto pb-4">
       {lists.map((list) => (
         <div key={list.id} className="w-72 shrink-0 rounded-[var(--radius-card)] bg-muted/60 pb-3">
           <div className="flex items-center gap-2 rounded-t-[var(--radius-card)] bg-muted px-3 py-2.5">

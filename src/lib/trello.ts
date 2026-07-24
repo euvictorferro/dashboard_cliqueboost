@@ -21,7 +21,13 @@ export type ContentLabel = { name: string; color: string };
 export type ContentAssignee = { name: string; avatarUrl: string | null; initials: string };
 export type ContentChecklistItem = { id: string; name: string; checked: boolean };
 export type ContentChecklist = { total: number; checked: number; items: ContentChecklistItem[] };
-export type ContentAttachment = { name: string; url: string; isUpload: boolean; previewUrl: string | null };
+export type ContentAttachment = {
+  name: string;
+  url: string;
+  isUpload: boolean;
+  previewUrl: string | null;
+  date: number;
+};
 
 export type ContentCard = {
   id: string;
@@ -60,6 +66,7 @@ type RawTrelloAttachment = {
   url: string;
   fileName?: string;
   isUpload: boolean;
+  date: string;
   previews: RawTrelloPreview[];
 };
 type RawTrelloCheckItem = { id: string; name: string; state: string };
@@ -166,6 +173,7 @@ export async function fetchClientBoard(boardId: string): Promise<ContentList[]> 
         url: a.url,
         isUpload: a.isUpload,
         previewUrl: pickSmallestPreviewUrl(a),
+        date: new Date(a.date).getTime(),
       })),
       coverImageUrl: pickCoverImageUrl(c),
       checklist:

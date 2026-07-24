@@ -4,6 +4,8 @@
 import { useEffect, useState } from "react";
 import type { ContentActivity, ContentCard } from "@/lib/trello";
 import { renderMarkdown } from "./markdown";
+import { AssigneeAvatars } from "./AssigneeAvatars";
+import { AttachmentIcon, ChecklistIcon, CommentsIcon, DescriptionIcon, LinkIcon } from "./icons";
 
 function formatDueDate(dueDate: number | null): string {
   if (dueDate === null) return "Sem prazo";
@@ -20,24 +22,26 @@ function formatActivityDate(ts: number): string {
   });
 }
 
+function formatRelativeTime(ts: number): string {
+  const diff = Date.now() - ts;
+  const minute = 60_000;
+  const hour = 3_600_000;
+  const day = 86_400_000;
+  if (diff < minute) return "agora mesmo";
+  if (diff < hour) return `há ${Math.floor(diff / minute)} min`;
+  if (diff < day) return `há ${Math.floor(diff / hour)} h`;
+  if (diff < day * 30) return `há ${Math.floor(diff / day)} d`;
+  return new Date(ts).toLocaleDateString("pt-BR");
+}
+
+function coverProxyUrl(clientId: string, accessKey: string, url: string): string {
+  return `/api/content/${clientId}/cover-proxy?key=${encodeURIComponent(accessKey)}&url=${encodeURIComponent(url)}`;
+}
+
 function CloseIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function LinkIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 11 11" fill="none" aria-hidden="true" className="shrink-0">
-      <path
-        d="M8.3 3.3L4.6 7a1.5 1.5 0 1 1-2.1-2.1l3.7-3.7a1 1 0 1 1 1.4 1.4L4.2 6"
-        stroke="currentColor"
-        strokeWidth="1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
     </svg>
   );
 }
@@ -62,23 +66,58 @@ function CheckboxIcon({ checked }: { checked: boolean }) {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, icon, children }: { label: string; icon?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div>
-      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mb-2 flex items-center gap-1.5 text-sm font-bold text-card-foreground">
+        {icon}
+        {label}
+      </p>
       <div className="text-sm text-card-foreground">{children}</div>
     </div>
+  );
+}
+
+function DescriptionField({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = text.length > 360;
+  const collapsed = isLong && !expanded;
+
+  return (
+    <Field label="Descrição" icon={<DescriptionIcon size={14} />}>
+      {text ? (
+        <div>
+          <div className={`relative ${collapsed ? "max-h-40 overflow-hidden" : ""}`}>
+            {renderMarkdown(text)}
+            {collapsed && (
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-card to-transparent" />
+            )}
+          </div>
+          {isLong && (
+            <button
+              type="button"
+              onClick={() => setExpanded((e) => !e)}
+              className="mt-2 w-full rounded-md bg-muted py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted/70"
+            >
+              {expanded ? "Mostrar menos" : "Mostrar mais"}
+            </button>
+          )}
+        </div>
+      ) : (
+        <span className="text-muted-foreground">Sem descrição</span>
+      )}
+    </Field>
   );
 }
 
 function ChecklistField({ checklist }: { checklist: NonNullable<ContentCard["checklist"]> }) {
   const percent = checklist.total === 0 ? 0 : Math.round((checklist.checked / checklist.total) * 100);
   return (
-    <Field label={`Checklist (${checklist.checked}/${checklist.total})`}>
-      <div className="mb-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+    <Field label={`Checklist (${checklist.checked}/${checklist.total})`} icon={<ChecklistIcon size={14} />}>
+      <div className="mb-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
         <div className="h-full rounded-full bg-brand-accent" style={{ width: `${percent}%` }} />
       </div>
-      <ul className="space-y-1.5">
+      <ul className="space-y-2">
         {checklist.items.map((item) => (
           <li key={item.id} className="flex items-start gap-2">
             <CheckboxIcon checked={item.checked} />
@@ -87,6 +126,74 @@ function ChecklistField({ checklist }: { checklist: NonNullable<ContentCard["che
         ))}
       </ul>
     </Field>
+  );
+}
+
+function LinkRow({ attachment }: { attachment: ContentCard["attachments"][number] }) {
+  const [faviconFailed, setFaviconFailed] = useState(false);
+  let domain = "";
+  try {
+    domain = new URL(attachment.url).hostname;
+  } catch {
+    // ponytail: url inválida (raro) — cai no ícone genérico
+  }
+
+  return (
+    <li className="flex items-center gap-2">
+      {domain && !faviconFailed ? (
+        // eslint-disable-next-line @next/next/no-img-element -- favicon de serviço externo (Google), não asset local
+        <img
+          src={`https://www.google.com/s2/favicons?sz=32&domain=${encodeURIComponent(domain)}`}
+          alt=""
+          className="h-4 w-4 shrink-0 rounded-sm"
+          onError={() => setFaviconFailed(true)}
+        />
+      ) : (
+        <LinkIcon />
+      )}
+      <a
+        href={attachment.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="min-w-0 flex-1 truncate text-brand-accent hover:underline"
+      >
+        {attachment.name}
+      </a>
+      <span className="shrink-0 text-[10px] text-muted-foreground">{formatRelativeTime(attachment.date)}</span>
+    </li>
+  );
+}
+
+function FileRow({
+  attachment,
+  clientId,
+  accessKey,
+}: {
+  attachment: ContentCard["attachments"][number];
+  clientId: string;
+  accessKey: string;
+}) {
+  return (
+    <li className="flex items-center gap-2.5">
+      {attachment.previewUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element -- imagem vem do proxy autenticado
+        <img
+          src={coverProxyUrl(clientId, accessKey, attachment.previewUrl)}
+          alt=""
+          className="h-10 w-10 shrink-0 rounded object-cover"
+        />
+      ) : (
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-muted">
+          <AttachmentIcon size={14} />
+        </span>
+      )}
+      <div className="min-w-0 flex-1">
+        <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="block truncate text-brand-accent hover:underline">
+          {attachment.name}
+        </a>
+        <p className="text-[10px] text-muted-foreground">Adicionado {formatRelativeTime(attachment.date)}</p>
+      </div>
+    </li>
   );
 }
 
@@ -103,44 +210,27 @@ function AttachmentsField({
   const files = attachments.filter((a) => a.isUpload);
 
   return (
-    <Field label="Anexos">
+    <Field label="Anexos" icon={<AttachmentIcon size={14} />}>
       {links.length === 0 && files.length === 0 ? (
         <span className="text-muted-foreground">Sem anexos</span>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {links.length > 0 && (
             <div>
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Links</p>
-              <ul className="space-y-1">
+              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Links</p>
+              <ul className="space-y-2">
                 {links.map((a) => (
-                  <li key={a.url} className="flex items-center gap-1.5">
-                    <LinkIcon />
-                    <a href={a.url} target="_blank" rel="noopener noreferrer" className="text-brand-accent hover:underline">
-                      {a.name}
-                    </a>
-                  </li>
+                  <LinkRow key={a.url} attachment={a} />
                 ))}
               </ul>
             </div>
           )}
           {files.length > 0 && (
             <div>
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Arquivos</p>
-              <ul className="space-y-1.5">
+              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Arquivos</p>
+              <ul className="space-y-2">
                 {files.map((a) => (
-                  <li key={a.url} className="flex items-center gap-2">
-                    {a.previewUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element -- imagem vem do proxy autenticado
-                      <img
-                        src={`/api/content/${clientId}/cover-proxy?key=${encodeURIComponent(accessKey)}&url=${encodeURIComponent(a.previewUrl)}`}
-                        alt=""
-                        className="h-8 w-8 shrink-0 rounded object-cover"
-                      />
-                    )}
-                    <a href={a.url} target="_blank" rel="noopener noreferrer" className="text-brand-accent hover:underline">
-                      {a.name}
-                    </a>
-                  </li>
+                  <FileRow key={a.url} attachment={a} clientId={clientId} accessKey={accessKey} />
                 ))}
               </ul>
             </div>
@@ -176,14 +266,14 @@ function ActivityField({ clientId, accessKey, cardId }: { clientId: string; acce
   }, [clientId, accessKey, cardId]);
 
   return (
-    <Field label="Comentários e atividade">
+    <Field label="Comentários e atividade" icon={<CommentsIcon size={14} />}>
       {failed && <span className="text-muted-foreground">Não foi possível carregar.</span>}
       {!failed && activity === null && <span className="text-muted-foreground">Carregando...</span>}
       {!failed && activity !== null && activity.length === 0 && (
         <span className="text-muted-foreground">Sem comentários ou atividade.</span>
       )}
       {!failed && activity !== null && activity.length > 0 && (
-        <ul className="space-y-3">
+        <ul className="space-y-4">
           {activity.map((a) => (
             <li key={a.id} className="flex items-start gap-2">
               {a.authorAvatarUrl ? (
@@ -240,21 +330,21 @@ export function ContentCardModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
       <div
-        className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-[var(--radius-card)] bg-card shadow-[var(--shadow-soft)]"
+        className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-[var(--radius-card)] bg-card shadow-[var(--shadow-soft)]"
         onClick={(e) => e.stopPropagation()}
       >
         {showCover && (
           // eslint-disable-next-line @next/next/no-img-element -- imagem vem do proxy autenticado, não é asset local
           <img
-            src={`/api/content/${clientId}/cover-proxy?key=${encodeURIComponent(accessKey)}&url=${encodeURIComponent(card.coverImageUrl!)}`}
+            src={coverProxyUrl(clientId, accessKey, card.coverImageUrl!)}
             alt=""
             className="h-40 w-full object-cover"
             onError={() => setCoverFailed(true)}
           />
         )}
 
-        <div className="p-6">
-          <div className="mb-4 flex items-start justify-between gap-4">
+        <div className="p-7">
+          <div className="mb-6 flex items-start justify-between gap-4">
             <h2 className="text-lg font-bold text-card-foreground">{card.name}</h2>
             <button
               onClick={onClose}
@@ -265,44 +355,48 @@ export function ContentCardModal({
             </button>
           </div>
 
-          <div className="space-y-4">
-            <Field label="Labels">
-              {card.labels.length === 0 ? (
-                <span className="text-muted-foreground">Sem labels</span>
-              ) : (
-                <div className="flex flex-wrap gap-1.5">
-                  {card.labels.map((label, i) => (
-                    <span
-                      key={`${label.name}-${i}`}
-                      className="rounded-full px-2.5 py-1 text-xs font-semibold text-white"
-                      style={{ backgroundColor: label.color }}
-                    >
-                      {label.name}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </Field>
+          <div className="flex flex-col gap-8 md:flex-row">
+            <div className="min-w-0 flex-1 space-y-6">
+              <div className="flex flex-wrap gap-x-10 gap-y-6">
+                <Field label="Membros">
+                  {card.assignees.length === 0 ? (
+                    <span className="text-muted-foreground">Sem responsável</span>
+                  ) : (
+                    <AssigneeAvatars assignees={card.assignees} size="sm" />
+                  )}
+                </Field>
 
-            <Field label="Descrição">
-              {card.description ? renderMarkdown(card.description) : <span className="text-muted-foreground">Sem descrição</span>}
-            </Field>
+                <Field label="Labels">
+                  {card.labels.length === 0 ? (
+                    <span className="text-muted-foreground">Sem labels</span>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {card.labels.map((label, i) => (
+                        <span
+                          key={`${label.name}-${i}`}
+                          className="rounded-full px-2.5 py-1 text-xs font-semibold text-white"
+                          style={{ backgroundColor: label.color }}
+                        >
+                          {label.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </Field>
+              </div>
 
-            <Field label="Data prevista">{formatDueDate(card.dueDate)}</Field>
+              <Field label="Data prevista">{formatDueDate(card.dueDate)}</Field>
 
-            <Field label="Responsável">
-              {card.assignees.length === 0 ? (
-                <span className="text-muted-foreground">Sem responsável</span>
-              ) : (
-                card.assignees.map((a) => a.name).join(", ")
-              )}
-            </Field>
+              <DescriptionField text={card.description} />
 
-            {card.checklist && <ChecklistField checklist={card.checklist} />}
+              {card.checklist && <ChecklistField checklist={card.checklist} />}
 
-            <AttachmentsField attachments={card.attachments} clientId={clientId} accessKey={accessKey} />
+              <AttachmentsField attachments={card.attachments} clientId={clientId} accessKey={accessKey} />
+            </div>
 
-            <ActivityField clientId={clientId} accessKey={accessKey} cardId={card.id} />
+            <div className="min-w-0 border-t border-border pt-6 md:w-72 md:shrink-0 md:border-l md:border-t-0 md:pl-7 md:pt-0">
+              <ActivityField clientId={clientId} accessKey={accessKey} cardId={card.id} />
+            </div>
           </div>
         </div>
       </div>

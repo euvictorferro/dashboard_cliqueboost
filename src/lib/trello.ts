@@ -19,7 +19,9 @@ async function trelloGet(path: string, params: Record<string, string>) {
 
 export type ContentLabel = { name: string; color: string };
 export type ContentAssignee = { name: string; avatarUrl: string | null; initials: string };
-export type ContentChecklist = { total: number; checked: number };
+export type ContentChecklistItem = { id: string; name: string; checked: boolean };
+export type ContentChecklist = { total: number; checked: number; items: ContentChecklistItem[] };
+export type ContentAttachment = { name: string; url: string; isUpload: boolean; previewUrl: string | null };
 
 export type ContentCard = {
   id: string;
@@ -28,9 +30,19 @@ export type ContentCard = {
   labels: ContentLabel[];
   dueDate: number | null;
   assignees: ContentAssignee[];
-  attachments: { name: string; url: string }[];
+  attachments: ContentAttachment[];
   coverImageUrl: string | null;
   checklist: ContentChecklist | null;
+};
+
+export type ContentActivity = {
+  id: string;
+  date: number;
+  authorName: string;
+  authorAvatarUrl: string | null;
+  authorInitials: string;
+  kind: "comment" | "activity";
+  text: string;
 };
 
 export type ContentList = {
@@ -42,7 +54,16 @@ export type ContentList = {
 type RawTrelloList = { id: string; name: string; pos: number };
 type RawTrelloLabel = { name: string; color: string | null };
 type RawTrelloPreview = { url: string; width: number; height: number; scaled: boolean };
-type RawTrelloAttachment = { id: string; name: string; url: string; fileName?: string; previews: RawTrelloPreview[] };
+type RawTrelloAttachment = {
+  id: string;
+  name: string;
+  url: string;
+  fileName?: string;
+  isUpload: boolean;
+  previews: RawTrelloPreview[];
+};
+type RawTrelloCheckItem = { id: string; name: string; state: string };
+type RawTrelloChecklist = { checkItems: RawTrelloCheckItem[] };
 type RawTrelloCard = {
   id: string;
   name: string;
@@ -53,10 +74,19 @@ type RawTrelloCard = {
   idAttachmentCover: string | null;
   labels: RawTrelloLabel[];
   attachments: RawTrelloAttachment[];
+  checklists: RawTrelloChecklist[];
   pos: number;
   badges: { checkItems: number; checkItemsChecked: number };
 };
 type RawTrelloMember = { id: string; fullName: string; avatarUrl: string | null; initials: string };
+type RawTrelloActionMember = { fullName: string; avatarUrl: string | null; initials: string };
+type RawTrelloAction = {
+  id: string;
+  type: string;
+  date: string;
+  data: Record<string, unknown>;
+  memberCreator: RawTrelloActionMember;
+};
 
 // ponytail: paleta de cores nomeadas do Trello (estável há anos, não muda por board) — a API
 // devolve o nome da cor ("purple", "green"...), não um hex, então convertemos aqui pro pill
@@ -92,6 +122,13 @@ function pickCoverImageUrl(card: RawTrelloCard): string | null {
   return [...pool].sort((a, b) => b.width - a.width)[0].url;
 }
 
+// ponytail: pra thumbnail pequena na lista de anexos do modal — pega o menor preview disponível
+// (não precisa do maior, é só um ícone). null quando o anexo não tem preview (link ou arquivo sem imagem).
+function pickSmallestPreviewUrl(attachment: RawTrelloAttachment): string | null {
+  if (attachment.previews.length === 0) return null;
+  return [...attachment.previews].sort((a, b) => a.width - b.width)[0].url;
+}
+
 // ponytail: busca ao vivo, sem cache — 3 chamadas em paralelo (lists, cards, members), sem loop
 // por card. "attachments=true" é obrigatório pra API devolver os anexos (testado ao vivo).
 export async function fetchClientBoard(boardId: string): Promise<ContentList[]> {
@@ -100,6 +137,8 @@ export async function fetchClientBoard(boardId: string): Promise<ContentList[]> 
     trelloGet(`boards/${boardId}/cards`, {
       fields: "name,desc,due,idList,idMembers,labels,pos,idAttachmentCover,badges",
       attachments: "true",
+      checklists: "all",
+      checkItemStates: "true",
     }),
     trelloGet(`boards/${boardId}/members`, { fields: "fullName,avatarUrl,initials" }),
   ]);
@@ -122,9 +161,23 @@ export async function fetchClientBoard(boardId: string): Promise<ContentList[]> 
           initials: m?.initials ?? "?",
         };
       }),
-      attachments: c.attachments.map((a) => ({ name: a.name || a.fileName || a.url, url: a.url })),
+      attachments: c.attachments.map((a) => ({
+        name: a.name || a.fileName || a.url,
+        url: a.url,
+        isUpload: a.isUpload,
+        previewUrl: pickSmallestPreviewUrl(a),
+      })),
       coverImageUrl: pickCoverImageUrl(c),
-      checklist: c.badges.checkItems > 0 ? { total: c.badges.checkItems, checked: c.badges.checkItemsChecked } : null,
+      checklist:
+        c.badges.checkItems > 0
+          ? {
+              total: c.badges.checkItems,
+              checked: c.badges.checkItemsChecked,
+              items: c.checklists.flatMap((cl) =>
+                cl.checkItems.map((item) => ({ id: item.id, name: item.name, checked: item.state === "complete" })),
+              ),
+            }
+          : null,
     };
     const existing = cardsByList.get(c.idList) ?? [];
     existing.push(card);
@@ -134,4 +187,71 @@ export async function fetchClientBoard(boardId: string): Promise<ContentList[]> 
   return [...rawLists]
     .sort((a, b) => a.pos - b.pos)
     .map((l) => ({ id: l.id, name: l.name, cards: cardsByList.get(l.id) ?? [] }));
+}
+
+// ponytail: cobre os tipos de action mais comuns (mover lista, data, checklist, anexo, membro).
+// Tipo não coberto cai fora da lista em vez de mostrar algo genérico feio — upgrade: adicionar
+// mais `case`s conforme aparecerem tipos novos no uso real.
+function describeAction(type: string, data: Record<string, unknown>): string | null {
+  const asObj = (v: unknown) => (v && typeof v === "object" ? (v as Record<string, unknown>) : null);
+  const listBefore = asObj(data.listBefore);
+  const listAfter = asObj(data.listAfter);
+  const card = asObj(data.card);
+  const checkItem = asObj(data.checkItem);
+  const checklist = asObj(data.checklist);
+  const attachment = asObj(data.attachment);
+  const member = asObj(data.member);
+  const list = asObj(data.list);
+
+  switch (type) {
+    case "createCard":
+      return `criou este card${list ? ` em "${list.name}"` : ""}`;
+    case "updateCard":
+      if (listBefore && listAfter) return `moveu de "${listBefore.name}" para "${listAfter.name}"`;
+      if (card && "due" in card) return card.due ? "definiu a data prevista" : "removeu a data prevista";
+      if (card && "closed" in card) return card.closed ? "arquivou o card" : "reabriu o card";
+      return null;
+    case "updateCheckItemStateOnCard":
+      return `${checkItem?.state === "complete" ? "marcou" : "desmarcou"} "${checkItem?.name}" na checklist`;
+    case "addChecklistToCard":
+      return `adicionou a checklist "${checklist?.name}"`;
+    case "addAttachmentToCard":
+      return `anexou "${attachment?.name}"`;
+    case "deleteAttachmentFromCard":
+      return "removeu um anexo";
+    case "addMemberToCard":
+      return `adicionou ${member?.fullName ?? "alguém"} ao card`;
+    case "removeMemberFromCard":
+      return `removeu ${member?.fullName ?? "alguém"} do card`;
+    default:
+      return null;
+  }
+}
+
+// ponytail: filter=all + limit=50 em vez de uma allowlist de tipos — mais simples e não perde
+// tipo novo silenciosamente. Só é chamada sob demanda (modal aberto), não no fetch do board.
+export async function fetchCardActivity(cardId: string): Promise<ContentActivity[]> {
+  const rawActions: RawTrelloAction[] = await trelloGet(`cards/${cardId}/actions`, {
+    filter: "all",
+    limit: "50",
+  });
+
+  const activity: ContentActivity[] = [];
+  for (const action of rawActions) {
+    const author = action.memberCreator;
+    const base = {
+      id: action.id,
+      date: new Date(action.date).getTime(),
+      authorName: author?.fullName ?? "Desconhecido",
+      authorAvatarUrl: author?.avatarUrl ? `${author.avatarUrl}/50.png` : null,
+      authorInitials: author?.initials ?? "?",
+    };
+    if (action.type === "commentCard") {
+      activity.push({ ...base, kind: "comment", text: String(action.data.text ?? "") });
+      continue;
+    }
+    const text = describeAction(action.type, action.data);
+    if (text) activity.push({ ...base, kind: "activity", text });
+  }
+  return activity.sort((a, b) => b.date - a.date);
 }

@@ -5,8 +5,23 @@ import { useState } from "react";
 import type { ContentCard as ContentCardData } from "@/lib/trello";
 import { AssigneeAvatars } from "./AssigneeAvatars";
 
-function formatDueDate(dueDate: number): string {
-  return new Date(dueDate).toLocaleDateString("pt-BR");
+const MONTHS_PT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+function getDueDateDisplay(dueDate: number): { text: string; className: string } {
+  const due = new Date(dueDate);
+  const now = new Date();
+  const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const daysDiff = Math.round((dueDay.getTime() - today.getTime()) / 86400000);
+
+  const text =
+    due.getFullYear() === now.getFullYear()
+      ? `${String(due.getDate()).padStart(2, "0")} ${MONTHS_PT[due.getMonth()]}`
+      : due.toLocaleDateString("pt-BR");
+
+  const className = daysDiff < 0 ? "text-red-400" : daysDiff <= 3 ? "text-amber-400" : "";
+
+  return { text, className };
 }
 
 function AttachmentIcon() {
@@ -66,6 +81,7 @@ export function ContentCard({
   onClick: () => void;
 }) {
   const [coverFailed, setCoverFailed] = useState(false);
+  const dueDisplay = card.dueDate !== null ? getDueDateDisplay(card.dueDate) : null;
   const hasMeta =
     card.dueDate !== null ||
     card.description !== "" ||
@@ -85,7 +101,7 @@ export function ContentCard({
         <img
           src={`/api/content/${clientId}/cover-proxy?key=${encodeURIComponent(accessKey)}&url=${encodeURIComponent(card.coverImageUrl!)}`}
           alt=""
-          className="h-24 w-full object-cover"
+          className="aspect-[3/4] w-full object-cover"
           onError={() => setCoverFailed(true)}
         />
       )}
@@ -106,10 +122,10 @@ export function ContentCard({
         <p className="text-sm font-medium text-card-foreground">{card.name}</p>
         {hasMeta && (
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-            {card.dueDate !== null && (
-              <span className="flex items-center gap-1">
+            {dueDisplay && (
+              <span className={`flex items-center gap-1 ${dueDisplay.className}`}>
                 <ClockIcon />
-                {formatDueDate(card.dueDate)}
+                {dueDisplay.text}
               </span>
             )}
             {card.description !== "" && <DescriptionIcon />}

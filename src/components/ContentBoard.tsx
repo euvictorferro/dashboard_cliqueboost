@@ -29,7 +29,7 @@ export function ContentBoard({
     <div className="flex items-start gap-4 overflow-x-auto pb-4">
       {lists.map((list) => (
         <div key={list.id} className="w-72 shrink-0 rounded-[var(--radius-card)] bg-muted/60 pb-3">
-          <div className="flex items-center gap-2 rounded-t-[var(--radius-card)] bg-muted px-3 py-2.5">
+          <div className="flex items-center justify-between gap-2 rounded-t-[var(--radius-card)] bg-muted px-3 py-2.5">
             <p className="text-sm font-bold text-card-foreground">{list.name}</p>
             <span className="text-xs font-medium text-muted-foreground">{list.cards.length}</span>
           </div>

@@ -5,7 +5,7 @@ export type Assignee = { name: string; avatarUrl?: string | null; initials: stri
 
 const SIZE_CLASSES = {
   sm: { wrapper: "h-7 w-7", text: "text-[11px]" },
-  xs: { wrapper: "h-5 w-5", text: "text-[9px]" },
+  xs: { wrapper: "h-6 w-6", text: "text-[10px]" },
 } as const;
 
 export function AssigneeAvatars({

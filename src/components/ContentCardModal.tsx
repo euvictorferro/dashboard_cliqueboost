@@ -430,75 +430,94 @@ export function ContentCardModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex shrink-0 items-center justify-between gap-4 border-b border-border px-6 py-3">
-          <h3
-            className={`truncate text-sm font-bold text-card-foreground transition-opacity duration-150 ${scrolled ? "opacity-100" : "opacity-0"}`}
-          >
-            {card.name}
-          </h3>
-          <button
-            onClick={onClose}
-            aria-label="Fechar"
-            className="shrink-0 rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-card-foreground"
-          >
-            <CloseIcon />
-          </button>
-        </div>
-
-        <div className="flex min-h-0 flex-1">
-          <div ref={leftScrollRef} className="min-w-0 flex-1 overflow-y-auto p-7">
+          <span className="truncate rounded bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">
+            {card.listName}
+          </span>
+          <div className="flex shrink-0 items-center gap-3">
             {showCover && (
               // eslint-disable-next-line @next/next/no-img-element -- imagem vem do proxy autenticado, não é asset local
               <img
                 src={coverProxyUrl(clientId, accessKey, card.coverImageUrl!)}
                 alt=""
-                className="mb-6 h-40 w-full rounded-[var(--radius-card)] object-cover"
+                className="h-8 w-8 rounded object-cover"
                 onError={() => setCoverFailed(true)}
               />
             )}
+            <button
+              onClick={onClose}
+              aria-label="Fechar"
+              className="rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-card-foreground"
+            >
+              <CloseIcon />
+            </button>
+          </div>
+        </div>
 
-            <h1 className="mb-6 text-xl font-bold text-card-foreground">{card.name}</h1>
-
-            <div className="space-y-6">
-              <div className="flex flex-wrap gap-x-10 gap-y-6">
-                <Field label="Membros">
-                  {card.assignees.length === 0 ? (
-                    <span className="text-muted-foreground">Sem responsável</span>
-                  ) : (
-                    <AssigneeAvatars assignees={card.assignees} size="sm" />
-                  )}
-                </Field>
-
-                <Field label="Labels">
-                  {card.labels.length === 0 ? (
-                    <span className="text-muted-foreground">Sem labels</span>
-                  ) : (
-                    <div className="flex flex-wrap gap-1.5">
-                      {card.labels.map((label, i) => (
-                        <span
-                          key={`${label.name}-${i}`}
-                          className="rounded-full px-2.5 py-1 text-xs font-semibold text-white"
-                          style={{ backgroundColor: label.color }}
-                        >
-                          {label.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </Field>
+        <div className="flex min-h-0 flex-1">
+          <div ref={leftScrollRef} className="min-w-0 flex-1 overflow-y-auto">
+            <div
+              className={`sticky top-0 z-10 overflow-hidden border-b border-border bg-card transition-[height] duration-150 ${scrolled ? "h-11" : "h-0"}`}
+            >
+              <div className="flex h-11 items-center px-7">
+                <h3 className="truncate text-sm font-bold text-card-foreground">{card.name}</h3>
               </div>
+            </div>
 
-              <Field label="Data prevista">{formatDueDate(card.dueDate)}</Field>
+            <div className="p-7 pt-6">
+              {showCover && (
+                // eslint-disable-next-line @next/next/no-img-element -- imagem vem do proxy autenticado, não é asset local
+                <img
+                  src={coverProxyUrl(clientId, accessKey, card.coverImageUrl!)}
+                  alt=""
+                  className="mb-6 h-40 w-full rounded-[var(--radius-card)] object-cover"
+                  onError={() => setCoverFailed(true)}
+                />
+              )}
 
-              <DescriptionField text={card.description} />
+              <h1 className="mb-6 text-xl font-bold text-card-foreground">{card.name}</h1>
 
-              {card.checklist && <ChecklistField checklist={card.checklist} />}
+              <div className="space-y-6">
+                <div className="flex flex-wrap gap-x-10 gap-y-6">
+                  <Field label="Membros">
+                    {card.assignees.length === 0 ? (
+                      <span className="text-muted-foreground">Sem responsável</span>
+                    ) : (
+                      <AssigneeAvatars assignees={card.assignees} size="sm" />
+                    )}
+                  </Field>
 
-              <AttachmentsField
-                attachments={card.attachments}
-                clientId={clientId}
-                accessKey={accessKey}
-                onOpenImage={setLightboxAttachment}
-              />
+                  <Field label="Labels">
+                    {card.labels.length === 0 ? (
+                      <span className="text-muted-foreground">Sem labels</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {card.labels.map((label, i) => (
+                          <span
+                            key={`${label.name}-${i}`}
+                            className="rounded-full px-2.5 py-1 text-xs font-semibold text-white"
+                            style={{ backgroundColor: label.color }}
+                          >
+                            {label.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </Field>
+                </div>
+
+                <Field label="Data prevista">{formatDueDate(card.dueDate)}</Field>
+
+                <DescriptionField text={card.description} />
+
+                {card.checklist && <ChecklistField checklist={card.checklist} />}
+
+                <AttachmentsField
+                  attachments={card.attachments}
+                  clientId={clientId}
+                  accessKey={accessKey}
+                  onOpenImage={setLightboxAttachment}
+                />
+              </div>
             </div>
           </div>
 

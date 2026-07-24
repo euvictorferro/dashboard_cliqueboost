@@ -33,6 +33,7 @@ export type ContentAttachment = {
 export type ContentCard = {
   id: string;
   name: string;
+  listName: string;
   description: string;
   labels: ContentLabel[];
   dueDate: number | null;
@@ -157,12 +158,14 @@ export async function fetchClientBoard(boardId: string): Promise<ContentList[]> 
   ]);
 
   const membersById = new Map(rawMembers.map((m) => [m.id, m]));
+  const listNameById = new Map(rawLists.map((l) => [l.id, l.name]));
 
   const cardsByList = new Map<string, ContentCard[]>();
   for (const c of [...rawCards].sort((a, b) => a.pos - b.pos)) {
     const card: ContentCard = {
       id: c.id,
       name: c.name,
+      listName: listNameById.get(c.idList) ?? "",
       description: c.desc,
       labels: c.labels.map((l) => ({ name: l.name || "Sem nome", color: trelloColorToHex(l.color) })),
       dueDate: c.due ? new Date(c.due).getTime() : null,

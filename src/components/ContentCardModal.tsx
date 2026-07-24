@@ -1,25 +1,15 @@
 // src/components/ContentCardModal.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ContentActivity, ContentCard } from "@/lib/trello";
 import { renderMarkdown } from "./markdown";
 import { AssigneeAvatars } from "./AssigneeAvatars";
-import { AttachmentIcon, ChecklistIcon, CommentsIcon, DescriptionIcon, LinkIcon } from "./icons";
+import { AttachmentIcon, ChecklistIcon, CommentsIcon, DescriptionIcon, DownloadIcon, LinkIcon } from "./icons";
 
 function formatDueDate(dueDate: number | null): string {
   if (dueDate === null) return "Sem prazo";
   return new Date(dueDate).toLocaleDateString("pt-BR");
-}
-
-function formatActivityDate(ts: number): string {
-  return new Date(ts).toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 function formatRelativeTime(ts: number): string {
@@ -168,29 +158,45 @@ function FileRow({
   attachment,
   clientId,
   accessKey,
+  onOpenImage,
 }: {
   attachment: ContentCard["attachments"][number];
   clientId: string;
   accessKey: string;
+  onOpenImage: (attachment: ContentCard["attachments"][number]) => void;
 }) {
+  const canPreview = attachment.previewUrl !== null;
+
   return (
     <li className="flex items-center gap-2.5">
-      {attachment.previewUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element -- imagem vem do proxy autenticado
-        <img
-          src={coverProxyUrl(clientId, accessKey, attachment.previewUrl)}
-          alt=""
-          className="h-10 w-10 shrink-0 rounded object-cover"
-        />
+      {canPreview ? (
+        <button type="button" onClick={() => onOpenImage(attachment)} className="shrink-0">
+          {/* eslint-disable-next-line @next/next/no-img-element -- imagem vem do proxy autenticado */}
+          <img
+            src={coverProxyUrl(clientId, accessKey, attachment.previewUrl!)}
+            alt=""
+            className="h-10 w-10 rounded object-cover"
+          />
+        </button>
       ) : (
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-muted">
           <AttachmentIcon size={14} />
         </span>
       )}
       <div className="min-w-0 flex-1">
-        <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="block truncate text-brand-accent hover:underline">
-          {attachment.name}
-        </a>
+        {canPreview ? (
+          <button
+            type="button"
+            onClick={() => onOpenImage(attachment)}
+            className="block max-w-full truncate text-left text-brand-accent hover:underline"
+          >
+            {attachment.name}
+          </button>
+        ) : (
+          <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="block truncate text-brand-accent hover:underline">
+            {attachment.name}
+          </a>
+        )}
         <p className="text-[10px] text-muted-foreground">Adicionado {formatRelativeTime(attachment.date)}</p>
       </div>
     </li>
@@ -201,10 +207,12 @@ function AttachmentsField({
   attachments,
   clientId,
   accessKey,
+  onOpenImage,
 }: {
   attachments: ContentCard["attachments"];
   clientId: string;
   accessKey: string;
+  onOpenImage: (attachment: ContentCard["attachments"][number]) => void;
 }) {
   const links = attachments.filter((a) => !a.isUpload);
   const files = attachments.filter((a) => a.isUpload);
@@ -230,7 +238,7 @@ function AttachmentsField({
               <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Arquivos</p>
               <ul className="space-y-2">
                 {files.map((a) => (
-                  <FileRow key={a.url} attachment={a} clientId={clientId} accessKey={accessKey} />
+                  <FileRow key={a.url} attachment={a} clientId={clientId} accessKey={accessKey} onOpenImage={onOpenImage} />
                 ))}
               </ul>
             </div>
@@ -241,14 +249,19 @@ function AttachmentsField({
   );
 }
 
+// ponytail: sidebar clara (#f8f8f8) por pedido explícito, mesmo com o resto do app em tema
+// escuro — por isso usa cores neutras hardcoded aqui em vez das classes do tema (que são claras
+// pensando em fundo escuro e ficariam invisíveis num fundo claro).
 function ActivityField({ clientId, accessKey, cardId }: { clientId: string; accessKey: string; cardId: string }) {
   const [activity, setActivity] = useState<ContentActivity[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setActivity(null);
     setFailed(false);
+    setShowDetails(false);
     fetch(`/api/content/${clientId}/card/${cardId}/activity?key=${encodeURIComponent(accessKey)}`)
       .then((res) => {
         if (!res.ok) throw new Error("fetch_failed");
@@ -265,43 +278,113 @@ function ActivityField({ clientId, accessKey, cardId }: { clientId: string; acce
     };
   }, [clientId, accessKey, cardId]);
 
+  const creationOnly = activity?.filter((a) => a.isCreation) ?? [];
+  const collapsedView = creationOnly.length > 0 ? creationOnly : (activity?.slice(-1) ?? []);
+  const visible = showDetails ? (activity ?? []) : collapsedView;
+
   return (
-    <Field label="Comentários e atividade" icon={<CommentsIcon size={14} />}>
-      {failed && <span className="text-muted-foreground">Não foi possível carregar.</span>}
-      {!failed && activity === null && <span className="text-muted-foreground">Carregando...</span>}
+    <div>
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <p className="flex items-center gap-1.5 text-sm font-bold text-neutral-900">
+          <CommentsIcon size={14} />
+          Comentários e atividade
+        </p>
+        {activity !== null && activity.length > 1 && (
+          <button
+            type="button"
+            onClick={() => setShowDetails((s) => !s)}
+            className="shrink-0 rounded-md border border-neutral-300 px-2.5 py-1 text-[11px] font-semibold text-neutral-600 transition-colors hover:bg-neutral-200"
+          >
+            {showDetails ? "Fechar Detalhes" : "Mostrar Detalhes"}
+          </button>
+        )}
+      </div>
+
+      {failed && <span className="text-sm text-neutral-500">Não foi possível carregar.</span>}
+      {!failed && activity === null && <span className="text-sm text-neutral-500">Carregando...</span>}
       {!failed && activity !== null && activity.length === 0 && (
-        <span className="text-muted-foreground">Sem comentários ou atividade.</span>
+        <span className="text-sm text-neutral-500">Sem comentários ou atividade.</span>
       )}
       {!failed && activity !== null && activity.length > 0 && (
         <ul className="space-y-4">
-          {activity.map((a) => (
+          {visible.map((a) => (
             <li key={a.id} className="flex items-start gap-2">
               {a.authorAvatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- avatar vem de URL externa do Trello
                 <img src={a.authorAvatarUrl} alt="" className="h-6 w-6 shrink-0 rounded-full object-cover" />
               ) : (
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-200 text-[10px] font-semibold text-neutral-700">
                   {a.authorInitials}
                 </span>
               )}
               <div className="min-w-0 flex-1">
-                {a.kind === "comment" ? (
-                  <div className="rounded-[var(--radius-card)] bg-muted px-3 py-2">
-                    <p className="mb-0.5 text-xs font-semibold">{a.authorName}</p>
-                    {renderMarkdown(a.text)}
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">
-                    <span className="font-semibold text-card-foreground">{a.authorName}</span> {a.text}
-                  </p>
-                )}
-                <p className="mt-0.5 text-[10px] text-muted-foreground">{formatActivityDate(a.date)}</p>
+                <p className="text-xs text-neutral-800">
+                  <span className="font-bold text-neutral-900">{a.authorName}</span> {a.text}
+                </p>
+                <span className="text-[11px] font-medium text-blue-600 underline underline-offset-2">
+                  {formatRelativeTime(a.date)}
+                </span>
               </div>
             </li>
           ))}
         </ul>
       )}
-    </Field>
+    </div>
+  );
+}
+
+function ImageLightbox({
+  attachment,
+  clientId,
+  accessKey,
+  onClose,
+}: {
+  attachment: ContentCard["attachments"][number];
+  clientId: string;
+  accessKey: string;
+  onClose: () => void;
+}) {
+  const src = coverProxyUrl(clientId, accessKey, attachment.largePreviewUrl ?? attachment.previewUrl!);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 p-6"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClose();
+      }}
+    >
+      <div className="relative max-h-full max-w-full" onClick={(e) => e.stopPropagation()}>
+        <div className="absolute -top-11 right-0 flex items-center gap-2">
+          <a
+            href={src}
+            download={attachment.name}
+            className="flex items-center gap-1.5 rounded-md bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/20"
+          >
+            <DownloadIcon />
+            Download
+          </a>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fechar"
+            className="rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+          >
+            <CloseIcon />
+          </button>
+        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element -- imagem vem do proxy autenticado */}
+        <img src={src} alt={attachment.name} className="max-h-[80vh] max-w-full rounded object-contain" />
+      </div>
+    </div>
   );
 }
 
@@ -317,46 +400,65 @@ export function ContentCardModal({
   onClose: () => void;
 }) {
   const [coverFailed, setCoverFailed] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [lightboxAttachment, setLightboxAttachment] = useState<ContentCard["attachments"][number] | null>(null);
+  const leftScrollRef = useRef<HTMLDivElement>(null);
   const showCover = card.coverImageUrl !== null && !coverFailed;
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape" && !lightboxAttachment) onClose();
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  }, [onClose, lightboxAttachment]);
+
+  useEffect(() => {
+    const el = leftScrollRef.current;
+    if (!el) return;
+    function onScroll() {
+      setScrolled(el!.scrollTop > 24);
+    }
+    el.addEventListener("scroll", onScroll);
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
       <div
-        className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-[var(--radius-card)] bg-card shadow-[var(--shadow-soft)]"
+        className="flex max-h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded-[var(--radius-card)] bg-card shadow-[var(--shadow-soft)]"
         onClick={(e) => e.stopPropagation()}
       >
-        {showCover && (
-          // eslint-disable-next-line @next/next/no-img-element -- imagem vem do proxy autenticado, não é asset local
-          <img
-            src={coverProxyUrl(clientId, accessKey, card.coverImageUrl!)}
-            alt=""
-            className="h-40 w-full object-cover"
-            onError={() => setCoverFailed(true)}
-          />
-        )}
+        <div className="flex shrink-0 items-center justify-between gap-4 border-b border-border px-6 py-3">
+          <h3
+            className={`truncate text-sm font-bold text-card-foreground transition-opacity duration-150 ${scrolled ? "opacity-100" : "opacity-0"}`}
+          >
+            {card.name}
+          </h3>
+          <button
+            onClick={onClose}
+            aria-label="Fechar"
+            className="shrink-0 rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-card-foreground"
+          >
+            <CloseIcon />
+          </button>
+        </div>
 
-        <div className="p-7">
-          <div className="mb-6 flex items-start justify-between gap-4">
-            <h2 className="text-lg font-bold text-card-foreground">{card.name}</h2>
-            <button
-              onClick={onClose}
-              aria-label="Fechar"
-              className="shrink-0 rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-card-foreground"
-            >
-              <CloseIcon />
-            </button>
-          </div>
+        <div className="flex min-h-0 flex-1">
+          <div ref={leftScrollRef} className="min-w-0 flex-1 overflow-y-auto p-7">
+            {showCover && (
+              // eslint-disable-next-line @next/next/no-img-element -- imagem vem do proxy autenticado, não é asset local
+              <img
+                src={coverProxyUrl(clientId, accessKey, card.coverImageUrl!)}
+                alt=""
+                className="mb-6 h-40 w-full rounded-[var(--radius-card)] object-cover"
+                onError={() => setCoverFailed(true)}
+              />
+            )}
 
-          <div className="flex flex-col gap-8 md:flex-row">
-            <div className="min-w-0 flex-1 space-y-6">
+            <h1 className="mb-6 text-xl font-bold text-card-foreground">{card.name}</h1>
+
+            <div className="space-y-6">
               <div className="flex flex-wrap gap-x-10 gap-y-6">
                 <Field label="Membros">
                   {card.assignees.length === 0 ? (
@@ -391,15 +493,34 @@ export function ContentCardModal({
 
               {card.checklist && <ChecklistField checklist={card.checklist} />}
 
-              <AttachmentsField attachments={card.attachments} clientId={clientId} accessKey={accessKey} />
+              <AttachmentsField
+                attachments={card.attachments}
+                clientId={clientId}
+                accessKey={accessKey}
+                onOpenImage={setLightboxAttachment}
+              />
             </div>
+          </div>
 
-            <div className="min-w-0 border-t border-border pt-6 md:w-72 md:shrink-0 md:border-l md:border-t-0 md:pl-7 md:pt-0">
+          <div
+            className="min-w-0 shrink-0 overflow-y-auto border-l border-border md:w-80"
+            style={{ backgroundColor: "#f8f8f8" }}
+          >
+            <div className="p-6">
               <ActivityField clientId={clientId} accessKey={accessKey} cardId={card.id} />
             </div>
           </div>
         </div>
       </div>
+
+      {lightboxAttachment && (
+        <ImageLightbox
+          attachment={lightboxAttachment}
+          clientId={clientId}
+          accessKey={accessKey}
+          onClose={() => setLightboxAttachment(null)}
+        />
+      )}
     </div>
   );
 }

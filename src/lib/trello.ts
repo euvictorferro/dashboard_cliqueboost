@@ -26,6 +26,7 @@ export type ContentAttachment = {
   url: string;
   isUpload: boolean;
   previewUrl: string | null;
+  largePreviewUrl: string | null;
   date: number;
 };
 
@@ -49,6 +50,7 @@ export type ContentActivity = {
   authorInitials: string;
   kind: "comment" | "activity";
   text: string;
+  isCreation: boolean;
 };
 
 export type ContentList = {
@@ -119,14 +121,18 @@ function trelloColorToHex(color: string | null): string {
 // ponytail: capa é a maior preview não-escalada do anexo marcado como idAttachmentCover — se
 // não houver nenhuma não-escalada, cai pra maior escalada. Sem capa configurada ou anexo/preview
 // ausente (removido depois de virar capa) -> null, o card volta pro layout sem capa.
-function pickCoverImageUrl(card: RawTrelloCard): string | null {
-  if (!card.idAttachmentCover) return null;
-  const attachment = card.attachments.find((a) => a.id === card.idAttachmentCover);
-  if (!attachment || attachment.previews.length === 0) return null;
-
+function pickLargestPreviewUrl(attachment: RawTrelloAttachment): string | null {
+  if (attachment.previews.length === 0) return null;
   const nonScaled = attachment.previews.filter((p) => !p.scaled);
   const pool = nonScaled.length > 0 ? nonScaled : attachment.previews;
   return [...pool].sort((a, b) => b.width - a.width)[0].url;
+}
+
+function pickCoverImageUrl(card: RawTrelloCard): string | null {
+  if (!card.idAttachmentCover) return null;
+  const attachment = card.attachments.find((a) => a.id === card.idAttachmentCover);
+  if (!attachment) return null;
+  return pickLargestPreviewUrl(attachment);
 }
 
 // ponytail: pra thumbnail pequena na lista de anexos do modal — pega o menor preview disponível
@@ -173,6 +179,7 @@ export async function fetchClientBoard(boardId: string): Promise<ContentList[]> 
         url: a.url,
         isUpload: a.isUpload,
         previewUrl: pickSmallestPreviewUrl(a),
+        largePreviewUrl: pickLargestPreviewUrl(a),
         date: new Date(a.date).getTime(),
       })),
       coverImageUrl: pickCoverImageUrl(c),
@@ -255,11 +262,11 @@ export async function fetchCardActivity(cardId: string): Promise<ContentActivity
       authorInitials: author?.initials ?? "?",
     };
     if (action.type === "commentCard") {
-      activity.push({ ...base, kind: "comment", text: String(action.data.text ?? "") });
+      activity.push({ ...base, kind: "comment", text: String(action.data.text ?? ""), isCreation: false });
       continue;
     }
     const text = describeAction(action.type, action.data);
-    if (text) activity.push({ ...base, kind: "activity", text });
+    if (text) activity.push({ ...base, kind: "activity", text, isCreation: action.type === "createCard" });
   }
   return activity.sort((a, b) => b.date - a.date);
 }

@@ -57,6 +57,20 @@ export function CommentsIcon({ size = 11 }: IconProps) {
   );
 }
 
+export function DownloadIcon({ size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 14 14" fill="none" aria-hidden="true" className="shrink-0">
+      <path
+        d="M7 1.5v7.5m0 0L4 6m3 3l3-3M2 11.5h10"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function LinkIcon({ size = 13 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 11 11" fill="none" aria-hidden="true" className="shrink-0">

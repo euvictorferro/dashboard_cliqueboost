@@ -30,8 +30,8 @@ async function trelloMutate(method: "POST" | "PUT" | "DELETE", path: string, par
   return text ? JSON.parse(text) : null;
 }
 
-export type ContentLabel = { name: string; color: string };
-export type ContentAssignee = { name: string; avatarUrl: string | null; initials: string };
+export type ContentLabel = { id: string; name: string; color: string };
+export type ContentAssignee = { id: string; name: string; avatarUrl: string | null; initials: string };
 export type ContentChecklistItem = { id: string; name: string; checked: boolean; checklistId: string };
 export type ContentChecklist = { total: number; checked: number; items: ContentChecklistItem[] };
 export type ContentAttachment = {
@@ -56,6 +56,9 @@ export type ContentCard = {
   checklist: ContentChecklist | null;
 };
 
+export type ContentBoardLabel = { id: string; name: string; color: string };
+export type ContentBoardMember = { id: string; name: string; avatarUrl: string | null; initials: string };
+
 export type ContentActivity = {
   id: string;
   date: number;
@@ -76,7 +79,7 @@ export type ContentList = {
 };
 
 type RawTrelloList = { id: string; name: string; pos: number };
-type RawTrelloLabel = { name: string; color: string | null };
+type RawTrelloLabel = { id: string; name: string; color: string | null };
 type RawTrelloPreview = { url: string; width: number; height: number; scaled: boolean };
 type RawTrelloAttachment = {
   id: string;
@@ -182,11 +185,12 @@ export async function fetchClientBoard(boardId: string): Promise<ContentList[]> 
       name: c.name,
       listName: listNameById.get(c.idList) ?? "",
       description: c.desc,
-      labels: c.labels.map((l) => ({ name: l.name || "Sem nome", color: trelloColorToHex(l.color) })),
+      labels: c.labels.map((l) => ({ id: l.id, name: l.name || "Sem nome", color: trelloColorToHex(l.color) })),
       dueDate: c.due ? new Date(c.due).getTime() : null,
       assignees: c.idMembers.map((id) => {
         const m = membersById.get(id);
         return {
+          id,
           name: m?.fullName ?? "Desconhecido",
           avatarUrl: m?.avatarUrl ? `${m.avatarUrl}/50.png` : null,
           initials: m?.initials ?? "?",
@@ -359,4 +363,63 @@ export async function addLinkAttachment(cardId: string, url: string): Promise<Co
     largePreviewUrl: null,
     date: new Date(attachment.date).getTime(),
   };
+}
+
+// ponytail: upload real (multipart) — diferente das outras mutations, que só mandam parâmetros
+// via query string. Node/Next já tem FormData/File nativos, sem precisar de lib extra.
+export async function addFileAttachment(cardId: string, file: File): Promise<ContentAttachment> {
+  const url = new URL(`${TRELLO_API}/cards/${cardId}/attachments`);
+  url.searchParams.set("key", process.env.TRELLO_API_KEY!);
+  url.searchParams.set("token", process.env.TRELLO_TOKEN!);
+  const form = new FormData();
+  form.append("file", file, file.name);
+  const res = await fetch(url, { method: "POST", body: form });
+  const text = await res.text();
+  if (!res.ok) throw new Error(text || "upload failed");
+  const attachment: RawTrelloAttachment = JSON.parse(text);
+  return {
+    name: attachment.name || attachment.fileName || attachment.url,
+    url: attachment.url,
+    isUpload: attachment.isUpload,
+    previewUrl: pickSmallestPreviewUrl(attachment),
+    largePreviewUrl: pickLargestPreviewUrl(attachment),
+    date: new Date(attachment.date).getTime(),
+  };
+}
+
+export async function updateDescription(cardId: string, desc: string): Promise<void> {
+  await trelloMutate("PUT", `cards/${cardId}`, { desc });
+}
+
+export async function fetchBoardLabels(boardId: string): Promise<ContentBoardLabel[]> {
+  const raw: { id: string; name: string; color: string | null }[] = await trelloGet(`boards/${boardId}/labels`, {
+    fields: "name,color",
+  });
+  return raw.map((l) => ({ id: l.id, name: l.name || "Sem nome", color: trelloColorToHex(l.color) }));
+}
+
+export async function fetchBoardMembers(boardId: string): Promise<ContentBoardMember[]> {
+  const raw: RawTrelloMember[] = await trelloGet(`boards/${boardId}/members`, { fields: "fullName,avatarUrl,initials" });
+  return raw.map((m) => ({
+    id: m.id,
+    name: m.fullName,
+    avatarUrl: m.avatarUrl ? `${m.avatarUrl}/50.png` : null,
+    initials: m.initials,
+  }));
+}
+
+export async function addLabelToCard(cardId: string, labelId: string): Promise<void> {
+  await trelloMutate("POST", `cards/${cardId}/idLabels`, { value: labelId });
+}
+
+export async function removeLabelFromCard(cardId: string, labelId: string): Promise<void> {
+  await trelloMutate("DELETE", `cards/${cardId}/idLabels/${labelId}`, {});
+}
+
+export async function addMemberToCard(cardId: string, memberId: string): Promise<void> {
+  await trelloMutate("POST", `cards/${cardId}/idMembers`, { value: memberId });
+}
+
+export async function removeMemberFromCard(cardId: string, memberId: string): Promise<void> {
+  await trelloMutate("DELETE", `cards/${cardId}/idMembers/${memberId}`, {});
 }

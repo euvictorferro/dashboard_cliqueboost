@@ -2,7 +2,17 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import type { ContentActivity, ContentAttachment, ContentCard, ContentChecklist, ContentChecklistItem } from "@/lib/trello";
+import type {
+  ContentActivity,
+  ContentAssignee,
+  ContentAttachment,
+  ContentBoardLabel,
+  ContentBoardMember,
+  ContentCard,
+  ContentChecklist,
+  ContentChecklistItem,
+  ContentLabel,
+} from "@/lib/trello";
 import { renderMarkdown } from "./markdown";
 import { AssigneeAvatars } from "./AssigneeAvatars";
 import { AttachmentIcon, ChecklistIcon, CommentsIcon, DescriptionIcon, DownloadIcon, LinkIcon, TrashIcon } from "./icons";
@@ -90,14 +100,306 @@ function Field({
   );
 }
 
-function DescriptionField({ text }: { text: string }) {
+function useClickOutside(onOutside: () => void) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onOutside();
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [onOutside]);
+  return ref;
+}
+
+function PlusButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Adicionar"
+      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-dashed border-border text-muted-foreground hover:border-brand-accent hover:text-brand-accent"
+    >
+      +
+    </button>
+  );
+}
+
+function MembersField({
+  assignees,
+  clientId,
+  accessKey,
+  cardId,
+  onToggle,
+}: {
+  assignees: ContentAssignee[];
+  clientId: string;
+  accessKey: string;
+  cardId: string;
+  onToggle: (member: ContentBoardMember, adding: boolean) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [boardMembers, setBoardMembers] = useState<ContentBoardMember[] | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const ref = useClickOutside(() => setOpen(false));
+
+  useEffect(() => {
+    if (!open || boardMembers !== null) return;
+    fetch(`/api/content/${clientId}/board-meta?key=${encodeURIComponent(accessKey)}`)
+      .then((res) => res.json())
+      .then((data: { members: ContentBoardMember[] }) => setBoardMembers(data.members ?? []))
+      .catch(() => setBoardMembers([]));
+  }, [open, boardMembers, clientId, accessKey]);
+
+  async function handleToggle(member: ContentBoardMember) {
+    const isAssigned = assignees.some((a) => a.id === member.id);
+    setBusyId(member.id);
+    try {
+      const res = await fetch(`/api/content/${clientId}/card/${cardId}/members?key=${encodeURIComponent(accessKey)}`, {
+        method: isAssigned ? "DELETE" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId: member.id }),
+      });
+      if (!res.ok) throw new Error();
+      onToggle(member, !isAssigned);
+    } catch (err) {
+      console.error("falha ao atualizar membro do card", err);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  return (
+    <Field
+      label="Membros"
+      action={
+        <div ref={ref} className="relative">
+          <PlusButton onClick={() => setOpen((o) => !o)} />
+          {open && (
+            <div className="absolute left-0 top-full z-20 mt-1 w-56 rounded-md border border-border bg-card p-1.5 shadow-[var(--shadow-soft)]">
+              {boardMembers === null && <p className="px-2 py-1.5 text-xs text-muted-foreground">Carregando...</p>}
+              {boardMembers?.length === 0 && <p className="px-2 py-1.5 text-xs text-muted-foreground">Sem membros no board.</p>}
+              {boardMembers?.map((member) => {
+                const isAssigned = assignees.some((a) => a.id === member.id);
+                return (
+                  <button
+                    key={member.id}
+                    type="button"
+                    onClick={() => handleToggle(member)}
+                    disabled={busyId === member.id}
+                    className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-muted ${isAssigned ? "bg-muted/70" : ""} disabled:opacity-50`}
+                  >
+                    {member.avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- avatar vem de URL externa do Trello
+                      <img src={member.avatarUrl} alt="" className="h-5 w-5 shrink-0 rounded-full object-cover" />
+                    ) : (
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[9px] font-semibold">
+                        {member.initials}
+                      </span>
+                    )}
+                    <span className="min-w-0 flex-1 truncate">{member.name}</span>
+                    {isAssigned && <span className="shrink-0 text-brand-accent">✓</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      }
+    >
+      {assignees.length === 0 ? (
+        <span className="text-muted-foreground">Sem responsável</span>
+      ) : (
+        <AssigneeAvatars assignees={assignees} size="sm" />
+      )}
+    </Field>
+  );
+}
+
+function LabelsField({
+  labels,
+  clientId,
+  accessKey,
+  cardId,
+  onToggle,
+}: {
+  labels: ContentLabel[];
+  clientId: string;
+  accessKey: string;
+  cardId: string;
+  onToggle: (label: ContentBoardLabel, adding: boolean) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [boardLabels, setBoardLabels] = useState<ContentBoardLabel[] | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const ref = useClickOutside(() => setOpen(false));
+
+  useEffect(() => {
+    if (!open || boardLabels !== null) return;
+    fetch(`/api/content/${clientId}/board-meta?key=${encodeURIComponent(accessKey)}`)
+      .then((res) => res.json())
+      .then((data: { labels: ContentBoardLabel[] }) => setBoardLabels(data.labels ?? []))
+      .catch(() => setBoardLabels([]));
+  }, [open, boardLabels, clientId, accessKey]);
+
+  async function handleToggle(label: ContentBoardLabel) {
+    const isApplied = labels.some((l) => l.id === label.id);
+    setBusyId(label.id);
+    try {
+      const res = await fetch(`/api/content/${clientId}/card/${cardId}/labels?key=${encodeURIComponent(accessKey)}`, {
+        method: isApplied ? "DELETE" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ labelId: label.id }),
+      });
+      if (!res.ok) throw new Error();
+      onToggle(label, !isApplied);
+    } catch (err) {
+      console.error("falha ao atualizar label do card", err);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  return (
+    <Field
+      label="Labels"
+      action={
+        <div ref={ref} className="relative">
+          <PlusButton onClick={() => setOpen((o) => !o)} />
+          {open && (
+            <div className="absolute left-0 top-full z-20 mt-1 w-56 rounded-md border border-border bg-card p-1.5 shadow-[var(--shadow-soft)]">
+              {boardLabels === null && <p className="px-2 py-1.5 text-xs text-muted-foreground">Carregando...</p>}
+              {boardLabels?.filter((l) => l.name).length === 0 && (
+                <p className="px-2 py-1.5 text-xs text-muted-foreground">Sem labels no board.</p>
+              )}
+              {boardLabels
+                ?.filter((l) => l.name)
+                .map((label) => {
+                  const isApplied = labels.some((l) => l.id === label.id);
+                  return (
+                    <button
+                      key={label.id}
+                      type="button"
+                      onClick={() => handleToggle(label)}
+                      disabled={busyId === label.id}
+                      className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-muted disabled:opacity-50"
+                    >
+                      <span className="h-3.5 w-3.5 shrink-0 rounded-sm" style={{ backgroundColor: label.color }} />
+                      <span className="min-w-0 flex-1 truncate">{label.name}</span>
+                      {isApplied && <span className="shrink-0 text-brand-accent">✓</span>}
+                    </button>
+                  );
+                })}
+            </div>
+          )}
+        </div>
+      }
+    >
+      {labels.length === 0 ? (
+        <span className="text-muted-foreground">Sem labels</span>
+      ) : (
+        <div className="flex flex-wrap gap-1.5">
+          {labels.map((label) => (
+            <span
+              key={label.id}
+              className="rounded-full px-2.5 py-1 text-xs font-semibold text-white"
+              style={{ backgroundColor: label.color }}
+            >
+              {label.name}
+            </span>
+          ))}
+        </div>
+      )}
+    </Field>
+  );
+}
+
+function DescriptionField({
+  text,
+  clientId,
+  accessKey,
+  cardId,
+  onSaved,
+}: {
+  text: string;
+  clientId: string;
+  accessKey: string;
+  cardId: string;
+  onSaved: (desc: string) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(text);
+  const [saving, setSaving] = useState(false);
   const isLong = text.length > 360;
   const collapsed = isLong && !expanded;
 
+  async function save() {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/content/${clientId}/card/${cardId}/description?key=${encodeURIComponent(accessKey)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ desc: draft }),
+      });
+      if (!res.ok) throw new Error();
+      onSaved(draft);
+      setEditing(false);
+    } catch (err) {
+      console.error("falha ao editar descrição", err);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
-    <Field label="Descrição" icon={<DescriptionIcon size={14} />}>
-      {text ? (
+    <Field
+      label="Descrição"
+      icon={<DescriptionIcon size={14} />}
+      action={
+        !editing && (
+          <button
+            type="button"
+            onClick={() => {
+              setDraft(text);
+              setEditing(true);
+            }}
+            className="shrink-0 rounded-md border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-muted"
+          >
+            Editar
+          </button>
+        )
+      }
+    >
+      {editing ? (
+        <div>
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            rows={10}
+            autoFocus
+            className="w-full resize-y rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-brand-accent"
+          />
+          <div className="mt-2 flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="rounded-md px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={save}
+              disabled={saving}
+              className="rounded-md bg-brand-accent px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {saving ? "Salvando..." : "Salvar"}
+            </button>
+          </div>
+        </div>
+      ) : text ? (
         <div>
           <div className={`relative ${collapsed ? "max-h-40 overflow-hidden" : ""}`}>
             {renderMarkdown(text)}
@@ -289,17 +591,21 @@ function AttachmentsField({
   accessKey,
   onOpenImage,
   onAddLink,
+  onAddFile,
 }: {
   attachments: ContentAttachment[];
   clientId: string;
   accessKey: string;
   onOpenImage: (target: LightboxTarget) => void;
   onAddLink: (url: string) => Promise<void>;
+  onAddFile: (file: File) => Promise<void>;
 }) {
   const [adding, setAdding] = useState(false);
   const [url, setUrl] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const links = attachments.filter((a) => !a.isUpload);
   const files = attachments.filter((a) => a.isUpload);
 
@@ -318,6 +624,22 @@ function AttachmentsField({
     }
   }
 
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError(false);
+    try {
+      await onAddFile(file);
+      setAdding(false);
+    } catch {
+      setError(true);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
   return (
     <Field
       label="Anexos"
@@ -333,26 +655,40 @@ function AttachmentsField({
       }
     >
       {adding && (
-        <div className="mb-3 flex items-center gap-2">
-          <input
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && submit()}
-            placeholder="Cole um link..."
-            autoFocus
-            className="min-w-0 flex-1 rounded-md border border-border bg-transparent px-2.5 py-1.5 text-xs outline-none focus:border-brand-accent"
-          />
-          <button
-            type="button"
-            onClick={submit}
-            disabled={saving || !url.trim()}
-            className="shrink-0 rounded-md bg-brand-accent px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
-          >
-            {saving ? "Salvando..." : "Salvar"}
-          </button>
+        <div className="mb-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && submit()}
+              placeholder="Cole um link..."
+              autoFocus
+              className="min-w-0 flex-1 rounded-md border border-border bg-transparent px-2.5 py-1.5 text-xs outline-none focus:border-brand-accent"
+            />
+            <button
+              type="button"
+              onClick={submit}
+              disabled={saving || !url.trim()}
+              className="shrink-0 rounded-md bg-brand-accent px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {saving ? "Salvando..." : "Salvar"}
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">ou</span>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="rounded-md border border-border px-2.5 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted disabled:opacity-50"
+            >
+              {uploading ? "Enviando..." : "Escolher arquivo"}
+            </button>
+            <input ref={fileInputRef} type="file" onChange={handleFileChange} className="hidden" />
+          </div>
         </div>
       )}
-      {error && <p className="mb-2 text-xs text-red-500">Não foi possível anexar esse link.</p>}
+      {error && <p className="mb-2 text-xs text-red-500">Não foi possível anexar.</p>}
       {links.length === 0 && files.length === 0 ? (
         <span className="text-muted-foreground">Sem anexos</span>
       ) : (
@@ -675,6 +1011,9 @@ export function ContentCardModal({
   const [lightboxTarget, setLightboxTarget] = useState<LightboxTarget | null>(null);
   const [checklist, setChecklist] = useState(card.checklist);
   const [attachments, setAttachments] = useState(card.attachments);
+  const [description, setDescription] = useState(card.description);
+  const [labels, setLabels] = useState(card.labels);
+  const [assignees, setAssignees] = useState(card.assignees);
   const leftScrollRef = useRef<HTMLDivElement>(null);
   const showCover = card.coverImageUrl !== null && !coverFailed;
 
@@ -774,6 +1113,32 @@ export function ContentCardModal({
     setAttachments((prev) => [...prev, data.attachment]);
   }
 
+  async function addFileAttachmentLocal(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(
+      `/api/content/${clientId}/card/${card.id}/attachments/upload?key=${encodeURIComponent(accessKey)}`,
+      { method: "POST", body: formData },
+    );
+    if (!res.ok) throw new Error();
+    const data: { attachment: ContentAttachment } = await res.json();
+    setAttachments((prev) => [...prev, data.attachment]);
+  }
+
+  function toggleLabelLocal(label: ContentBoardLabel, adding: boolean) {
+    setLabels((prev) =>
+      adding ? [...prev, { id: label.id, name: label.name, color: label.color }] : prev.filter((l) => l.id !== label.id),
+    );
+  }
+
+  function toggleMemberLocal(member: ContentBoardMember, adding: boolean) {
+    setAssignees((prev) =>
+      adding
+        ? [...prev, { id: member.id, name: member.name, avatarUrl: member.avatarUrl, initials: member.initials }]
+        : prev.filter((a) => a.id !== member.id),
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
       <div
@@ -820,36 +1185,32 @@ export function ContentCardModal({
 
               <div className="space-y-6">
                 <div className="flex flex-wrap gap-x-10 gap-y-6">
-                  <Field label="Membros">
-                    {card.assignees.length === 0 ? (
-                      <span className="text-muted-foreground">Sem responsável</span>
-                    ) : (
-                      <AssigneeAvatars assignees={card.assignees} size="sm" />
-                    )}
-                  </Field>
+                  <MembersField
+                    assignees={assignees}
+                    clientId={clientId}
+                    accessKey={accessKey}
+                    cardId={card.id}
+                    onToggle={toggleMemberLocal}
+                  />
 
-                  <Field label="Labels">
-                    {card.labels.length === 0 ? (
-                      <span className="text-muted-foreground">Sem labels</span>
-                    ) : (
-                      <div className="flex flex-wrap gap-1.5">
-                        {card.labels.map((label, i) => (
-                          <span
-                            key={`${label.name}-${i}`}
-                            className="rounded-full px-2.5 py-1 text-xs font-semibold text-white"
-                            style={{ backgroundColor: label.color }}
-                          >
-                            {label.name}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </Field>
+                  <LabelsField
+                    labels={labels}
+                    clientId={clientId}
+                    accessKey={accessKey}
+                    cardId={card.id}
+                    onToggle={toggleLabelLocal}
+                  />
                 </div>
 
                 <Field label="Data prevista">{formatDueDate(card.dueDate)}</Field>
 
-                <DescriptionField text={card.description} />
+                <DescriptionField
+                  text={description}
+                  clientId={clientId}
+                  accessKey={accessKey}
+                  cardId={card.id}
+                  onSaved={setDescription}
+                />
 
                 <AttachmentsField
                   attachments={attachments}
@@ -857,6 +1218,7 @@ export function ContentCardModal({
                   accessKey={accessKey}
                   onOpenImage={setLightboxTarget}
                   onAddLink={addLinkAttachmentLocal}
+                  onAddFile={addFileAttachmentLocal}
                 />
 
                 {checklist && (

@@ -423,3 +423,19 @@ export async function addMemberToCard(cardId: string, memberId: string): Promise
 export async function removeMemberFromCard(cardId: string, memberId: string): Promise<void> {
   await trelloMutate("DELETE", `cards/${cardId}/idMembers/${memberId}`, {});
 }
+
+export async function createCard(listId: string, name: string, listName: string): Promise<ContentCard> {
+  const raw = await trelloMutate("POST", "cards", { idList: listId, name });
+  return {
+    id: raw.id,
+    name: raw.name,
+    listName,
+    description: "",
+    labels: [],
+    dueDate: null,
+    assignees: [],
+    attachments: [],
+    coverImageUrl: null,
+    checklist: null,
+  };
+}

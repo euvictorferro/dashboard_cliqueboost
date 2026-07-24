@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import type { ContentCard as ContentCardData } from "@/lib/trello";
+import { AssigneeAvatars } from "./AssigneeAvatars";
 
 function formatDueDate(dueDate: number): string {
   return new Date(dueDate).toLocaleDateString("pt-BR");
@@ -22,6 +23,37 @@ function AttachmentIcon() {
   );
 }
 
+function ClockIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+      <circle cx="5.5" cy="5.5" r="4.5" stroke="currentColor" strokeWidth="1" />
+      <path d="M5.5 3v2.5L7 6.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function DescriptionIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+      <path
+        d="M1.5 1.5h8M1.5 5.5h8M1.5 9.5h5"
+        stroke="currentColor"
+        strokeWidth="1"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function ChecklistIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+      <rect x="1" y="1" width="9" height="9" rx="1.5" stroke="currentColor" strokeWidth="1" />
+      <path d="M3 5.5l1.5 1.5L8 3.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function ContentCard({
   card,
   clientId,
@@ -34,7 +66,12 @@ export function ContentCard({
   onClick: () => void;
 }) {
   const [coverFailed, setCoverFailed] = useState(false);
-  const hasMeta = card.dueDate !== null || card.assignees.length > 0 || card.attachments.length > 0;
+  const hasMeta =
+    card.dueDate !== null ||
+    card.description !== "" ||
+    card.attachments.length > 0 ||
+    card.checklist !== null ||
+    card.assignees.length > 0;
   const showCover = card.coverImageUrl !== null && !coverFailed;
 
   return (
@@ -67,15 +104,30 @@ export function ContentCard({
           </div>
         )}
         <p className="text-sm font-medium text-card-foreground">{card.name}</p>
-        {card.description && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{card.description}</p>}
         {hasMeta && (
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
-            {card.dueDate !== null && <span>{formatDueDate(card.dueDate)}</span>}
-            {card.assignees.length > 0 && <span>{card.assignees.join(", ")}</span>}
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+            {card.dueDate !== null && (
+              <span className="flex items-center gap-1">
+                <ClockIcon />
+                {formatDueDate(card.dueDate)}
+              </span>
+            )}
+            {card.description !== "" && <DescriptionIcon />}
             {card.attachments.length > 0 && (
               <span className="flex items-center gap-1">
                 <AttachmentIcon />
                 {card.attachments.length}
+              </span>
+            )}
+            {card.checklist !== null && (
+              <span className="flex items-center gap-1">
+                <ChecklistIcon />
+                {card.checklist.checked}/{card.checklist.total}
+              </span>
+            )}
+            {card.assignees.length > 0 && (
+              <span className="ml-auto">
+                <AssigneeAvatars assignees={card.assignees} size="xs" />
               </span>
             )}
           </div>

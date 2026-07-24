@@ -18,6 +18,8 @@ async function trelloGet(path: string, params: Record<string, string>) {
 }
 
 export type ContentLabel = { name: string; color: string };
+export type ContentAssignee = { name: string; avatarUrl: string | null; initials: string };
+export type ContentChecklist = { total: number; checked: number };
 
 export type ContentCard = {
   id: string;
@@ -25,9 +27,10 @@ export type ContentCard = {
   description: string;
   labels: ContentLabel[];
   dueDate: number | null;
-  assignees: string[];
+  assignees: ContentAssignee[];
   attachments: { name: string; url: string }[];
   coverImageUrl: string | null;
+  checklist: ContentChecklist | null;
 };
 
 export type ContentList = {
@@ -51,8 +54,9 @@ type RawTrelloCard = {
   labels: RawTrelloLabel[];
   attachments: RawTrelloAttachment[];
   pos: number;
+  badges: { checkItems: number; checkItemsChecked: number };
 };
-type RawTrelloMember = { id: string; fullName: string };
+type RawTrelloMember = { id: string; fullName: string; avatarUrl: string | null; initials: string };
 
 // ponytail: paleta de cores nomeadas do Trello (estável há anos, não muda por board) — a API
 // devolve o nome da cor ("purple", "green"...), não um hex, então convertemos aqui pro pill
@@ -94,13 +98,13 @@ export async function fetchClientBoard(boardId: string): Promise<ContentList[]> 
   const [rawLists, rawCards, rawMembers]: [RawTrelloList[], RawTrelloCard[], RawTrelloMember[]] = await Promise.all([
     trelloGet(`boards/${boardId}/lists`, { fields: "name,pos" }),
     trelloGet(`boards/${boardId}/cards`, {
-      fields: "name,desc,due,idList,idMembers,labels,pos,idAttachmentCover",
+      fields: "name,desc,due,idList,idMembers,labels,pos,idAttachmentCover,badges",
       attachments: "true",
     }),
-    trelloGet(`boards/${boardId}/members`, { fields: "fullName" }),
+    trelloGet(`boards/${boardId}/members`, { fields: "fullName,avatarUrl,initials" }),
   ]);
 
-  const memberNames = new Map(rawMembers.map((m) => [m.id, m.fullName]));
+  const membersById = new Map(rawMembers.map((m) => [m.id, m]));
 
   const cardsByList = new Map<string, ContentCard[]>();
   for (const c of [...rawCards].sort((a, b) => a.pos - b.pos)) {
@@ -110,9 +114,17 @@ export async function fetchClientBoard(boardId: string): Promise<ContentList[]> 
       description: c.desc,
       labels: c.labels.map((l) => ({ name: l.name || "Sem nome", color: trelloColorToHex(l.color) })),
       dueDate: c.due ? new Date(c.due).getTime() : null,
-      assignees: c.idMembers.map((id) => memberNames.get(id) ?? "Desconhecido"),
+      assignees: c.idMembers.map((id) => {
+        const m = membersById.get(id);
+        return {
+          name: m?.fullName ?? "Desconhecido",
+          avatarUrl: m?.avatarUrl ? `${m.avatarUrl}/50.png` : null,
+          initials: m?.initials ?? "?",
+        };
+      }),
       attachments: c.attachments.map((a) => ({ name: a.name || a.fileName || a.url, url: a.url })),
       coverImageUrl: pickCoverImageUrl(c),
+      checklist: c.badges.checkItems > 0 ? { total: c.badges.checkItems, checked: c.badges.checkItemsChecked } : null,
     };
     const existing = cardsByList.get(c.idList) ?? [];
     existing.push(card);

@@ -1,41 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import type { TaskAssignee, TaskItem } from "@/lib/clickup";
+import type { TaskItem } from "@/lib/clickup";
+import { AssigneeAvatars } from "./AssigneeAvatars";
 import { TaskDetailModal } from "./TaskDetailModal";
 
 function formatDueDate(dueDate: number | null): string {
   if (dueDate === null) return "Sem prazo";
   return new Date(dueDate).toLocaleDateString("pt-BR");
-}
-
-function AssigneeAvatars({ assignees }: { assignees: TaskAssignee[] }) {
-  if (assignees.length === 0) {
-    return <span className="text-xs text-muted-foreground">Sem responsável</span>;
-  }
-  return (
-    <div className="flex items-center -space-x-2">
-      {assignees.map((a) => (
-        <span
-          key={a.name}
-          title={a.name}
-          className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full border-2 border-card"
-        >
-          {a.avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- avatar vem de URL assinada do ClickUp
-            <img src={a.avatarUrl} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <span
-              className="flex h-full w-full items-center justify-center text-[11px] font-semibold text-white"
-              style={{ backgroundColor: a.color }}
-            >
-              {a.initials}
-            </span>
-          )}
-        </span>
-      ))}
-    </div>
-  );
 }
 
 function ChevronIcon({ open }: { open: boolean }) {
@@ -84,7 +56,7 @@ function TaskSection({ section, onSelectTask }: { section: TaskSectionData; onSe
               </p>
               <p className="w-24 shrink-0 text-xs text-muted-foreground">{formatDueDate(task.dueDate)}</p>
               <div className="w-20 shrink-0">
-                <AssigneeAvatars assignees={task.assignees} />
+                <AssigneeAvatars assignees={task.assignees} emptyLabel="Sem responsável" />
               </div>
             </button>
           ))}

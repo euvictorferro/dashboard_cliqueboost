@@ -109,7 +109,7 @@ export function ContentCardModal({
               {card.assignees.length === 0 ? (
                 <span className="text-muted-foreground">Sem responsável</span>
               ) : (
-                card.assignees.join(", ")
+                card.assignees.map((a) => a.name).join(", ")
               )}
             </Field>
 

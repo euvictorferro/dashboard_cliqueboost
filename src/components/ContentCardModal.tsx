@@ -1,11 +1,13 @@
 // src/components/ContentCardModal.tsx
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import type { ContentActivity, ContentCard } from "@/lib/trello";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { ContentActivity, ContentAttachment, ContentCard, ContentChecklist, ContentChecklistItem } from "@/lib/trello";
 import { renderMarkdown } from "./markdown";
 import { AssigneeAvatars } from "./AssigneeAvatars";
-import { AttachmentIcon, ChecklistIcon, CommentsIcon, DescriptionIcon, DownloadIcon, LinkIcon } from "./icons";
+import { AttachmentIcon, ChecklistIcon, CommentsIcon, DescriptionIcon, DownloadIcon, LinkIcon, TrashIcon } from "./icons";
+
+type LightboxTarget = { name: string; imageUrl: string; downloadUrl: string };
 
 function formatDueDate(dueDate: number | null): string {
   if (dueDate === null) return "Sem prazo";
@@ -28,6 +30,13 @@ function coverProxyUrl(clientId: string, accessKey: string, url: string): string
   return `/api/content/${clientId}/cover-proxy?key=${encodeURIComponent(accessKey)}&url=${encodeURIComponent(url)}`;
 }
 
+function checklistBarColor(percent: number): string {
+  if (percent === 100) return "bg-green-500";
+  if (percent >= 50) return "bg-blue-500";
+  if (percent > 0) return "bg-amber-400";
+  return "bg-neutral-300";
+}
+
 function CloseIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -38,7 +47,7 @@ function CloseIcon() {
 
 function CheckboxIcon({ checked }: { checked: boolean }) {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" className="mt-0.5 shrink-0">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" className="shrink-0">
       <rect
         x="1"
         y="1"
@@ -56,13 +65,26 @@ function CheckboxIcon({ checked }: { checked: boolean }) {
   );
 }
 
-function Field({ label, icon, children }: { label: string; icon?: React.ReactNode; children: React.ReactNode }) {
+function Field({
+  label,
+  icon,
+  action,
+  children,
+}: {
+  label: string;
+  icon?: React.ReactNode;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <div>
-      <p className="mb-2 flex items-center gap-1.5 text-sm font-bold text-card-foreground">
-        {icon}
-        {label}
-      </p>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="flex items-center gap-1.5 text-sm font-bold text-card-foreground">
+          {icon}
+          {label}
+        </p>
+        {action}
+      </div>
       <div className="text-sm text-card-foreground">{children}</div>
     </div>
   );
@@ -100,26 +122,80 @@ function DescriptionField({ text }: { text: string }) {
   );
 }
 
-function ChecklistField({ checklist }: { checklist: NonNullable<ContentCard["checklist"]> }) {
+function ChecklistField({
+  checklist,
+  onToggle,
+  onAddItem,
+  onDeleteItem,
+}: {
+  checklist: ContentChecklist;
+  onToggle: (item: ContentChecklistItem) => void;
+  onAddItem: (name: string) => Promise<void>;
+  onDeleteItem: (item: ContentChecklistItem) => void;
+}) {
+  const [newItemName, setNewItemName] = useState("");
+  const [adding, setAdding] = useState(false);
   const percent = checklist.total === 0 ? 0 : Math.round((checklist.checked / checklist.total) * 100);
+
+  async function submitNewItem() {
+    if (!newItemName.trim() || adding) return;
+    setAdding(true);
+    try {
+      await onAddItem(newItemName.trim());
+      setNewItemName("");
+    } finally {
+      setAdding(false);
+    }
+  }
+
   return (
     <Field label={`Checklist (${checklist.checked}/${checklist.total})`} icon={<ChecklistIcon size={14} />}>
-      <div className="mb-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-        <div className="h-full rounded-full bg-brand-accent" style={{ width: `${percent}%` }} />
+      <div className="mb-3 flex items-center gap-2">
+        <span className="w-9 shrink-0 text-xs font-semibold text-muted-foreground">{percent}%</span>
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+          <div className={`h-full rounded-full transition-all ${checklistBarColor(percent)}`} style={{ width: `${percent}%` }} />
+        </div>
       </div>
-      <ul className="space-y-2">
+      <ul className="space-y-1.5">
         {checklist.items.map((item) => (
-          <li key={item.id} className="flex items-start gap-2">
-            <CheckboxIcon checked={item.checked} />
-            <span className={item.checked ? "text-muted-foreground line-through" : ""}>{item.name}</span>
+          <li key={item.id} className="group flex items-center gap-2">
+            <button type="button" onClick={() => onToggle(item)} className="shrink-0">
+              <CheckboxIcon checked={item.checked} />
+            </button>
+            <span className={`flex-1 ${item.checked ? "text-muted-foreground line-through" : ""}`}>{item.name}</span>
+            <button
+              type="button"
+              onClick={() => onDeleteItem(item)}
+              aria-label="Remover item"
+              className="shrink-0 text-muted-foreground opacity-0 hover:text-red-500 group-hover:opacity-100"
+            >
+              <TrashIcon />
+            </button>
           </li>
         ))}
       </ul>
+      <div className="mt-2 flex items-center gap-2">
+        <input
+          value={newItemName}
+          onChange={(e) => setNewItemName(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && submitNewItem()}
+          placeholder="Adicionar item"
+          className="min-w-0 flex-1 rounded-md border border-border bg-transparent px-2.5 py-1.5 text-xs outline-none focus:border-brand-accent"
+        />
+        <button
+          type="button"
+          onClick={submitNewItem}
+          disabled={adding || !newItemName.trim()}
+          className="shrink-0 rounded-md bg-muted px-2.5 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted/70 disabled:opacity-50"
+        >
+          Adicionar
+        </button>
+      </div>
     </Field>
   );
 }
 
-function LinkRow({ attachment }: { attachment: ContentCard["attachments"][number] }) {
+function LinkRow({ attachment }: { attachment: ContentAttachment }) {
   const [faviconFailed, setFaviconFailed] = useState(false);
   let domain = "";
   try {
@@ -129,7 +205,7 @@ function LinkRow({ attachment }: { attachment: ContentCard["attachments"][number
   }
 
   return (
-    <li className="flex items-center gap-2">
+    <li className="flex items-center gap-2 rounded-md border border-border px-3 py-2">
       {domain && !faviconFailed ? (
         // eslint-disable-next-line @next/next/no-img-element -- favicon de serviço externo (Google), não asset local
         <img
@@ -160,17 +236,25 @@ function FileRow({
   accessKey,
   onOpenImage,
 }: {
-  attachment: ContentCard["attachments"][number];
+  attachment: ContentAttachment;
   clientId: string;
   accessKey: string;
-  onOpenImage: (attachment: ContentCard["attachments"][number]) => void;
+  onOpenImage: (target: LightboxTarget) => void;
 }) {
   const canPreview = attachment.previewUrl !== null;
 
+  function open() {
+    onOpenImage({
+      name: attachment.name,
+      imageUrl: attachment.largePreviewUrl ?? attachment.previewUrl!,
+      downloadUrl: attachment.url,
+    });
+  }
+
   return (
-    <li className="flex items-center gap-2.5">
+    <li className="flex items-center gap-2.5 rounded-md border border-border px-3 py-2">
       {canPreview ? (
-        <button type="button" onClick={() => onOpenImage(attachment)} className="shrink-0">
+        <button type="button" onClick={open} className="shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element -- imagem vem do proxy autenticado */}
           <img
             src={coverProxyUrl(clientId, accessKey, attachment.previewUrl!)}
@@ -185,11 +269,7 @@ function FileRow({
       )}
       <div className="min-w-0 flex-1">
         {canPreview ? (
-          <button
-            type="button"
-            onClick={() => onOpenImage(attachment)}
-            className="block max-w-full truncate text-left text-brand-accent hover:underline"
-          >
+          <button type="button" onClick={open} className="block max-w-full truncate text-left text-brand-accent hover:underline">
             {attachment.name}
           </button>
         ) : (
@@ -208,17 +288,71 @@ function AttachmentsField({
   clientId,
   accessKey,
   onOpenImage,
+  onAddLink,
 }: {
-  attachments: ContentCard["attachments"];
+  attachments: ContentAttachment[];
   clientId: string;
   accessKey: string;
-  onOpenImage: (attachment: ContentCard["attachments"][number]) => void;
+  onOpenImage: (target: LightboxTarget) => void;
+  onAddLink: (url: string) => Promise<void>;
 }) {
+  const [adding, setAdding] = useState(false);
+  const [url, setUrl] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(false);
   const links = attachments.filter((a) => !a.isUpload);
   const files = attachments.filter((a) => a.isUpload);
 
+  async function submit() {
+    if (!url.trim() || saving) return;
+    setSaving(true);
+    setError(false);
+    try {
+      await onAddLink(url.trim());
+      setUrl("");
+      setAdding(false);
+    } catch {
+      setError(true);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
-    <Field label="Anexos" icon={<AttachmentIcon size={14} />}>
+    <Field
+      label="Anexos"
+      icon={<AttachmentIcon size={14} />}
+      action={
+        <button
+          type="button"
+          onClick={() => setAdding((a) => !a)}
+          className="shrink-0 rounded-md border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-muted"
+        >
+          Adicionar
+        </button>
+      }
+    >
+      {adding && (
+        <div className="mb-3 flex items-center gap-2">
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && submit()}
+            placeholder="Cole um link..."
+            autoFocus
+            className="min-w-0 flex-1 rounded-md border border-border bg-transparent px-2.5 py-1.5 text-xs outline-none focus:border-brand-accent"
+          />
+          <button
+            type="button"
+            onClick={submit}
+            disabled={saving || !url.trim()}
+            className="shrink-0 rounded-md bg-brand-accent px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+          >
+            {saving ? "Salvando..." : "Salvar"}
+          </button>
+        </div>
+      )}
+      {error && <p className="mb-2 text-xs text-red-500">Não foi possível anexar esse link.</p>}
       {links.length === 0 && files.length === 0 ? (
         <span className="text-muted-foreground">Sem anexos</span>
       ) : (
@@ -249,10 +383,114 @@ function AttachmentsField({
   );
 }
 
+function InlineLink({ url }: { url: string }) {
+  const [faviconFailed, setFaviconFailed] = useState(false);
+  let domain = "";
+  try {
+    domain = new URL(url).hostname;
+  } catch {
+    // ponytail: url mal formada dentro de texto livre — mostra sem favicon
+  }
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 break-all text-blue-600 underline"
+    >
+      {domain && !faviconFailed && (
+        // eslint-disable-next-line @next/next/no-img-element -- favicon de serviço externo (Google), não asset local
+        <img
+          src={`https://www.google.com/s2/favicons?sz=16&domain=${encodeURIComponent(domain)}`}
+          alt=""
+          className="h-3 w-3 shrink-0"
+          onError={() => setFaviconFailed(true)}
+        />
+      )}
+      {url}
+    </a>
+  );
+}
+
+function renderCommentText(text: string): ReactNode[] {
+  const parts = text.split(/(https?:\/\/[^\s]+)/g);
+  return parts.map((part, i) => (i % 2 === 1 ? <InlineLink key={i} url={part} /> : part ? <span key={i}>{part}</span> : null));
+}
+
+function CommentBox({
+  clientId,
+  accessKey,
+  cardId,
+  onPosted,
+}: {
+  clientId: string;
+  accessKey: string;
+  cardId: string;
+  onPosted: (activity: ContentActivity) => void;
+}) {
+  const [text, setText] = useState("");
+  const [posting, setPosting] = useState(false);
+  const [error, setError] = useState(false);
+
+  async function submit() {
+    if (!text.trim() || posting) return;
+    setPosting(true);
+    setError(false);
+    try {
+      const res = await fetch(`/api/content/${clientId}/card/${cardId}/activity?key=${encodeURIComponent(accessKey)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: text.trim() }),
+      });
+      if (!res.ok) throw new Error();
+      const data: { activity: ContentActivity } = await res.json();
+      onPosted(data.activity);
+      setText("");
+    } catch {
+      setError(true);
+    } finally {
+      setPosting(false);
+    }
+  }
+
+  return (
+    <div className="mb-5">
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Escreva um comentário..."
+        rows={2}
+        className="w-full resize-none rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 outline-none focus:border-neutral-500"
+      />
+      <div className="mt-1.5 flex items-center justify-between gap-2">
+        {error ? <span className="text-xs text-red-600">Falha ao enviar o comentário.</span> : <span />}
+        <button
+          type="button"
+          onClick={submit}
+          disabled={!text.trim() || posting}
+          className="shrink-0 rounded-md bg-brand-accent px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+        >
+          {posting ? "Enviando..." : "Comentar"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ponytail: sidebar clara (#f8f8f8) por pedido explícito, mesmo com o resto do app em tema
 // escuro — por isso usa cores neutras hardcoded aqui em vez das classes do tema (que são claras
 // pensando em fundo escuro e ficariam invisíveis num fundo claro).
-function ActivityField({ clientId, accessKey, cardId }: { clientId: string; accessKey: string; cardId: string }) {
+function ActivityField({
+  clientId,
+  accessKey,
+  cardId,
+  onOpenImage,
+}: {
+  clientId: string;
+  accessKey: string;
+  cardId: string;
+  onOpenImage: (target: LightboxTarget) => void;
+}) {
   const [activity, setActivity] = useState<ContentActivity[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -278,14 +516,22 @@ function ActivityField({ clientId, accessKey, cardId }: { clientId: string; acce
     };
   }, [clientId, accessKey, cardId]);
 
+  function openAttachmentRef(ref: NonNullable<ContentActivity["attachmentRef"]>) {
+    if (ref.previewUrl) {
+      onOpenImage({ name: ref.name, imageUrl: ref.previewUrl, downloadUrl: ref.url });
+    } else {
+      window.open(coverProxyUrl(clientId, accessKey, ref.url), "_blank", "noopener,noreferrer");
+    }
+  }
+
   const creationOnly = activity?.filter((a) => a.isCreation) ?? [];
   const collapsedView = creationOnly.length > 0 ? creationOnly : (activity?.slice(-1) ?? []);
   const visible = showDetails ? (activity ?? []) : collapsedView;
 
   return (
     <div>
-      <div className="mb-5 flex items-center justify-between gap-3">
-        <p className="flex items-center gap-1.5 text-sm font-bold text-neutral-900">
+      <div className="mb-3 flex flex-nowrap items-center justify-between gap-3">
+        <p className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm font-bold text-neutral-900">
           <CommentsIcon size={14} />
           Comentários e atividade
         </p>
@@ -300,6 +546,16 @@ function ActivityField({ clientId, accessKey, cardId }: { clientId: string; acce
         )}
       </div>
 
+      <CommentBox
+        clientId={clientId}
+        accessKey={accessKey}
+        cardId={cardId}
+        onPosted={(newActivity) => {
+          setActivity((prev) => (prev ? [newActivity, ...prev] : [newActivity]));
+          setShowDetails(true);
+        }}
+      />
+
       {failed && <span className="text-sm text-neutral-500">Não foi possível carregar.</span>}
       {!failed && activity === null && <span className="text-sm text-neutral-500">Carregando...</span>}
       {!failed && activity !== null && activity.length === 0 && (
@@ -308,18 +564,32 @@ function ActivityField({ clientId, accessKey, cardId }: { clientId: string; acce
       {!failed && activity !== null && activity.length > 0 && (
         <ul className="space-y-4">
           {visible.map((a) => (
-            <li key={a.id} className="flex items-start gap-2">
+            <li key={a.id} className="flex items-start gap-2.5">
               {a.authorAvatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- avatar vem de URL externa do Trello
-                <img src={a.authorAvatarUrl} alt="" className="h-6 w-6 shrink-0 rounded-full object-cover" />
+                <img src={a.authorAvatarUrl} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
               ) : (
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-200 text-[10px] font-semibold text-neutral-700">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-200 text-xs font-semibold text-neutral-700">
                   {a.authorInitials}
                 </span>
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-xs text-neutral-800">
-                  <span className="font-bold text-neutral-900">{a.authorName}</span> {a.text}
+                <p className="text-sm text-neutral-800">
+                  <span className="font-bold text-neutral-900">{a.authorName}</span>{" "}
+                  {a.kind === "comment" ? renderCommentText(a.text) : a.text}
+                  {a.attachmentRef && (
+                    <>
+                      {" "}
+                      <button
+                        type="button"
+                        onClick={() => openAttachmentRef(a.attachmentRef!)}
+                        className="text-blue-600 underline"
+                      >
+                        {a.attachmentRef.name}
+                      </button>
+                    </>
+                  )}
+                  {a.textAfter && <> {a.textAfter}</>}
                 </p>
                 <span className="text-[11px] font-medium text-blue-600 underline underline-offset-2">
                   {formatRelativeTime(a.date)}
@@ -334,17 +604,18 @@ function ActivityField({ clientId, accessKey, cardId }: { clientId: string; acce
 }
 
 function ImageLightbox({
-  attachment,
+  target,
   clientId,
   accessKey,
   onClose,
 }: {
-  attachment: ContentCard["attachments"][number];
+  target: LightboxTarget;
   clientId: string;
   accessKey: string;
   onClose: () => void;
 }) {
-  const src = coverProxyUrl(clientId, accessKey, attachment.largePreviewUrl ?? attachment.previewUrl!);
+  const src = coverProxyUrl(clientId, accessKey, target.imageUrl);
+  const downloadSrc = coverProxyUrl(clientId, accessKey, target.downloadUrl);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -365,8 +636,8 @@ function ImageLightbox({
       <div className="relative max-h-full max-w-full" onClick={(e) => e.stopPropagation()}>
         <div className="absolute -top-11 right-0 flex items-center gap-2">
           <a
-            href={src}
-            download={attachment.name}
+            href={downloadSrc}
+            download={target.name}
             className="flex items-center gap-1.5 rounded-md bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/20"
           >
             <DownloadIcon />
@@ -382,7 +653,7 @@ function ImageLightbox({
           </button>
         </div>
         {/* eslint-disable-next-line @next/next/no-img-element -- imagem vem do proxy autenticado */}
-        <img src={src} alt={attachment.name} className="max-h-[80vh] max-w-full rounded object-contain" />
+        <img src={src} alt={target.name} className="max-h-[80vh] max-w-full rounded object-contain" />
       </div>
     </div>
   );
@@ -401,17 +672,19 @@ export function ContentCardModal({
 }) {
   const [coverFailed, setCoverFailed] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [lightboxAttachment, setLightboxAttachment] = useState<ContentCard["attachments"][number] | null>(null);
+  const [lightboxTarget, setLightboxTarget] = useState<LightboxTarget | null>(null);
+  const [checklist, setChecklist] = useState(card.checklist);
+  const [attachments, setAttachments] = useState(card.attachments);
   const leftScrollRef = useRef<HTMLDivElement>(null);
   const showCover = card.coverImageUrl !== null && !coverFailed;
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape" && !lightboxAttachment) onClose();
+      if (e.key === "Escape" && !lightboxTarget) onClose();
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose, lightboxAttachment]);
+  }, [onClose, lightboxTarget]);
 
   useEffect(() => {
     const el = leftScrollRef.current;
@@ -423,35 +696,114 @@ export function ContentCardModal({
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
+  async function toggleChecklistItem(item: ContentChecklistItem) {
+    const nextChecked = !item.checked;
+    setChecklist((prev) =>
+      prev
+        ? {
+            ...prev,
+            checked: prev.checked + (nextChecked ? 1 : -1),
+            items: prev.items.map((i) => (i.id === item.id ? { ...i, checked: nextChecked } : i)),
+          }
+        : prev,
+    );
+    try {
+      const res = await fetch(`/api/content/${clientId}/card/${card.id}/checklist/toggle?key=${encodeURIComponent(accessKey)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ checkItemId: item.id, checked: nextChecked }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setChecklist((prev) =>
+        prev
+          ? {
+              ...prev,
+              checked: prev.checked + (nextChecked ? -1 : 1),
+              items: prev.items.map((i) => (i.id === item.id ? { ...i, checked: item.checked } : i)),
+            }
+          : prev,
+      );
+    }
+  }
+
+  async function addChecklistItemLocal(name: string) {
+    const checklistId = checklist?.items[0]?.checklistId;
+    if (!checklistId) return;
+    const res = await fetch(`/api/content/${clientId}/card/${card.id}/checklist/items?key=${encodeURIComponent(accessKey)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ checklistId, name }),
+    });
+    if (!res.ok) throw new Error();
+    const data: { item: ContentChecklistItem } = await res.json();
+    setChecklist((prev) => (prev ? { ...prev, total: prev.total + 1, items: [...prev.items, data.item] } : prev));
+  }
+
+  async function deleteChecklistItemLocal(item: ContentChecklistItem) {
+    setChecklist((prev) =>
+      prev
+        ? {
+            ...prev,
+            total: prev.total - 1,
+            checked: prev.checked - (item.checked ? 1 : 0),
+            items: prev.items.filter((i) => i.id !== item.id),
+          }
+        : prev,
+    );
+    try {
+      const res = await fetch(`/api/content/${clientId}/card/${card.id}/checklist/items?key=${encodeURIComponent(accessKey)}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ checklistId: item.checklistId, checkItemId: item.id }),
+      });
+      if (!res.ok) throw new Error();
+    } catch (err) {
+      console.error("falha ao remover item da checklist", err);
+    }
+  }
+
+  async function addLinkAttachmentLocal(url: string) {
+    const res = await fetch(`/api/content/${clientId}/card/${card.id}/attachments?key=${encodeURIComponent(accessKey)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    });
+    if (!res.ok) throw new Error();
+    const data: { attachment: ContentAttachment } = await res.json();
+    setAttachments((prev) => [...prev, data.attachment]);
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
       <div
-        className="flex max-h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded-[var(--radius-card)] bg-card shadow-[var(--shadow-soft)]"
+        className="flex max-h-[85vh] w-full max-w-6xl flex-col overflow-hidden rounded-[var(--radius-card)] bg-card shadow-[var(--shadow-soft)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex shrink-0 items-center justify-between gap-4 border-b border-border px-6 py-3">
           <span className="truncate rounded bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">
             {card.listName}
           </span>
-          <div className="flex shrink-0 items-center gap-3">
-            {showCover && (
-              // eslint-disable-next-line @next/next/no-img-element -- imagem vem do proxy autenticado, não é asset local
-              <img
-                src={coverProxyUrl(clientId, accessKey, card.coverImageUrl!)}
-                alt=""
-                className="h-8 w-8 rounded object-cover"
-                onError={() => setCoverFailed(true)}
-              />
-            )}
-            <button
-              onClick={onClose}
-              aria-label="Fechar"
-              className="rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-card-foreground"
-            >
-              <CloseIcon />
-            </button>
-          </div>
+          <button
+            onClick={onClose}
+            aria-label="Fechar"
+            className="shrink-0 rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-card-foreground"
+          >
+            <CloseIcon />
+          </button>
         </div>
+
+        {showCover && (
+          <div className="flex shrink-0 items-center justify-center border-b border-border bg-muted/40 py-4">
+            {/* eslint-disable-next-line @next/next/no-img-element -- imagem vem do proxy autenticado, não é asset local */}
+            <img
+              src={coverProxyUrl(clientId, accessKey, card.coverImageUrl!)}
+              alt=""
+              className="max-h-56 max-w-[70%] rounded-[var(--radius-card)] object-contain"
+              onError={() => setCoverFailed(true)}
+            />
+          </div>
+        )}
 
         <div className="flex min-h-0 flex-1">
           <div ref={leftScrollRef} className="min-w-0 flex-1 overflow-y-auto">
@@ -464,16 +816,6 @@ export function ContentCardModal({
             </div>
 
             <div className="p-7 pt-6">
-              {showCover && (
-                // eslint-disable-next-line @next/next/no-img-element -- imagem vem do proxy autenticado, não é asset local
-                <img
-                  src={coverProxyUrl(clientId, accessKey, card.coverImageUrl!)}
-                  alt=""
-                  className="mb-6 h-40 w-full rounded-[var(--radius-card)] object-cover"
-                  onError={() => setCoverFailed(true)}
-                />
-              )}
-
               <h1 className="mb-6 text-xl font-bold text-card-foreground">{card.name}</h1>
 
               <div className="space-y-6">
@@ -509,35 +851,43 @@ export function ContentCardModal({
 
                 <DescriptionField text={card.description} />
 
-                {card.checklist && <ChecklistField checklist={card.checklist} />}
-
                 <AttachmentsField
-                  attachments={card.attachments}
+                  attachments={attachments}
                   clientId={clientId}
                   accessKey={accessKey}
-                  onOpenImage={setLightboxAttachment}
+                  onOpenImage={setLightboxTarget}
+                  onAddLink={addLinkAttachmentLocal}
                 />
+
+                {checklist && (
+                  <ChecklistField
+                    checklist={checklist}
+                    onToggle={toggleChecklistItem}
+                    onAddItem={addChecklistItemLocal}
+                    onDeleteItem={deleteChecklistItemLocal}
+                  />
+                )}
               </div>
             </div>
           </div>
 
           <div
-            className="min-w-0 shrink-0 overflow-y-auto border-l border-border md:w-80"
+            className="min-w-0 shrink-0 overflow-y-auto border-l border-border md:w-[420px]"
             style={{ backgroundColor: "#f8f8f8" }}
           >
             <div className="p-6">
-              <ActivityField clientId={clientId} accessKey={accessKey} cardId={card.id} />
+              <ActivityField clientId={clientId} accessKey={accessKey} cardId={card.id} onOpenImage={setLightboxTarget} />
             </div>
           </div>
         </div>
       </div>
 
-      {lightboxAttachment && (
+      {lightboxTarget && (
         <ImageLightbox
-          attachment={lightboxAttachment}
+          target={lightboxTarget}
           clientId={clientId}
           accessKey={accessKey}
-          onClose={() => setLightboxAttachment(null)}
+          onClose={() => setLightboxTarget(null)}
         />
       )}
     </div>

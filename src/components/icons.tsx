@@ -71,6 +71,20 @@ export function DownloadIcon({ size = 14 }: IconProps) {
   );
 }
 
+export function TrashIcon({ size = 12 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 12 12" fill="none" aria-hidden="true" className="shrink-0">
+      <path
+        d="M2 3.5h8M4.5 3.5V2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v1.5M3 3.5l.4 6a1 1 0 0 0 1 .9h3.2a1 1 0 0 0 1-.9l.4-6"
+        stroke="currentColor"
+        strokeWidth="1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function LinkIcon({ size = 13 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 11 11" fill="none" aria-hidden="true" className="shrink-0">

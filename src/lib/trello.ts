@@ -17,9 +17,22 @@ async function trelloGet(path: string, params: Record<string, string>) {
   return json;
 }
 
+// ponytail: mesmo padrão do trelloGet, mas pra POST/PUT/DELETE — Trello aceita os parâmetros
+// como query string em qualquer verbo, não precisa de body.
+async function trelloMutate(method: "POST" | "PUT" | "DELETE", path: string, params: Record<string, string>) {
+  const url = new URL(`${TRELLO_API}/${path}`);
+  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+  url.searchParams.set("key", process.env.TRELLO_API_KEY!);
+  url.searchParams.set("token", process.env.TRELLO_TOKEN!);
+  const res = await fetch(url, { method });
+  const text = await res.text();
+  if (!res.ok) throw new Error(text || `trello ${method} ${path} failed`);
+  return text ? JSON.parse(text) : null;
+}
+
 export type ContentLabel = { name: string; color: string };
 export type ContentAssignee = { name: string; avatarUrl: string | null; initials: string };
-export type ContentChecklistItem = { id: string; name: string; checked: boolean };
+export type ContentChecklistItem = { id: string; name: string; checked: boolean; checklistId: string };
 export type ContentChecklist = { total: number; checked: number; items: ContentChecklistItem[] };
 export type ContentAttachment = {
   name: string;
@@ -51,6 +64,8 @@ export type ContentActivity = {
   authorInitials: string;
   kind: "comment" | "activity";
   text: string;
+  textAfter: string | null;
+  attachmentRef: { name: string; url: string; previewUrl: string | null } | null;
   isCreation: boolean;
 };
 
@@ -73,7 +88,7 @@ type RawTrelloAttachment = {
   previews: RawTrelloPreview[];
 };
 type RawTrelloCheckItem = { id: string; name: string; state: string };
-type RawTrelloChecklist = { checkItems: RawTrelloCheckItem[] };
+type RawTrelloChecklist = { id: string; checkItems: RawTrelloCheckItem[] };
 type RawTrelloCard = {
   id: string;
   name: string;
@@ -192,7 +207,12 @@ export async function fetchClientBoard(boardId: string): Promise<ContentList[]> 
               total: c.badges.checkItems,
               checked: c.badges.checkItemsChecked,
               items: c.checklists.flatMap((cl) =>
-                cl.checkItems.map((item) => ({ id: item.id, name: item.name, checked: item.state === "complete" })),
+                cl.checkItems.map((item) => ({
+                  id: item.id,
+                  name: item.name,
+                  checked: item.state === "complete",
+                  checklistId: cl.id,
+                })),
               ),
             }
           : null,
@@ -217,7 +237,6 @@ function describeAction(type: string, data: Record<string, unknown>): string | n
   const card = asObj(data.card);
   const checkItem = asObj(data.checkItem);
   const checklist = asObj(data.checklist);
-  const attachment = asObj(data.attachment);
   const member = asObj(data.member);
   const list = asObj(data.list);
 
@@ -233,8 +252,6 @@ function describeAction(type: string, data: Record<string, unknown>): string | n
       return `${checkItem?.state === "complete" ? "marcou" : "desmarcou"} "${checkItem?.name}" na checklist`;
     case "addChecklistToCard":
       return `adicionou a checklist "${checklist?.name}"`;
-    case "addAttachmentToCard":
-      return `anexou "${attachment?.name}"`;
     case "deleteAttachmentFromCard":
       return "removeu um anexo";
     case "addMemberToCard":
@@ -265,11 +282,81 @@ export async function fetchCardActivity(cardId: string): Promise<ContentActivity
       authorInitials: author?.initials ?? "?",
     };
     if (action.type === "commentCard") {
-      activity.push({ ...base, kind: "comment", text: String(action.data.text ?? ""), isCreation: false });
+      activity.push({
+        ...base,
+        kind: "comment",
+        text: String(action.data.text ?? ""),
+        textAfter: null,
+        attachmentRef: null,
+        isCreation: false,
+      });
+      continue;
+    }
+    if (action.type === "addAttachmentToCard") {
+      const att = action.data.attachment as { name?: string; url?: string; previewUrl?: string } | undefined;
+      activity.push({
+        ...base,
+        kind: "activity",
+        text: "anexou",
+        textAfter: "a este card",
+        attachmentRef: att?.url ? { name: att.name ?? att.url, url: att.url, previewUrl: att.previewUrl ?? null } : null,
+        isCreation: false,
+      });
       continue;
     }
     const text = describeAction(action.type, action.data);
-    if (text) activity.push({ ...base, kind: "activity", text, isCreation: action.type === "createCard" });
+    if (text) {
+      activity.push({
+        ...base,
+        kind: "activity",
+        text,
+        textAfter: null,
+        attachmentRef: null,
+        isCreation: action.type === "createCard",
+      });
+    }
   }
   return activity.sort((a, b) => b.date - a.date);
+}
+
+export async function setChecklistItemState(cardId: string, checkItemId: string, checked: boolean): Promise<void> {
+  await trelloMutate("PUT", `cards/${cardId}/checkItem/${checkItemId}`, { state: checked ? "complete" : "incomplete" });
+}
+
+export async function addChecklistItem(checklistId: string, name: string): Promise<ContentChecklistItem> {
+  const item = await trelloMutate("POST", `checklists/${checklistId}/checkItems`, { name });
+  return { id: item.id, name: item.name, checked: item.state === "complete", checklistId };
+}
+
+export async function deleteChecklistItem(checklistId: string, checkItemId: string): Promise<void> {
+  await trelloMutate("DELETE", `checklists/${checklistId}/checkItems/${checkItemId}`, {});
+}
+
+export async function addComment(cardId: string, text: string): Promise<ContentActivity> {
+  const action = await trelloMutate("POST", `cards/${cardId}/actions/comments`, { text });
+  const author = action.memberCreator as RawTrelloActionMember | undefined;
+  return {
+    id: action.id,
+    date: new Date(action.date).getTime(),
+    authorName: author?.fullName ?? "Você",
+    authorAvatarUrl: author?.avatarUrl ? `${author.avatarUrl}/50.png` : null,
+    authorInitials: author?.initials ?? "?",
+    kind: "comment",
+    text: String(action.data?.text ?? text),
+    textAfter: null,
+    attachmentRef: null,
+    isCreation: false,
+  };
+}
+
+export async function addLinkAttachment(cardId: string, url: string): Promise<ContentAttachment> {
+  const attachment = await trelloMutate("POST", `cards/${cardId}/attachments`, { url });
+  return {
+    name: attachment.name || attachment.url,
+    url: attachment.url,
+    isUpload: Boolean(attachment.isUpload),
+    previewUrl: null,
+    largePreviewUrl: null,
+    date: new Date(attachment.date).getTime(),
+  };
 }

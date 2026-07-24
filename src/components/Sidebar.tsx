@@ -22,9 +22,20 @@ function TasksIcon() {
   );
 }
 
+function ContentIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <rect x="2" y="2" width="4" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+      <rect x="7" y="2" width="4" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+      <rect x="12" y="2" width="4" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
 const NAV_ITEMS = [
   { href: "", label: "Dashboard", key: "dashboard", icon: DashboardIcon },
   { href: "/tasks", label: "Tasks", key: "tasks", icon: TasksIcon },
+  { href: "/conteudos", label: "Conteúdos", key: "conteudos", icon: ContentIcon },
 ] as const;
 
 export function Sidebar({
@@ -34,7 +45,7 @@ export function Sidebar({
 }: {
   clientId: string;
   accessKey: string;
-  active: "dashboard" | "tasks";
+  active: "dashboard" | "tasks" | "conteudos";
 }) {
   return (
     <nav className="sticky top-0 flex h-screen w-56 shrink-0 flex-col gap-6 overflow-y-auto border-r border-border bg-card px-4 py-6">

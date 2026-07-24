@@ -47,7 +47,7 @@ export function TasksPageClient({ clientId, accessKey }: { clientId: string; acc
         </p>
       )}
       {!error && !tasks && <p className="text-sm text-muted-foreground">Carregando...</p>}
-      {!error && tasks && <TasksTable tasks={tasks} />}
+      {!error && tasks && <TasksTable tasks={tasks} clientId={clientId} accessKey={accessKey} />}
     </div>
   );
 }

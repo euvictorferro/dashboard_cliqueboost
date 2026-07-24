@@ -48,7 +48,15 @@ function TaskSection({ section, onSelectTask }: { section: TaskSectionData; onSe
   );
 }
 
-export function TasksTable({ tasks }: { tasks: TaskItem[] }) {
+export function TasksTable({
+  tasks,
+  clientId,
+  accessKey,
+}: {
+  tasks: TaskItem[];
+  clientId: string;
+  accessKey: string;
+}) {
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
 
   const groups = new Map<string, TaskSectionData>();
@@ -83,7 +91,9 @@ export function TasksTable({ tasks }: { tasks: TaskItem[] }) {
       {sections.map((section) => (
         <TaskSection key={section.label} section={section} onSelectTask={setSelectedTask} />
       ))}
-      {selectedTask && <TaskDetailModal task={selectedTask} onClose={() => setSelectedTask(null)} />}
+      {selectedTask && (
+        <TaskDetailModal task={selectedTask} clientId={clientId} accessKey={accessKey} onClose={() => setSelectedTask(null)} />
+      )}
     </div>
   );
 }

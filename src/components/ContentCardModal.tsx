@@ -796,7 +796,7 @@ function CommentBox({
         onChange={(e) => setText(e.target.value)}
         placeholder="Escreva um comentário..."
         rows={2}
-        className="w-full resize-none rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 outline-none focus:border-neutral-500"
+        className="w-full resize-none rounded-md border border-border bg-transparent px-3 py-2 text-sm text-card-foreground outline-none focus:border-brand-accent"
       />
       <div className="mt-1.5 flex items-center justify-between gap-2">
         {error ? <span className="text-xs text-red-600">Falha ao enviar o comentário.</span> : <span />}
@@ -813,9 +813,6 @@ function CommentBox({
   );
 }
 
-// ponytail: sidebar clara (#f8f8f8) por pedido explícito, mesmo com o resto do app em tema
-// escuro — por isso usa cores neutras hardcoded aqui em vez das classes do tema (que são claras
-// pensando em fundo escuro e ficariam invisíveis num fundo claro).
 function ActivityField({
   clientId,
   accessKey,
@@ -867,7 +864,7 @@ function ActivityField({
   return (
     <div>
       <div className="mb-3 flex flex-nowrap items-center justify-between gap-3">
-        <p className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm font-bold text-neutral-900">
+        <p className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm font-bold text-card-foreground">
           <CommentsIcon size={14} />
           Comentários e atividade
         </p>
@@ -875,7 +872,7 @@ function ActivityField({
           <button
             type="button"
             onClick={() => setShowDetails((s) => !s)}
-            className="shrink-0 rounded-md border border-neutral-300 px-2.5 py-1 text-[11px] font-semibold text-neutral-600 transition-colors hover:bg-neutral-200"
+            className="shrink-0 rounded-md border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-muted"
           >
             {showDetails ? "Fechar Detalhes" : "Mostrar Detalhes"}
           </button>
@@ -892,10 +889,10 @@ function ActivityField({
         }}
       />
 
-      {failed && <span className="text-sm text-neutral-500">Não foi possível carregar.</span>}
-      {!failed && activity === null && <span className="text-sm text-neutral-500">Carregando...</span>}
+      {failed && <span className="text-sm text-muted-foreground">Não foi possível carregar.</span>}
+      {!failed && activity === null && <span className="text-sm text-muted-foreground">Carregando...</span>}
       {!failed && activity !== null && activity.length === 0 && (
-        <span className="text-sm text-neutral-500">Sem comentários ou atividade.</span>
+        <span className="text-sm text-muted-foreground">Sem comentários ou atividade.</span>
       )}
       {!failed && activity !== null && activity.length > 0 && (
         <ul className="space-y-4">
@@ -905,13 +902,13 @@ function ActivityField({
                 // eslint-disable-next-line @next/next/no-img-element -- avatar vem de URL externa do Trello
                 <img src={a.authorAvatarUrl} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
               ) : (
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-200 text-xs font-semibold text-neutral-700">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
                   {a.authorInitials}
                 </span>
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-sm text-neutral-800">
-                  <span className="font-bold text-neutral-900">{a.authorName}</span>{" "}
+                <p className="text-sm text-card-foreground">
+                  <span className="font-bold text-card-foreground">{a.authorName}</span>{" "}
                   {a.kind === "comment" ? renderCommentText(a.text) : a.text}
                   {a.attachmentRef && (
                     <>
@@ -1033,6 +1030,14 @@ export function ContentCardModal({
     }
     el.addEventListener("scroll", onScroll);
     return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
   }, []);
 
   async function toggleChecklistItem(item: ContentChecklistItem) {
@@ -1233,10 +1238,7 @@ export function ContentCardModal({
             </div>
           </div>
 
-          <div
-            className="min-w-0 shrink-0 overflow-y-auto border-l border-border md:w-[420px]"
-            style={{ backgroundColor: "#f8f8f8" }}
-          >
+          <div className="min-w-0 shrink-0 overflow-y-auto border-l border-border bg-muted/30 md:w-[420px]">
             <div className="p-6">
               <ActivityField clientId={clientId} accessKey={accessKey} cardId={card.id} onOpenImage={setLightboxTarget} />
             </div>

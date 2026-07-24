@@ -23,7 +23,7 @@ export default async function ClientContentPage({
   return (
     <div className="flex min-h-full">
       <Sidebar clientId={found.id} accessKey={key!} active="conteudos" />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <ContentPageClient clientId={found.id} accessKey={key!} />
       </div>
     </div>

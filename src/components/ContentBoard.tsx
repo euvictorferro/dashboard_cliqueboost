@@ -1,3 +1,4 @@
+// src/components/ContentBoard.tsx
 "use client";
 
 import { useState } from "react";
@@ -5,7 +6,15 @@ import type { ContentCard as ContentCardData, ContentList } from "@/lib/trello";
 import { ContentCard } from "./ContentCard";
 import { ContentCardModal } from "./ContentCardModal";
 
-export function ContentBoard({ lists }: { lists: ContentList[] }) {
+export function ContentBoard({
+  lists,
+  clientId,
+  accessKey,
+}: {
+  lists: ContentList[];
+  clientId: string;
+  accessKey: string;
+}) {
   const [selectedCard, setSelectedCard] = useState<ContentCardData | null>(null);
 
   if (lists.length === 0) {
@@ -29,13 +38,26 @@ export function ContentBoard({ lists }: { lists: ContentList[] }) {
               <p className="px-1 text-xs text-muted-foreground">Sem cards</p>
             ) : (
               list.cards.map((card) => (
-                <ContentCard key={card.id} card={card} onClick={() => setSelectedCard(card)} />
+                <ContentCard
+                  key={card.id}
+                  card={card}
+                  clientId={clientId}
+                  accessKey={accessKey}
+                  onClick={() => setSelectedCard(card)}
+                />
               ))
             )}
           </div>
         </div>
       ))}
-      {selectedCard && <ContentCardModal card={selectedCard} onClose={() => setSelectedCard(null)} />}
+      {selectedCard && (
+        <ContentCardModal
+          card={selectedCard}
+          clientId={clientId}
+          accessKey={accessKey}
+          onClose={() => setSelectedCard(null)}
+        />
+      )}
     </div>
   );
 }

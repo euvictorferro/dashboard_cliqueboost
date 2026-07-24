@@ -47,7 +47,7 @@ export function ContentPageClient({ clientId, accessKey }: { clientId: string; a
         </p>
       )}
       {!error && !lists && <p className="text-sm text-muted-foreground">Carregando...</p>}
-      {!error && lists && <ContentBoard lists={lists} />}
+      {!error && lists && <ContentBoard lists={lists} clientId={clientId} accessKey={accessKey} />}
     </div>
   );
 }

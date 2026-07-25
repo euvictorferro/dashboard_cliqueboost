@@ -16,6 +16,7 @@ export function BunkerPageClient({ clientId, accessKey }: { clientId: string; ac
   const [lists, setLists] = useState<ContentList[] | null>(null);
   const [error, setError] = useState<ErrorKind | null>(null);
   const [competitors, setCompetitors] = useState<Competitor[] | null>(null);
+  const [competitorsError, setCompetitorsError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,13 +43,19 @@ export function BunkerPageClient({ clientId, accessKey }: { clientId: string; ac
 
   useEffect(() => {
     let cancelled = false;
+    setCompetitors(null);
+    setCompetitorsError(false);
     fetch(`/api/content/${clientId}/competitors?key=${encodeURIComponent(accessKey)}`)
-      .then((res) => res.json())
-      .then((data: { competitors: Competitor[] }) => {
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error();
+        return data as { competitors: Competitor[] };
+      })
+      .then((data) => {
         if (!cancelled) setCompetitors(data.competitors ?? []);
       })
       .catch(() => {
-        if (!cancelled) setCompetitors([]);
+        if (!cancelled) setCompetitorsError(true);
       });
     return () => {
       cancelled = true;
@@ -77,9 +84,13 @@ export function BunkerPageClient({ clientId, accessKey }: { clientId: string; ac
 
       <div>
         <h2 className="mb-4 text-lg font-bold text-card-foreground">Concorrentes e referências</h2>
-        {competitors === null ? (
-          <p className="text-sm text-muted-foreground">Carregando...</p>
-        ) : (
+        {competitorsError && (
+          <p className="rounded-[var(--radius-card)] bg-card p-6 text-center text-sm text-muted-foreground shadow-[var(--shadow-soft)]">
+            Não foi possível carregar os concorrentes agora.
+          </p>
+        )}
+        {!competitorsError && competitors === null && <p className="text-sm text-muted-foreground">Carregando...</p>}
+        {!competitorsError && competitors && (
           <CompetitorsSection clientId={clientId} accessKey={accessKey} initialCompetitors={competitors} />
         )}
       </div>

@@ -638,7 +638,7 @@ export function TaskDetailModal({
               <h1 className="mb-6 text-xl font-bold text-card-foreground">{task.name}</h1>
 
               <div className="space-y-6">
-                <div className="flex flex-wrap gap-x-10 gap-y-6">
+                <div className="grid grid-cols-2 gap-x-10 gap-y-6">
                   <StatusField
                     status={status}
                     statusColor={statusColor}
@@ -658,30 +658,32 @@ export function TaskDetailModal({
                     taskId={task.id}
                     onToggle={toggleAssigneeLocal}
                   />
+
+                  <DueDateField
+                    dueDate={dueDate}
+                    clientId={clientId}
+                    accessKey={accessKey}
+                    taskId={task.id}
+                    onSaved={setDueDate}
+                  />
+
+                  <Field label="Prioridade">
+                    {task.priority ? (
+                      <span
+                        className="rounded-full px-2.5 py-1 text-xs font-semibold text-white"
+                        style={{ backgroundColor: task.priority.color }}
+                      >
+                        {task.priority.label}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">Sem prioridade</span>
+                    )}
+                  </Field>
+
+                  {task.startDate !== null && <Field label="Início">{formatDate(task.startDate)}</Field>}
+
+                  <Field label="Tempo">{formatTime(task.timeEstimate, task.timeSpent)}</Field>
                 </div>
-
-                {task.startDate !== null && <Field label="Início">{formatDate(task.startDate)}</Field>}
-
-                <DueDateField
-                  dueDate={dueDate}
-                  clientId={clientId}
-                  accessKey={accessKey}
-                  taskId={task.id}
-                  onSaved={setDueDate}
-                />
-
-                <Field label="Prioridade">
-                  {task.priority ? (
-                    <span
-                      className="rounded-full px-2.5 py-1 text-xs font-semibold text-white"
-                      style={{ backgroundColor: task.priority.color }}
-                    >
-                      {task.priority.label}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">Sem prioridade</span>
-                  )}
-                </Field>
 
                 <Field label="Tags">
                   {task.tags.length === 0 ? (
@@ -696,8 +698,6 @@ export function TaskDetailModal({
                     </div>
                   )}
                 </Field>
-
-                <Field label="Tempo">{formatTime(task.timeEstimate, task.timeSpent)}</Field>
 
                 <DescriptionField
                   text={description}

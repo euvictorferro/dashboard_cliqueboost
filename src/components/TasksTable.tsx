@@ -43,12 +43,12 @@ function TaskSection({
       </button>
       {open && (
         <div className="pb-1">
-          <div className="grid grid-cols-[1fr_130px_110px_70px_50px] gap-3 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            <span>Nome</span>
-            <span>Status</span>
-            <span>Data</span>
-            <span>Responsável</span>
-            <span>Prioridade</span>
+          <div className="grid grid-cols-[minmax(0,1fr)_130px_110px_70px_50px] gap-3 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <span className="truncate">Nome</span>
+            <span className="truncate">Status</span>
+            <span className="truncate">Data</span>
+            <span className="truncate">Responsável</span>
+            <span className="truncate">Prioridade</span>
           </div>
           {tasks.map((task) => (
             <TaskRow key={task.id} task={task} onClick={() => onSelectTask(task)} />

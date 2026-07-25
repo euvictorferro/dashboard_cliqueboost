@@ -14,7 +14,7 @@ export function TaskRow({ task, onClick }: { task: TaskItem; onClick: () => void
     <button
       type="button"
       onClick={onClick}
-      className="grid w-full grid-cols-[1fr_130px_110px_70px_50px] items-center gap-3 border-t border-border px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
+      className="grid w-full grid-cols-[minmax(0,1fr)_130px_110px_70px_50px] items-center gap-3 border-t border-border px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
     >
       <span className="flex min-w-0 items-center gap-2">
         <StatusIcon type={task.statusType} color={task.statusColor} />

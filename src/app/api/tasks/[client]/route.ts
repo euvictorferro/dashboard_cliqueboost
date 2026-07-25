@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { CLIENTS } from "@/lib/clients";
-import { fetchClientTasks, hasClickUpCredentials } from "@/lib/clickup";
+import { fetchClientTasks, fetchListMeta, hasClickUpCredentials } from "@/lib/clickup";
 import { verifyClientToken } from "@/lib/access";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ client: string }> }) {
@@ -27,8 +27,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   try {
-    const tasks = await fetchClientTasks(client.clickupListId);
-    return Response.json({ tasks });
+    const [tasks, meta] = await Promise.all([fetchClientTasks(client.clickupListId), fetchListMeta(client.clickupListId)]);
+    return Response.json({ tasks, statuses: meta.statuses });
   } catch (err) {
     // ponytail: qualquer erro da API do ClickUp cai num 502 — a página trata isso com uma
     // mensagem inline, sem fallback de mock (não existe mock natural pra tarefas).

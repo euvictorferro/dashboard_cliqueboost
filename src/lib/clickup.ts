@@ -19,11 +19,16 @@ export type TaskPriority = {
   color: string;
 };
 
+// ponytail: "open"/"custom"/"closed" é o campo `type` real do status no ClickUp (confirmado ao
+// vivo) — mapeia direto pros 3 ícones de status (não iniciado/em andamento/concluído).
+export type StatusType = "open" | "custom" | "closed";
+
 export type TaskItem = {
   id: string;
   name: string;
   status: string;
   statusColor: string;
+  statusType: StatusType;
   statusOrder: number;
   dueDate: number | null;
   startDate: number | null;
@@ -35,7 +40,7 @@ export type TaskItem = {
   timeSpent: number;
 };
 
-export type TaskStatus = { status: string; color: string; orderindex: number };
+export type TaskStatus = { status: string; color: string; type: StatusType; orderindex: number };
 export type TaskListMember = { id: string; name: string; color: string; initials: string; avatarUrl?: string };
 
 export type TaskComment = {
@@ -59,7 +64,7 @@ type RawClickUpAssignee = {
 type RawClickUpTask = {
   id: string;
   name: string;
-  status: { status: string; color: string; orderindex: number };
+  status: { status: string; color: string; type: string; orderindex: number };
   due_date: string | null;
   start_date: string | null;
   assignees: RawClickUpAssignee[];
@@ -70,7 +75,7 @@ type RawClickUpTask = {
   time_spent: number | string | null;
 };
 
-type RawClickUpStatus = { status: string; color: string; orderindex: number };
+type RawClickUpStatus = { status: string; color: string; type: string; orderindex: number };
 type RawClickUpListMember = {
   id: number;
   username: string;
@@ -104,6 +109,12 @@ function parsePriority(raw: unknown): TaskPriority | null {
 // mesmo padrão do trelloColorToHex.
 function clickupColorToHex(color: string): string {
   return color.startsWith("#") ? color : "#8590a2";
+}
+
+// ponytail: qualquer valor de type fora dos 3 conhecidos cai em "custom" (o estado do meio,
+// visualmente neutro) em vez de quebrar — defensivo contra listas com status customizados extras.
+function parseStatusType(raw: string): StatusType {
+  return raw === "open" || raw === "closed" ? raw : "custom";
 }
 
 async function clickupGet(path: string) {
@@ -143,6 +154,7 @@ export async function fetchClientTasks(listId: string): Promise<TaskItem[]> {
     name: t.name,
     status: t.status.status,
     statusColor: clickupColorToHex(t.status.color),
+    statusType: parseStatusType(t.status.type),
     statusOrder: t.status.orderindex,
     dueDate: t.due_date ? Number(t.due_date) : null,
     startDate: t.start_date ? Number(t.start_date) : null,
@@ -162,7 +174,8 @@ export async function fetchClientTasks(listId: string): Promise<TaskItem[]> {
 }
 
 // ponytail: 2 chamadas em paralelo (status configurados da lista + membros da lista) — só
-// buscado sob demanda quando o dropdown de Status ou Responsáveis é aberto pela primeira vez.
+// buscado sob demanda quando o dropdown de Status ou Responsáveis é aberto pela primeira vez,
+// e agora também na carga inicial da página Tasks (via /api/tasks/[client]) pra montar as seções.
 export async function fetchListMeta(listId: string): Promise<{ statuses: TaskStatus[]; members: TaskListMember[] }> {
   const [listJson, membersJson] = await Promise.all([clickupGet(`list/${listId}`), clickupGet(`list/${listId}/member`)]);
 
@@ -172,7 +185,12 @@ export async function fetchListMeta(listId: string): Promise<{ statuses: TaskSta
   return {
     statuses: [...rawStatuses]
       .sort((a, b) => a.orderindex - b.orderindex)
-      .map((s) => ({ status: s.status, color: clickupColorToHex(s.color), orderindex: s.orderindex })),
+      .map((s) => ({
+        status: s.status,
+        color: clickupColorToHex(s.color),
+        type: parseStatusType(s.type),
+        orderindex: s.orderindex,
+      })),
     members: rawMembers.map((m) => ({
       id: String(m.id),
       name: m.username,

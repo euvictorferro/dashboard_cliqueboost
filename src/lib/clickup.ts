@@ -199,8 +199,10 @@ export async function updateTaskDueDate(taskId: string, dueDate: number | null):
   await clickupPut(`task/${taskId}`, { due_date: dueDate, due_date_time: dueDate !== null });
 }
 
+// ponytail: o ClickUp ignora silenciosamente description:"" (trata como "campo não enviado") —
+// confirmado ao vivo. Um espaço em branco força a atualização e o ClickUp normaliza pra vazio.
 export async function updateTaskDescription(taskId: string, desc: string): Promise<void> {
-  await clickupPut(`task/${taskId}`, { description: desc });
+  await clickupPut(`task/${taskId}`, { description: desc === "" ? " " : desc });
 }
 
 export async function fetchTaskComments(taskId: string): Promise<TaskComment[]> {

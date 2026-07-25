@@ -1,6 +1,6 @@
 const MONTHS_PT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
-// ponytail: usado nos cards mini (ContentCard e TaskCard) — data curta no ano corrente, completa
+// ponytail: usado no ContentCard e no TaskRow — data curta no ano corrente, completa
 // se for outro ano, cor por proximidade (vermelho vencido, amarelo <=3 dias, neutro caso contrário).
 export function getDueDateDisplay(dueDate: number): { text: string; className: string } {
   const due = new Date(dueDate);

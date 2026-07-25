@@ -1,18 +1,21 @@
+// src/components/TasksPageClient.tsx
 "use client";
 
 import { useEffect, useState } from "react";
-import type { TaskItem } from "@/lib/clickup";
+import type { TaskItem, TaskStatus } from "@/lib/clickup";
 import { TasksTable } from "./TasksTable";
 
 type ErrorKind = "no_list" | "fetch_failed";
 
 export function TasksPageClient({ clientId, accessKey }: { clientId: string; accessKey: string }) {
   const [tasks, setTasks] = useState<TaskItem[] | null>(null);
+  const [statuses, setStatuses] = useState<TaskStatus[]>([]);
   const [error, setError] = useState<ErrorKind | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setTasks(null);
+    setStatuses([]);
     setError(null);
     fetch(`/api/tasks/${clientId}?key=${encodeURIComponent(accessKey)}`)
       .then(async (res) => {
@@ -20,10 +23,13 @@ export function TasksPageClient({ clientId, accessKey }: { clientId: string; acc
         if (!res.ok) {
           throw new Error(data.error === "no_list_configured" ? "no_list" : "fetch_failed");
         }
-        return data as { tasks: TaskItem[] };
+        return data as { tasks: TaskItem[]; statuses: TaskStatus[] };
       })
       .then((data) => {
-        if (!cancelled) setTasks(data.tasks);
+        if (!cancelled) {
+          setTasks(data.tasks);
+          setStatuses(data.statuses);
+        }
       })
       .catch((err: Error) => {
         if (!cancelled) setError(err.message === "no_list" ? "no_list" : "fetch_failed");
@@ -47,7 +53,7 @@ export function TasksPageClient({ clientId, accessKey }: { clientId: string; acc
         </p>
       )}
       {!error && !tasks && <p className="text-sm text-muted-foreground">Carregando...</p>}
-      {!error && tasks && <TasksTable tasks={tasks} clientId={clientId} accessKey={accessKey} />}
+      {!error && tasks && <TasksTable tasks={tasks} statuses={statuses} clientId={clientId} accessKey={accessKey} />}
     </div>
   );
 }

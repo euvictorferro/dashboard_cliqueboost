@@ -43,7 +43,7 @@ function TaskSection({
       </button>
       {open && (
         <div className="pb-1">
-          <div className="grid grid-cols-[minmax(0,1fr)_130px_110px_70px_50px] gap-3 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className="grid grid-cols-[minmax(0,1fr)_130px_110px_90px_80px] gap-3 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             <span className="truncate">Nome</span>
             <span className="truncate">Status</span>
             <span className="truncate">Data</span>

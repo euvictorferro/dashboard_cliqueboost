@@ -68,31 +68,33 @@ export function BunkerPageClient({ clientId, accessKey }: { clientId: string; ac
   const ideasList = lists ? findIdeasList(lists) : null;
 
   return (
-    <div className="w-full py-10 pl-6 sm:pl-10">
+    <div className="w-full py-10 px-6 sm:px-10">
       <h1 className="mb-6 text-2xl font-bold text-foreground">Bunker</h1>
 
-      <div className="mb-10">
-        <h2 className="mb-4 text-lg font-bold text-card-foreground">Ideias</h2>
-        {error && (
-          <p className="rounded-[var(--radius-card)] bg-card p-6 text-center text-sm text-muted-foreground shadow-[var(--shadow-soft)]">
-            {errorMessage}
-          </p>
-        )}
-        {!error && !lists && <p className="text-sm text-muted-foreground">Carregando...</p>}
-        {!error && lists && <IdeasList cards={ideasList?.cards ?? []} clientId={clientId} accessKey={accessKey} />}
-      </div>
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <div>
+          <h2 className="mb-4 text-lg font-bold text-card-foreground">Ideias</h2>
+          {error && (
+            <p className="rounded-[var(--radius-card)] bg-card p-6 text-center text-sm text-muted-foreground shadow-[var(--shadow-soft)]">
+              {errorMessage}
+            </p>
+          )}
+          {!error && !lists && <p className="text-sm text-muted-foreground">Carregando...</p>}
+          {!error && lists && <IdeasList cards={ideasList?.cards ?? []} clientId={clientId} accessKey={accessKey} />}
+        </div>
 
-      <div>
-        <h2 className="mb-4 text-lg font-bold text-card-foreground">Concorrentes e referências</h2>
-        {competitorsError && (
-          <p className="rounded-[var(--radius-card)] bg-card p-6 text-center text-sm text-muted-foreground shadow-[var(--shadow-soft)]">
-            Não foi possível carregar os concorrentes agora.
-          </p>
-        )}
-        {!competitorsError && competitors === null && <p className="text-sm text-muted-foreground">Carregando...</p>}
-        {!competitorsError && competitors && (
-          <CompetitorsSection clientId={clientId} accessKey={accessKey} initialCompetitors={competitors} />
-        )}
+        <div>
+          <h2 className="mb-4 text-lg font-bold text-card-foreground">Concorrentes e referências</h2>
+          {competitorsError && (
+            <p className="rounded-[var(--radius-card)] bg-card p-6 text-center text-sm text-muted-foreground shadow-[var(--shadow-soft)]">
+              Não foi possível carregar os concorrentes agora.
+            </p>
+          )}
+          {!competitorsError && competitors === null && <p className="text-sm text-muted-foreground">Carregando...</p>}
+          {!competitorsError && competitors && (
+            <CompetitorsSection clientId={clientId} accessKey={accessKey} initialCompetitors={competitors} />
+          )}
+        </div>
       </div>
     </div>
   );

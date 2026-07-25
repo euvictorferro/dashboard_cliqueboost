@@ -19,6 +19,13 @@ export type TaskPriority = {
   color: string;
 };
 
+export type TaskCreator = {
+  name: string;
+  color: string;
+  initials: string;
+  avatarUrl?: string;
+};
+
 // ponytail: "open"/"custom"/"closed" é o campo `type` real do status no ClickUp (confirmado ao
 // vivo) — mapeia direto pros 3 ícones de status (não iniciado/em andamento/concluído).
 export type StatusType = "open" | "custom" | "closed";
@@ -38,6 +45,8 @@ export type TaskItem = {
   tags: string[];
   timeEstimate: number | null;
   timeSpent: number;
+  dateCreated: number;
+  creator: TaskCreator;
 };
 
 export type TaskStatus = { status: string; color: string; type: StatusType; orderindex: number };
@@ -61,6 +70,12 @@ type RawClickUpAssignee = {
   profilePicture: string | null;
 };
 
+type RawClickUpCreator = {
+  username: string;
+  color: string;
+  profilePicture: string | null;
+};
+
 type RawClickUpTask = {
   id: string;
   name: string;
@@ -73,6 +88,8 @@ type RawClickUpTask = {
   tags: { name: string }[];
   time_estimate: number | string | null;
   time_spent: number | string | null;
+  date_created: string;
+  creator: RawClickUpCreator;
 };
 
 type RawClickUpStatus = { status: string; color: string; type: string; orderindex: number };
@@ -170,6 +187,13 @@ export async function fetchClientTasks(listId: string): Promise<TaskItem[]> {
     tags: t.tags.map((tag) => tag.name),
     timeEstimate: t.time_estimate ? Number(t.time_estimate) : null,
     timeSpent: t.time_spent ? Number(t.time_spent) : 0,
+    dateCreated: Number(t.date_created),
+    creator: {
+      name: t.creator.username,
+      color: t.creator.color,
+      initials: t.creator.username.charAt(0).toUpperCase(),
+      avatarUrl: t.creator.profilePicture ?? undefined,
+    },
   }));
 }
 

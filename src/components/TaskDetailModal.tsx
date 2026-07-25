@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { TaskComment, TaskItem, TaskListMember, TaskStatus } from "@/lib/clickup";
 import { AssigneeAvatars } from "./AssigneeAvatars";
+import { CommentsIcon, DescriptionIcon } from "./icons";
 
 function formatDate(value: number | null): string | null {
   if (value === null) return null;
@@ -51,11 +52,24 @@ function CloseIcon() {
   );
 }
 
-function Field({ label, action, children }: { label: string; action?: React.ReactNode; children: React.ReactNode }) {
+function Field({
+  label,
+  icon,
+  action,
+  children,
+}: {
+  label: string;
+  icon?: React.ReactNode;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <div>
       <div className="mb-2 flex items-center justify-between gap-2">
-        <p className="text-sm font-bold text-card-foreground">{label}</p>
+        <p className="flex items-center gap-1.5 text-sm font-bold text-card-foreground">
+          {icon}
+          {label}
+        </p>
         {action}
       </div>
       <div className="text-sm text-card-foreground">{children}</div>
@@ -391,6 +405,7 @@ function DescriptionField({
   return (
     <Field
       label="Descrição"
+      icon={<DescriptionIcon size={14} />}
       action={
         !editing && (
           <button
@@ -502,15 +517,16 @@ function CommentBox({
   );
 }
 
-function CommentsField({ clientId, accessKey, taskId }: { clientId: string; accessKey: string; taskId: string }) {
+function CommentsField({ clientId, accessKey, task }: { clientId: string; accessKey: string; task: TaskItem }) {
   const [comments, setComments] = useState<TaskComment[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const [showActivity, setShowActivity] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setComments(null);
     setFailed(false);
-    fetch(`/api/tasks/${clientId}/task/${taskId}/comments?key=${encodeURIComponent(accessKey)}`)
+    fetch(`/api/tasks/${clientId}/task/${task.id}/comments?key=${encodeURIComponent(accessKey)}`)
       .then((res) => {
         if (!res.ok) throw new Error("fetch_failed");
         return res.json();
@@ -524,49 +540,95 @@ function CommentsField({ clientId, accessKey, taskId }: { clientId: string; acce
     return () => {
       cancelled = true;
     };
-  }, [clientId, accessKey, taskId]);
+  }, [clientId, accessKey, task.id]);
 
   return (
     <div>
-      <p className="mb-3 text-sm font-bold text-card-foreground">Comentários</p>
+      <div className="mb-3 flex flex-nowrap items-center justify-between gap-3">
+        <p className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm font-bold text-card-foreground">
+          <CommentsIcon size={14} />
+          Comentários e atividades
+        </p>
+        {comments !== null && comments.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowActivity((s) => !s)}
+            className="shrink-0 rounded-md border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-muted"
+          >
+            {showActivity ? "Fechar atividades" : "Mostrar atividades"}
+          </button>
+        )}
+      </div>
 
       <CommentBox
         clientId={clientId}
         accessKey={accessKey}
-        taskId={taskId}
-        onPosted={(comment) => setComments((prev) => (prev ? [comment, ...prev] : [comment]))}
+        taskId={task.id}
+        onPosted={(comment) => {
+          setComments((prev) => (prev ? [comment, ...prev] : [comment]));
+          setShowActivity(true);
+        }}
       />
 
-      {failed && <span className="text-sm text-muted-foreground">Não foi possível carregar.</span>}
-      {!failed && comments === null && <span className="text-sm text-muted-foreground">Carregando...</span>}
-      {!failed && comments !== null && comments.length === 0 && (
-        <span className="text-sm text-muted-foreground">Sem comentários.</span>
-      )}
-      {!failed && comments !== null && comments.length > 0 && (
-        <ul className="space-y-4">
-          {comments.map((c) => (
-            <li key={c.id} className="flex items-start gap-2.5">
-              {c.authorAvatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- avatar vem de URL externa do ClickUp
-                <img src={c.authorAvatarUrl} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
-              ) : (
-                <span
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
-                  style={{ backgroundColor: c.authorColor }}
-                >
-                  {c.authorInitials}
-                </span>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="text-sm text-card-foreground">
-                  <span className="font-bold text-card-foreground">{c.authorName}</span> {c.text}
-                </p>
-                <span className="text-[11px] text-muted-foreground">{formatRelativeTime(c.date)}</span>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+      <ul className="space-y-4">
+        <li className="flex items-start gap-2.5">
+          {task.creator.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- avatar vem de URL externa do ClickUp
+            <img src={task.creator.avatarUrl} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+          ) : (
+            <span
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
+              style={{ backgroundColor: task.creator.color }}
+            >
+              {task.creator.initials}
+            </span>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="text-sm text-card-foreground">
+              <span className="font-bold text-card-foreground">{task.creator.name}</span> criou essa task
+            </p>
+            <span className="text-[11px] text-muted-foreground">{formatRelativeTime(task.dateCreated)}</span>
+          </div>
+        </li>
+
+        {showActivity && (
+          <>
+            {failed && (
+              <li>
+                <span className="text-sm text-muted-foreground">Não foi possível carregar os comentários.</span>
+              </li>
+            )}
+            {!failed && comments === null && (
+              <li>
+                <span className="text-sm text-muted-foreground">Carregando...</span>
+              </li>
+            )}
+            {!failed &&
+              comments !== null &&
+              comments.map((c) => (
+                <li key={c.id} className="flex items-start gap-2.5">
+                  {c.authorAvatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- avatar vem de URL externa do ClickUp
+                    <img src={c.authorAvatarUrl} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+                  ) : (
+                    <span
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
+                      style={{ backgroundColor: c.authorColor }}
+                    >
+                      {c.authorInitials}
+                    </span>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-card-foreground">
+                      <span className="font-bold text-card-foreground">{c.authorName}</span> {c.text}
+                    </p>
+                    <span className="text-[11px] text-muted-foreground">{formatRelativeTime(c.date)}</span>
+                  </div>
+                </li>
+              ))}
+          </>
+        )}
+      </ul>
     </div>
   );
 }
@@ -712,7 +774,7 @@ export function TaskDetailModal({
 
           <div className="min-w-0 shrink-0 overflow-y-auto border-l border-border bg-muted/30 md:w-[380px]">
             <div className="p-6">
-              <CommentsField clientId={clientId} accessKey={accessKey} taskId={task.id} />
+              <CommentsField clientId={clientId} accessKey={accessKey} task={task} />
             </div>
           </div>
         </div>

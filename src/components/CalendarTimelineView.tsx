@@ -59,7 +59,6 @@ export function CalendarTimelineView({
 
   useEffect(() => {
     scrollToToday();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- só na montagem, pra abrir já centralizado em hoje
   }, []);
 
   if (days.length === 0) {

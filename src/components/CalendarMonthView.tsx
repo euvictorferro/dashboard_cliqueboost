@@ -4,6 +4,7 @@
 import { useState } from "react";
 import type { ContentCard as ContentCardData } from "@/lib/trello";
 import { getContentFormat, FORMAT_BAR_CLASSES } from "@/lib/contentFormat";
+import { getNYDateParts, isSameNYDay } from "@/lib/nyTime";
 
 const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const MONTH_LABELS = [
@@ -50,10 +51,6 @@ function buildMonthGrid(year: number, month: number): (Date | null)[] {
   return cells;
 }
 
-function isSameDay(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-}
-
 export function CalendarMonthView({
   cards,
   onSelectCard,
@@ -61,14 +58,20 @@ export function CalendarMonthView({
   cards: ContentCardData[];
   onSelectCard: (card: ContentCardData) => void;
 }) {
-  const today = new Date();
-  const [currentMonth, setCurrentMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const todayParts = getNYDateParts(Date.now());
+  const [currentMonth, setCurrentMonth] = useState(new Date(todayParts.year, todayParts.month, 1));
 
   const datedCards = cards.filter((c) => c.dueDate !== null);
   const cells = buildMonthGrid(currentMonth.getFullYear(), currentMonth.getMonth());
 
   function cardsForDay(day: Date): ContentCardData[] {
-    return datedCards.filter((c) => isSameDay(new Date(c.dueDate!), day));
+    return datedCards.filter((c) =>
+      isSameNYDay(c.dueDate!, { year: day.getFullYear(), month: day.getMonth(), day: day.getDate() })
+    );
+  }
+
+  function isToday(day: Date): boolean {
+    return day.getFullYear() === todayParts.year && day.getMonth() === todayParts.month && day.getDate() === todayParts.day;
   }
 
   function goToPrevMonth() {
@@ -118,7 +121,7 @@ export function CalendarMonthView({
           <div key={i} className="min-h-[110px] bg-card p-1.5">
             {day && (
               <>
-                <p className={`mb-1 text-xs font-medium ${isSameDay(day, today) ? "text-brand-primary" : "text-muted-foreground"}`}>
+                <p className={`mb-1 text-xs font-medium ${isToday(day) ? "text-brand-primary" : "text-muted-foreground"}`}>
                   {day.getDate()}
                 </p>
                 <div className="space-y-1">

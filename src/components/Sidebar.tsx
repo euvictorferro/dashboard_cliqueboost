@@ -25,6 +25,15 @@ function TasksIcon() {
   );
 }
 
+function AtasIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <rect x="3" y="2" width="12" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M6 6h6M6 9h6M6 12h3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function ContentIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
@@ -83,13 +92,14 @@ function ChevronIcon({ open }: { open: boolean }) {
   );
 }
 
-type ActiveKey = "dashboard" | "tasks" | "conteudos" | "calendario" | "bunker";
+type ActiveKey = "dashboard" | "tasks" | "atas" | "conteudos" | "calendario" | "bunker";
 
 type NavItemDef = { href: string; label: string; key: ActiveKey; icon: () => React.JSX.Element };
 
 const STANDALONE_ITEMS: NavItemDef[] = [
   { href: "", label: "Dashboard", key: "dashboard", icon: DashboardIcon },
   { href: "/tasks", label: "Tasks", key: "tasks", icon: TasksIcon },
+  { href: "/atas", label: "Atas", key: "atas", icon: AtasIcon },
 ];
 
 const SOCIAL_MEDIA_ITEMS: NavItemDef[] = [

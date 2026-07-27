@@ -1,13 +1,17 @@
 // src/lib/contentFormat.ts
 import type { ContentCard as ContentCardData } from "./trello";
 
-// ponytail: classificação por label do Trello, não pelo nome do card — se o cliente não usa
-// nenhuma dessas labels ainda (alguns boards só têm labels de status), o card cai no "default".
+// ponytail: classificação por label do Trello OU pelo título do card — alguns clientes (ex:
+// Débora) não usam labels de formato, só escrevem "[Carrossel]"/"[Reels]" no título. Se nenhum
+// dos dois bater, o card cai no "default".
 export type ContentFormat = "video" | "text" | null;
 
+const VIDEO_PATTERN = /reels?|tiktok/i;
+const TEXT_PATTERN = /carrossel|post ú?nico|artigo|linkedin|blog/i;
+
 export function getContentFormat(card: ContentCardData): ContentFormat {
-  if (card.labels.some((l) => /reels?|tiktok/i.test(l.name))) return "video";
-  if (card.labels.some((l) => /carrossel|post ú?nico|artigo|linkedin|blog/i.test(l.name))) return "text";
+  if (card.labels.some((l) => VIDEO_PATTERN.test(l.name)) || VIDEO_PATTERN.test(card.name)) return "video";
+  if (card.labels.some((l) => TEXT_PATTERN.test(l.name)) || TEXT_PATTERN.test(card.name)) return "text";
   return null;
 }
 

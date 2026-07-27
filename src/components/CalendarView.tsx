@@ -5,9 +5,10 @@ import { useState } from "react";
 import type { ContentCard as ContentCardData } from "@/lib/trello";
 import { ContentCardModal } from "./ContentCardModal";
 import { CalendarMonthView } from "./CalendarMonthView";
-import { CalendarTimelineView } from "./CalendarTimelineView";
+import { CalendarWeekView } from "./CalendarWeekView";
+import { CalendarDayView } from "./CalendarDayView";
 
-type ViewMode = "month" | "timeline";
+type ViewMode = "month" | "week" | "day";
 
 export function CalendarView({
   cards,
@@ -35,20 +36,27 @@ export function CalendarView({
         </button>
         <button
           type="button"
-          onClick={() => setViewMode("timeline")}
+          onClick={() => setViewMode("week")}
           className={`rounded px-3 py-1.5 text-xs font-semibold transition-colors ${
-            viewMode === "timeline" ? "bg-brand-primary/10 text-brand-primary" : "text-muted-foreground hover:bg-muted"
+            viewMode === "week" ? "bg-brand-primary/10 text-brand-primary" : "text-muted-foreground hover:bg-muted"
           }`}
         >
-          Timeline
+          Semana
+        </button>
+        <button
+          type="button"
+          onClick={() => setViewMode("day")}
+          className={`rounded px-3 py-1.5 text-xs font-semibold transition-colors ${
+            viewMode === "day" ? "bg-brand-primary/10 text-brand-primary" : "text-muted-foreground hover:bg-muted"
+          }`}
+        >
+          Dia
         </button>
       </div>
 
-      {viewMode === "month" ? (
-        <CalendarMonthView cards={cards} onSelectCard={setSelectedCard} />
-      ) : (
-        <CalendarTimelineView cards={cards} onSelectCard={setSelectedCard} />
-      )}
+      {viewMode === "month" && <CalendarMonthView cards={cards} onSelectCard={setSelectedCard} />}
+      {viewMode === "week" && <CalendarWeekView cards={cards} onSelectCard={setSelectedCard} />}
+      {viewMode === "day" && <CalendarDayView cards={cards} onSelectCard={setSelectedCard} />}
 
       {selectedCard && (
         <ContentCardModal card={selectedCard} clientId={clientId} accessKey={accessKey} onClose={() => setSelectedCard(null)} />

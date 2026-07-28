@@ -4,7 +4,9 @@ import { CLIENTS } from "@/lib/clients";
 import { AccessDenied } from "@/components/AccessDenied";
 import { Sidebar } from "@/components/Sidebar";
 import { AtasPageClient } from "@/components/AtasPageClient";
+import { TimeZoneProvider } from "@/components/TimeZoneContext";
 import { verifyClientToken } from "@/lib/access";
+import { fetchClientSettings } from "@/lib/clientSettings";
 
 export default async function ClientAtasPage({
   params,
@@ -21,11 +23,15 @@ export default async function ClientAtasPage({
   const authorized = await verifyClientToken(found.id, key);
   if (!authorized) return <AccessDenied />;
 
+  const { timeZone } = await fetchClientSettings(found.id);
+
   return (
     <div className="flex min-h-full">
       <Sidebar clientId={found.id} accessKey={key!} active="atas" />
       <div className="min-w-0 flex-1">
-        <AtasPageClient clientId={found.id} accessKey={key!} />
+        <TimeZoneProvider timeZone={timeZone}>
+          <AtasPageClient clientId={found.id} accessKey={key!} />
+        </TimeZoneProvider>
       </div>
     </div>
   );

@@ -3,14 +3,7 @@
 
 import { useState } from "react";
 import type { CallNote } from "@/lib/callNotes";
-
-// ponytail: call_date vem como "YYYY-MM-DD" (tipo date do Postgres) — parse manual em vez de
-// `new Date(callDate)` pra não sofrer com fuso horário (meia-noite UTC vira dia anterior em
-// alguns fusos locais).
-function formatCallDate(callDate: string): string {
-  const [year, month, day] = callDate.split("-");
-  return `${day}/${month}/${year}`;
-}
+import { formatCallDateHeader } from "@/lib/formatCallDate";
 
 export function AtasList({ notes }: { notes: CallNote[] }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -36,7 +29,7 @@ export function AtasList({ notes }: { notes: CallNote[] }) {
             >
               <div>
                 <p className="text-sm font-bold text-card-foreground">{note.title}</p>
-                <p className="text-xs text-muted-foreground">{formatCallDate(note.callDate)}</p>
+                <p className="text-xs text-muted-foreground">{formatCallDateHeader(note.callAt, { withYear: true })}</p>
               </div>
               <span className={`shrink-0 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`}>
                 ▾

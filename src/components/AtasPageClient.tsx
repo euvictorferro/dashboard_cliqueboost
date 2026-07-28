@@ -39,7 +39,7 @@ export function AtasPageClient({ clientId, accessKey }: { clientId: string; acce
         </p>
       )}
       {!error && !notes && <p className="text-sm text-muted-foreground">Carregando...</p>}
-      {!error && notes && <AtasList notes={notes} />}
+      {!error && notes && <AtasList notes={notes} clientId={clientId} accessKey={accessKey} />}
     </div>
   );
 }

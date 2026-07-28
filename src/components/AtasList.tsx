@@ -4,7 +4,8 @@
 import Link from "next/link";
 import type { CallNote } from "@/lib/callNotes";
 import { formatCallDateHeader } from "@/lib/formatCallDate";
-import { getNYDateParts, formatNYTime } from "@/lib/nyTime";
+import { getTimeZoneDateParts, formatTZTime } from "@/lib/clientTime";
+import { useTimeZone } from "./TimeZoneContext";
 
 function FileTextIcon() {
   return (
@@ -18,16 +19,16 @@ function FileTextIcon() {
 type DateGroup = { headerLabel: string; notes: CallNote[] };
 
 // ponytail: notas já vêm ordenadas por callAt decrescente da API — só precisa agrupar
-// consecutivas do mesmo dia-calendário em NY, sem reordenar nada.
-function groupByDay(notes: CallNote[]): DateGroup[] {
+// consecutivas do mesmo dia-calendário no fuso do cliente, sem reordenar nada.
+function groupByDay(notes: CallNote[], timeZone: string): DateGroup[] {
   const groups: DateGroup[] = [];
   let lastKey: string | null = null;
 
   for (const note of notes) {
-    const parts = getNYDateParts(note.callAt);
+    const parts = getTimeZoneDateParts(note.callAt, timeZone);
     const key = `${parts.year}-${parts.month}-${parts.day}`;
     if (key !== lastKey) {
-      groups.push({ headerLabel: formatCallDateHeader(note.callAt), notes: [note] });
+      groups.push({ headerLabel: formatCallDateHeader(note.callAt, timeZone), notes: [note] });
       lastKey = key;
     } else {
       groups[groups.length - 1].notes.push(note);
@@ -45,6 +46,8 @@ export function AtasList({
   clientId: string;
   accessKey: string;
 }) {
+  const timeZone = useTimeZone();
+
   if (notes.length === 0) {
     return (
       <div className="rounded-[var(--radius-card)] bg-card p-8 text-center shadow-[var(--shadow-soft)]">
@@ -53,7 +56,7 @@ export function AtasList({
     );
   }
 
-  const groups = groupByDay(notes);
+  const groups = groupByDay(notes, timeZone);
 
   return (
     <div className="space-y-6">
@@ -71,7 +74,7 @@ export function AtasList({
                   <FileTextIcon />
                 </span>
                 <span className="min-w-0 flex-1 truncate text-sm font-bold text-card-foreground">{note.title}</span>
-                <span className="shrink-0 text-xs text-muted-foreground">{formatNYTime(note.callAt)}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">{formatTZTime(note.callAt, timeZone)}</span>
               </Link>
             ))}
           </div>

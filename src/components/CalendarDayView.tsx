@@ -4,7 +4,8 @@
 import { useState } from "react";
 import type { ContentCard as ContentCardData } from "@/lib/trello";
 import { getContentFormat, FORMAT_BAR_CLASSES } from "@/lib/contentFormat";
-import { getNYDateParts, isSameNYDay, formatNYTime } from "@/lib/nyTime";
+import { getTimeZoneDateParts, isSameTZDay, formatTZTime } from "@/lib/clientTime";
+import { useTimeZone } from "./TimeZoneContext";
 
 const WEEKDAY_LABELS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 const MONTH_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -32,13 +33,14 @@ export function CalendarDayView({
   cards: ContentCardData[];
   onSelectCard: (card: ContentCardData) => void;
 }) {
-  const todayParts = getNYDateParts(Date.now());
+  const timeZone = useTimeZone();
+  const todayParts = getTimeZoneDateParts(Date.now(), timeZone);
   const [currentDay, setCurrentDay] = useState(() => new Date(todayParts.year, todayParts.month, todayParts.day));
 
   const datedCards = cards.filter((c) => c.dueDate !== null);
   const dayCards = datedCards
     .filter((c) =>
-      isSameNYDay(c.dueDate!, { year: currentDay.getFullYear(), month: currentDay.getMonth(), day: currentDay.getDate() })
+      isSameTZDay(c.dueDate!, { year: currentDay.getFullYear(), month: currentDay.getMonth(), day: currentDay.getDate() }, timeZone)
     )
     .sort((a, b) => a.dueDate! - b.dueDate!);
 
@@ -97,7 +99,7 @@ export function CalendarDayView({
               onClick={() => onSelectCard(card)}
               className={`flex w-full items-center gap-3 rounded-[var(--radius-card)] px-4 py-3 text-left transition-colors ${FORMAT_BAR_CLASSES[getContentFormat(card) ?? "default"]}`}
             >
-              <span className="text-xs font-semibold tabular-nums">{formatNYTime(card.dueDate!)}</span>
+              <span className="text-xs font-semibold tabular-nums">{formatTZTime(card.dueDate!, timeZone)}</span>
               <span className="truncate text-sm font-medium">{card.name}</span>
             </button>
           ))}

@@ -6,7 +6,8 @@ import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import type { CallNote } from "@/lib/callNotes";
 import { formatCallDateHeader } from "@/lib/formatCallDate";
-import { formatNYTime } from "@/lib/nyTime";
+import { formatTZTime } from "@/lib/clientTime";
+import { useTimeZone } from "./TimeZoneContext";
 
 type Status = "loading" | "error" | "not_found" | "success";
 
@@ -19,6 +20,7 @@ export function AtaDetailPageClient({
   accessKey: string;
   noteId: string;
 }) {
+  const timeZone = useTimeZone();
   const [note, setNote] = useState<CallNote | null>(null);
   const [status, setStatus] = useState<Status>("loading");
 
@@ -71,7 +73,7 @@ export function AtaDetailPageClient({
         <div className="rounded-[var(--radius-card)] bg-card p-8 shadow-[var(--shadow-soft)]">
           <h1 className="text-2xl font-bold text-foreground">{note.title}</h1>
           <p className="mb-6 mt-1 text-sm text-muted-foreground">
-            {formatCallDateHeader(note.callAt, { withYear: true })} · {formatNYTime(note.callAt)}
+            {formatCallDateHeader(note.callAt, timeZone, { withYear: true })} · {formatTZTime(note.callAt, timeZone)}
           </p>
           <ReactMarkdown
             components={{

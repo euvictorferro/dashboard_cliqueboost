@@ -4,7 +4,8 @@
 import { useState } from "react";
 import type { ContentCard as ContentCardData } from "@/lib/trello";
 import { getContentFormat, FORMAT_BAR_CLASSES } from "@/lib/contentFormat";
-import { getNYDateParts, isSameNYDay } from "@/lib/nyTime";
+import { getTimeZoneDateParts, isSameTZDay } from "@/lib/clientTime";
+import { useTimeZone } from "./TimeZoneContext";
 
 const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const MONTH_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -50,7 +51,8 @@ export function CalendarWeekView({
   cards: ContentCardData[];
   onSelectCard: (card: ContentCardData) => void;
 }) {
-  const todayParts = getNYDateParts(Date.now());
+  const timeZone = useTimeZone();
+  const todayParts = getTimeZoneDateParts(Date.now(), timeZone);
   const [weekStart, setWeekStart] = useState(() => getWeekStart(todayParts.year, todayParts.month, todayParts.day));
 
   const datedCards = cards.filter((c) => c.dueDate !== null);
@@ -58,7 +60,7 @@ export function CalendarWeekView({
 
   function cardsForDay(day: Date): ContentCardData[] {
     return datedCards.filter((c) =>
-      isSameNYDay(c.dueDate!, { year: day.getFullYear(), month: day.getMonth(), day: day.getDate() })
+      isSameTZDay(c.dueDate!, { year: day.getFullYear(), month: day.getMonth(), day: day.getDate() }, timeZone)
     );
   }
 

@@ -15,6 +15,7 @@ export function ContaPageClient({ clientId, accessKey }: { clientId: string; acc
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [brandSaveStatus, setBrandSaveStatus] = useState<SaveStatus>("idle");
   const [uploadStatus, setUploadStatus] = useState<SaveStatus>("idle");
+  const [contractDuration, setContractDuration] = useState<string>("Ainda não configurado");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -23,13 +24,14 @@ export function ContaPageClient({ clientId, accessKey }: { clientId: string; acc
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error();
-        return data as { timeZone: string; brandColor: string | null; logoUrl: string | null };
+        return data as { timeZone: string; brandColor: string | null; logoUrl: string | null; contractDuration: string };
       })
       .then((data) => {
         if (!cancelled) {
           setTimeZone(data.timeZone);
           if (data.brandColor) setBrandColor(data.brandColor);
           setLogoUrl(data.logoUrl);
+          setContractDuration(data.contractDuration);
           setStatus("ready");
         }
       })
@@ -189,6 +191,11 @@ export function ContaPageClient({ clientId, accessKey }: { clientId: string; acc
             </div>
             {uploadStatus === "saved" && <p className="text-xs text-green-600">Logo atualizado.</p>}
             {uploadStatus === "error" && <p className="text-xs text-red-500">Não foi possível enviar o logo.</p>}
+          </div>
+
+          <div className="rounded-[var(--radius-card)] bg-card p-6 shadow-[var(--shadow-soft)]">
+            <h2 className="mb-1 text-sm font-bold text-card-foreground">Tempo de contrato</h2>
+            <p className="text-sm text-foreground">{contractDuration}</p>
           </div>
         </div>
       )}

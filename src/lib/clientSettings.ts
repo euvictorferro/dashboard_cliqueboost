@@ -5,7 +5,6 @@ import { DEFAULT_TIME_ZONE } from "./clientTime";
 
 export type ClientSettings = {
   timeZone: string;
-  brandColor: string | null;
   logoUrl: string | null;
   contractStart: string | null;
 };
@@ -15,13 +14,12 @@ export async function fetchClientSettings(clientId: string): Promise<ClientSetti
   if (!supabase) throw new Error("Supabase não configurado");
   const { data, error } = await supabase
     .from("client_settings")
-    .select("time_zone, brand_color, logo_url, contract_start_date")
+    .select("time_zone, logo_url, contract_start_date")
     .eq("client_id", clientId)
     .maybeSingle();
   if (error) throw new Error(error.message);
   return {
     timeZone: data?.time_zone ?? DEFAULT_TIME_ZONE,
-    brandColor: data?.brand_color ?? null,
     logoUrl: data?.logo_url ?? null,
     contractStart: data?.contract_start_date ?? null,
   };
@@ -36,17 +34,11 @@ export async function updateClientSettings(clientId: string, timeZone: string): 
   if (error) throw new Error(error.message);
 }
 
-// ponytail: upsert parcial — só grava as colunas passadas, não mexe em time_zone/logo_url quando
-// só a cor é enviada (Postgres ON CONFLICT DO UPDATE SET só atualiza as colunas do payload).
-export async function updateClientBrand(
-  clientId: string,
-  brand: { brandColor?: string; logoUrl?: string }
-): Promise<void> {
+export async function updateClientLogo(clientId: string, logoUrl: string): Promise<void> {
   const supabase = getSupabaseAdmin();
   if (!supabase) throw new Error("Supabase não configurado");
-  const patch: Record<string, string> = { client_id: clientId };
-  if (brand.brandColor !== undefined) patch.brand_color = brand.brandColor;
-  if (brand.logoUrl !== undefined) patch.logo_url = brand.logoUrl;
-  const { error } = await supabase.from("client_settings").upsert(patch, { onConflict: "client_id" });
+  const { error } = await supabase
+    .from("client_settings")
+    .upsert({ client_id: clientId, logo_url: logoUrl }, { onConflict: "client_id" });
   if (error) throw new Error(error.message);
 }

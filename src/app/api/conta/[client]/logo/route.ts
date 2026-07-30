@@ -1,7 +1,7 @@
 // src/app/api/conta/[client]/logo/route.ts
 import { NextRequest } from "next/server";
 import { CLIENTS } from "@/lib/clients";
-import { updateClientBrand } from "@/lib/clientSettings";
+import { updateClientLogo } from "@/lib/clientSettings";
 import { verifyClientToken } from "@/lib/access";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (uploadError) throw new Error(uploadError.message);
 
     const { data } = supabase.storage.from("client-logos").getPublicUrl(path);
-    await updateClientBrand(clientId, { logoUrl: data.publicUrl });
+    await updateClientLogo(clientId, data.publicUrl);
     return Response.json({ logoUrl: data.publicUrl });
   } catch (err) {
     console.error(`[conta] falha ao subir logo de ${clientId}:`, err);

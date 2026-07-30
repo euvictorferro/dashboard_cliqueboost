@@ -3,14 +3,19 @@
 import { getSupabaseAdmin } from "./supabase";
 import { DEFAULT_TIME_ZONE } from "./clientTime";
 
-export type ClientSettings = { timeZone: string; brandColor: string | null; logoUrl: string | null };
+export type ClientSettings = {
+  timeZone: string;
+  brandColor: string | null;
+  logoUrl: string | null;
+  contractStart: string | null;
+};
 
 export async function fetchClientSettings(clientId: string): Promise<ClientSettings> {
   const supabase = getSupabaseAdmin();
   if (!supabase) throw new Error("Supabase não configurado");
   const { data, error } = await supabase
     .from("client_settings")
-    .select("time_zone, brand_color, logo_url")
+    .select("time_zone, brand_color, logo_url, contract_start_date")
     .eq("client_id", clientId)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -18,6 +23,7 @@ export async function fetchClientSettings(clientId: string): Promise<ClientSetti
     timeZone: data?.time_zone ?? DEFAULT_TIME_ZONE,
     brandColor: data?.brand_color ?? null,
     logoUrl: data?.logo_url ?? null,
+    contractStart: data?.contract_start_date ?? null,
   };
 }
 

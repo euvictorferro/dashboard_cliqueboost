@@ -4,6 +4,7 @@ import { CLIENTS } from "@/lib/clients";
 import { fetchClientSettings, updateClientSettings } from "@/lib/clientSettings";
 import { verifyClientToken } from "@/lib/access";
 import { US_TIMEZONES } from "@/lib/clientTime";
+import { formatContractDuration } from "@/lib/contractDuration";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ client: string }> }) {
   const { client: clientId } = await params;
@@ -15,7 +16,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   try {
     const settings = await fetchClientSettings(clientId);
-    return Response.json(settings);
+    return Response.json({
+      ...settings,
+      contractDuration: formatContractDuration(settings.contractStart, new Date()),
+    });
   } catch (err) {
     console.error(`[conta] falha ao buscar configurações de ${clientId}:`, err);
     return Response.json({ error: "fetch_failed" }, { status: 502 });

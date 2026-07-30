@@ -22,7 +22,6 @@
 **Files:**
 - Create: `supabase/migrations/0008_client_settings_contract.sql`
 - Create: `src/lib/contractDuration.ts`
-- Test: `src/lib/contractDuration.test.ts`
 - Modify: `src/lib/clientSettings.ts`
 - Modify: `src/app/api/conta/[client]/route.ts`
 
@@ -71,49 +70,10 @@ return NextResponse.json({ timeZone: settings.timeZone, brandColor: settings.bra
 alter table client_settings add column if not exists contract_start_date date;
 ```
 
-- [ ] **Step 2: Escrever o teste de `contractDuration.ts` (falhando)**
+- [ ] **Step 2: Confirmar que não há test runner no projeto**
 
-```ts
-// src/lib/contractDuration.test.ts
-import { describe, it, expect } from "vitest";
-import { formatContractDuration } from "./contractDuration";
-
-describe("formatContractDuration", () => {
-  const now = new Date("2026-07-30T12:00:00Z");
-
-  it("retorna 'Ainda não configurado' quando startDate é null", () => {
-    expect(formatContractDuration(null, now)).toBe("Ainda não configurado");
-  });
-
-  it("retorna em meses quando < 12 meses", () => {
-    // 2026-06-30 -> 2026-07-30 = 1 mês
-    expect(formatContractDuration("2026-06-30", now)).toBe("1 mês");
-    // 2025-09-30 -> 2026-07-30 = 10 meses
-    expect(formatContractDuration("2025-09-30", now)).toBe("10 meses");
-  });
-
-  it("retorna em anos e meses quando >= 12 meses", () => {
-    // 2025-07-30 -> 2026-07-30 = exatamente 12 meses = 1 ano
-    expect(formatContractDuration("2025-07-30", now)).toBe("1 ano");
-    // 2025-01-30 -> 2026-07-30 = 18 meses = 1 ano e 6 meses
-    expect(formatContractDuration("2025-01-30", now)).toBe("1 ano e 6 meses");
-    // 2024-07-30 -> 2026-07-30 = 24 meses = 2 anos
-    expect(formatContractDuration("2024-07-30", now)).toBe("2 anos");
-  });
-
-  it("trata 1 mês exato no singular e o resto no plural", () => {
-    expect(formatContractDuration("2026-06-30", now)).toBe("1 mês");
-    expect(formatContractDuration("2026-05-30", now)).toBe("2 meses");
-  });
-});
-```
-
-Se o projeto não usa `vitest` (confira `package.json`), use o test runner já configurado no projeto (procure outro arquivo `*.test.ts` existente pra copiar o padrão de import/runner). Não introduza um runner novo.
-
-- [ ] **Step 3: Rodar o teste e confirmar que falha**
-
-Run: `npm test -- contractDuration` (ou o comando de teste equivalente do projeto)
-Expected: FAIL — `formatContractDuration` não existe ainda.
+Run: `cat package.json` e `ls node_modules/.bin | grep -iE "tsx|ts-node|vitest|jest"`
+Expected: nenhum runner de teste instalado, nenhum arquivo `*.test.ts` existente no repo. Este projeto verifica lógica pura via script Node ad-hoc (throwaway), não via suíte de testes — não instale `vitest`/`jest`/`tsx` como dependência nova.
 
 - [ ] **Step 4: Implementar `contractDuration.ts`**
 
@@ -141,10 +101,9 @@ export function formatContractDuration(startDate: string | null, now: Date): str
 }
 ```
 
-- [ ] **Step 5: Rodar o teste e confirmar que passa**
+- [ ] **Step 5: Verificar a lógica com um script Node throwaway (não commitar)**
 
-Run: `npm test -- contractDuration`
-Expected: PASS — todos os casos.
+Escreva um arquivo temporário `/tmp/check-contract-duration.mjs` que copia a função `formatContractDuration` (mesma lógica de `contractDuration.ts`, em JS puro) e roda os mesmos casos do Step 2 do design (null, 1 mês, 10 meses, 12 meses exatos, 18 meses, 24 meses, plural/singular) com `console.assert`. Rode com `node /tmp/check-contract-duration.mjs` e confirme que nenhum assert falhou (sem output = todos passaram). Apague o arquivo temporário depois.
 
 - [ ] **Step 6: Estender `ClientSettings` e `fetchClientSettings`**
 
@@ -199,7 +158,7 @@ Expected: sem erros novos.
 - [ ] **Step 9: Commit**
 
 ```bash
-git add supabase/migrations/0008_client_settings_contract.sql src/lib/contractDuration.ts src/lib/contractDuration.test.ts src/lib/clientSettings.ts src/app/api/conta/[client]/route.ts
+git add supabase/migrations/0008_client_settings_contract.sql src/lib/contractDuration.ts src/lib/clientSettings.ts src/app/api/conta/[client]/route.ts
 git commit -m "feat: contractDuration + coluna contract_start_date + rota GET"
 ```
 
@@ -265,6 +224,6 @@ git commit -m "feat: card Tempo de contrato na página Conta"
 ## Verificação
 
 - `npx tsc --noEmit` limpo.
-- Testes de `contractDuration.ts` passando (todos os casos da Task 1).
+- Script Node throwaway confirma todos os casos de `contractDuration.ts` (Task 1), sem deixar arquivo residual.
 - Página Conta do Tiago mostra a duração certa quando `contract_start_date` está setado, e "Ainda não configurado" quando `null`.
 - `client_settings` sem resíduo de teste ao final (coluna `contract_start_date` de volta a `null` pro Tiago).

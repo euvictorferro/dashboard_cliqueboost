@@ -19,5 +19,9 @@ export default async function ClientLayout({
 
   if (!brandColor) return <>{children}</>;
 
-  return <div style={{ "--brand-primary": hexToHslTriplet(brandColor) } as React.CSSProperties}>{children}</div>;
+  return (
+    <div className="contents" style={{ "--brand-primary": hexToHslTriplet(brandColor) } as React.CSSProperties}>
+      {children}
+    </div>
+  );
 }

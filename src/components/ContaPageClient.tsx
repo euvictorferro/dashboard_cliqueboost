@@ -6,6 +6,7 @@ import { US_TIMEZONES } from "@/lib/clientTime";
 type Status = "loading" | "error" | "ready";
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 type Payment = { id: string; paidAt: string; amount: number | null };
+type ReferralLead = { id: string; name: string; contact: string; createdAt: string };
 
 export function ContaPageClient({
   clientId,
@@ -32,6 +33,17 @@ export function ContaPageClient({
   const [payments, setPayments] = useState<Payment[]>([]);
   const [contractDuration, setContractDuration] = useState<string>("Ainda não configurado");
 
+  const [referralLeads, setReferralLeads] = useState<ReferralLead[]>([]);
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied">("idle");
+  const referralLink = typeof window !== "undefined" ? `${window.location.origin}/r/${clientId}` : "";
+
+  function handleCopyLink() {
+    navigator.clipboard.writeText(referralLink).then(() => {
+      setCopyStatus("copied");
+      setTimeout(() => setCopyStatus("idle"), 2000);
+    });
+  }
+
   useEffect(() => {
     let cancelled = false;
     fetch(`/api/conta/${clientId}?key=${encodeURIComponent(accessKey)}`)
@@ -46,6 +58,7 @@ export function ContaPageClient({
           paymentStatus: string | null;
           contractDuration: string;
           payments: Payment[];
+          referralLeads: ReferralLead[];
         };
       })
       .then((data) => {
@@ -57,6 +70,7 @@ export function ContaPageClient({
           setPaymentStatus(data.paymentStatus);
           setContractDuration(data.contractDuration);
           setPayments(data.payments);
+          setReferralLeads(data.referralLeads);
           setStatus("ready");
         }
       })
@@ -247,6 +261,41 @@ export function ContaPageClient({
                   <li key={p.id} className="flex justify-between text-sm text-foreground">
                     <span>{p.paidAt}</span>
                     {p.amount != null && <span>R$ {p.amount.toFixed(2)}</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="rounded-[var(--radius-card)] bg-card p-6 shadow-[var(--shadow-soft)]">
+            <h2 className="mb-1 text-sm font-bold text-card-foreground">Indicação de amigos</h2>
+            <p className="mb-4 text-xs text-muted-foreground">Compartilhe seu link e acompanhe quem você já indicou.</p>
+
+            <div className="mb-4 flex items-center gap-2">
+              <input
+                type="text"
+                readOnly
+                value={referralLink}
+                className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+              />
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="rounded-md border border-border px-4 py-2 text-sm font-semibold text-card-foreground transition-colors hover:bg-muted"
+              >
+                {copyStatus === "copied" ? "Copiado!" : "Copiar"}
+              </button>
+            </div>
+
+            <p className="mb-2 text-xs font-semibold text-card-foreground">Quem você já indicou</p>
+            {referralLeads.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhuma indicação ainda.</p>
+            ) : (
+              <ul className="flex flex-col gap-1">
+                {referralLeads.map((lead) => (
+                  <li key={lead.id} className="flex justify-between text-sm text-foreground">
+                    <span>{lead.name}</span>
+                    <span className="text-muted-foreground">{lead.contact}</span>
                   </li>
                 ))}
               </ul>

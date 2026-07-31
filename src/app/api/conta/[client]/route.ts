@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { CLIENTS } from "@/lib/clients";
 import { fetchClientSettings, updateClientSettings } from "@/lib/clientSettings";
 import { fetchClientPayments } from "@/lib/clientPayments";
+import { fetchReferralLeads } from "@/lib/referralLeads";
 import { verifyClientToken } from "@/lib/access";
 import { US_TIMEZONES } from "@/lib/clientTime";
 import { formatContractDuration } from "@/lib/contractDuration";
@@ -16,14 +17,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (!(await verifyClientToken(clientId, key))) return Response.json({ error: "unauthorized" }, { status: 401 });
 
   try {
-    const [settings, payments] = await Promise.all([
+    const [settings, payments, referralLeads] = await Promise.all([
       fetchClientSettings(clientId),
       fetchClientPayments(clientId),
+      fetchReferralLeads(clientId),
     ]);
     return Response.json({
       ...settings,
       contractDuration: formatContractDuration(settings.contractStart, new Date()),
       payments,
+      referralLeads,
     });
   } catch (err) {
     console.error(`[conta] falha ao buscar configurações de ${clientId}:`, err);

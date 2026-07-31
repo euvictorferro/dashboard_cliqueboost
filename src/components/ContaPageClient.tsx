@@ -38,10 +38,13 @@ export function ContaPageClient({
   const referralLink = typeof window !== "undefined" ? `${window.location.origin}/r/${clientId}` : "";
 
   function handleCopyLink() {
-    navigator.clipboard.writeText(referralLink).then(() => {
-      setCopyStatus("copied");
-      setTimeout(() => setCopyStatus("idle"), 2000);
-    });
+    navigator.clipboard
+      .writeText(referralLink)
+      .then(() => {
+        setCopyStatus("copied");
+        setTimeout(() => setCopyStatus("idle"), 2000);
+      })
+      .catch(() => setCopyStatus("idle"));
   }
 
   useEffect(() => {
@@ -296,6 +299,7 @@ export function ContaPageClient({
                   <li key={lead.id} className="flex justify-between text-sm text-foreground">
                     <span>{lead.name}</span>
                     <span className="text-muted-foreground">{lead.contact}</span>
+                    <span className="text-muted-foreground">{lead.createdAt.slice(0, 10)}</span>
                   </li>
                 ))}
               </ul>

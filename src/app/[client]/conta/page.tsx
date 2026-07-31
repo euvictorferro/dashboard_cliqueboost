@@ -25,7 +25,7 @@ export default async function ClientContaPage({
     <div className="flex min-h-full">
       <Sidebar clientId={found.id} accessKey={key!} active="conta" />
       <div className="min-w-0 flex-1">
-        <ContaPageClient clientId={found.id} accessKey={key!} />
+        <ContaPageClient clientId={found.id} clientName={found.name} accessKey={key!} />
       </div>
     </div>
   );

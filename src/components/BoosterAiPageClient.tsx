@@ -40,6 +40,14 @@ export function BoosterAiPageClient({ clientId, accessKey }: { clientId: string;
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text }),
       });
+      if (res.status === 429) {
+        setMessages((prev) => {
+          const next = [...prev];
+          next[next.length - 1] = { role: "assistant", content: "Limite diário de mensagens atingido, volta amanhã." };
+          return next;
+        });
+        return;
+      }
       if (!res.ok || !res.body) throw new Error();
 
       const reader = res.body.getReader();

@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { CLIENTS } from "@/lib/clients";
 import { verifyClientToken } from "@/lib/access";
 import { fetchClientSettings } from "@/lib/clientSettings";
-import { fetchRecentMessages, saveMessage, countMessagesTodayInTimeZone } from "@/lib/chatMessages";
+import { fetchRecentMessages, saveMessage, incrementDailyUsage } from "@/lib/chatMessages";
 import { streamAnthropicTurn, type AnthropicMessage } from "@/lib/anthropicStream";
 import { BOOSTER_AI_TOOLS, runBoosterAiTool } from "@/lib/boosterAiTools";
 
@@ -25,14 +25,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const { timeZone } = await fetchClientSettings(clientId);
-  const usedToday = await countMessagesTodayInTimeZone(clientId, timeZone);
-  if (usedToday >= DAILY_LIMIT) {
+  const usedToday = await incrementDailyUsage(clientId, timeZone);
+  if (usedToday > DAILY_LIMIT) {
     return Response.json({ error: "daily_limit_reached" }, { status: 429 });
   }
 
   await saveMessage(clientId, "user", userMessage.trim());
   const history = await fetchRecentMessages(clientId, HISTORY_LIMIT);
-  const initialMessages: AnthropicMessage[] = history.map((m) => ({ role: m.role, content: m.content }));
+  const firstUserIndex = history.findIndex((m) => m.role === "user");
+  const trimmedHistory = firstUserIndex === -1 ? [] : history.slice(firstUserIndex);
+  const initialMessages: AnthropicMessage[] = trimmedHistory.map((m) => ({ role: m.role, content: m.content }));
 
   const system = `Você é o Booster AI, assistente da agência Clique Boost. Você está conversando com ${client.name}. Responda apenas sobre a conta e os dados deste cliente específico. Nunca mencione, compare ou revele informações de outros clientes da agência. Seja direto e útil, respondendo sempre em português.`;
 

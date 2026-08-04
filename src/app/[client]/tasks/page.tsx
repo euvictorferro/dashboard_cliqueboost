@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { CLIENTS } from "@/lib/clients";
 import { AccessDenied } from "@/components/AccessDenied";
-import { Sidebar } from "@/components/Sidebar";
+import { AppFrame } from "@/components/AppFrame";
 import { TasksPageClient } from "@/components/TasksPageClient";
 import { verifyClientToken } from "@/lib/access";
 
@@ -21,11 +21,8 @@ export default async function ClientTasksPage({
   if (!authorized) return <AccessDenied />;
 
   return (
-    <div className="flex min-h-full">
-      <Sidebar clientId={found.id} accessKey={key!} active="tasks" />
-      <div className="flex-1">
-        <TasksPageClient clientId={found.id} accessKey={key!} />
-      </div>
-    </div>
+    <AppFrame clientId={found.id} accessKey={key!} active="tasks" pageLabel="Tasks">
+      <TasksPageClient clientId={found.id} accessKey={key!} />
+    </AppFrame>
   );
 }

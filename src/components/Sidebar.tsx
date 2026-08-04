@@ -104,7 +104,7 @@ function ChevronIcon({ open }: { open: boolean }) {
   );
 }
 
-type ActiveKey = "dashboard" | "tasks" | "atas" | "booster-ai" | "conta" | "conteudos" | "calendario" | "bunker";
+export type ActiveKey = "dashboard" | "tasks" | "atas" | "booster-ai" | "conta" | "conteudos" | "calendario" | "bunker";
 
 type NavItemDef = { href: string; label: string; key: ActiveKey; icon: () => React.JSX.Element };
 
@@ -141,15 +141,10 @@ function NavLink({
   return (
     <Link
       href={`/${clientId}${item.href}?key=${encodeURIComponent(accessKey)}`}
-      className={`relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
-        isActive
-          ? "bg-brand-primary/10 text-brand-primary"
-          : "text-muted-foreground hover:bg-muted hover:text-card-foreground"
+      className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors ${
+        isActive ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-card-foreground"
       }`}
     >
-      {isActive && (
-        <span className="absolute -left-4 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-brand-primary" aria-hidden="true" />
-      )}
       <Icon />
       {item.label}
     </Link>
@@ -160,40 +155,56 @@ export function Sidebar({
   clientId,
   accessKey,
   active,
+  collapsed = false,
 }: {
   clientId: string;
   accessKey: string;
   active: ActiveKey;
+  collapsed?: boolean;
 }) {
   const isSocialActive = SOCIAL_MEDIA_KEYS.includes(active);
   const [manuallyOpen, setManuallyOpen] = useState(false);
   const socialOpen = isSocialActive || manuallyOpen;
 
   return (
-    <nav className="sticky top-0 flex h-screen w-56 shrink-0 flex-col border-r border-border bg-card">
-      <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 py-6">
-        <div className="px-2">
-          <Logo />
-        </div>
+    <nav
+      className={`sticky top-0 h-screen shrink-0 overflow-hidden border-r border-border bg-card transition-[width] duration-200 ${
+        collapsed ? "w-0 border-none" : "w-56"
+      }`}
+    >
+      <div className="flex h-full w-56 flex-col">
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-6">
+          <div className="px-2">
+            <Logo />
+          </div>
 
-        <div>
-          <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Menu</p>
-          <div className="flex flex-col gap-1">
-            {ITEMS_BEFORE_SOCIAL.map((item) => (
-              <NavLink key={item.href} clientId={clientId} accessKey={accessKey} item={item} isActive={active === item.key} />
-            ))}
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event("cliqueboost:open-cmdk"))}
+            className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:bg-muted"
+          >
+            <span className="flex-1">Buscar...</span>
+            <kbd className="rounded border border-border bg-muted px-1 font-mono text-[10px] text-muted-foreground">⌘K</kbd>
+          </button>
 
-            <button
-              type="button"
-              onClick={() => setManuallyOpen((o) => !o)}
-              className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm font-medium transition-colors ${
-                isSocialActive ? "text-brand-primary" : "text-muted-foreground hover:bg-muted hover:text-card-foreground"
-              }`}
-            >
-              <SocialMediaIcon />
-              <span className="flex-1">Social Media</span>
-              <ChevronIcon open={socialOpen} />
-            </button>
+          <div>
+            <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Menu</p>
+            <div className="flex flex-col gap-1">
+              {ITEMS_BEFORE_SOCIAL.map((item) => (
+                <NavLink key={item.href} clientId={clientId} accessKey={accessKey} item={item} isActive={active === item.key} />
+              ))}
+
+              <button
+                type="button"
+                onClick={() => setManuallyOpen((o) => !o)}
+                className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm font-medium transition-colors ${
+                  isSocialActive ? "text-foreground" : "text-muted-foreground hover:bg-muted hover:text-card-foreground"
+                }`}
+              >
+                <SocialMediaIcon />
+                <span className="flex-1">Social Media</span>
+                <ChevronIcon open={socialOpen} />
+              </button>
 
             {socialOpen && (
               <div className="ml-3 flex flex-col gap-1 border-l border-border pl-3">
@@ -203,15 +214,16 @@ export function Sidebar({
               </div>
             )}
 
-            {ITEMS_AFTER_SOCIAL.map((item) => (
-              <NavLink key={item.href} clientId={clientId} accessKey={accessKey} item={item} isActive={active === item.key} />
-            ))}
+              {ITEMS_AFTER_SOCIAL.map((item) => (
+                <NavLink key={item.href} clientId={clientId} accessKey={accessKey} item={item} isActive={active === item.key} />
+              ))}
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="px-4 pb-4">
-        <AccountCard clientId={clientId} accessKey={accessKey} />
+        <div className="px-4 pb-4">
+          <AccountCard clientId={clientId} accessKey={accessKey} />
+        </div>
       </div>
     </nav>
   );

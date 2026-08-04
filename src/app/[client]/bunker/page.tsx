@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { CLIENTS } from "@/lib/clients";
 import { AccessDenied } from "@/components/AccessDenied";
-import { Sidebar } from "@/components/Sidebar";
+import { AppFrame } from "@/components/AppFrame";
 import { BunkerPageClient } from "@/components/BunkerPageClient";
 import { verifyClientToken } from "@/lib/access";
 
@@ -21,11 +21,8 @@ export default async function ClientBunkerPage({
   if (!authorized) return <AccessDenied />;
 
   return (
-    <div className="flex min-h-full">
-      <Sidebar clientId={found.id} accessKey={key!} active="bunker" />
-      <div className="min-w-0 flex-1">
-        <BunkerPageClient clientId={found.id} accessKey={key!} />
-      </div>
-    </div>
+    <AppFrame clientId={found.id} accessKey={key!} active="bunker" pageLabel="Bunker">
+      <BunkerPageClient clientId={found.id} accessKey={key!} />
+    </AppFrame>
   );
 }

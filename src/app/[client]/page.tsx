@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { CLIENTS } from "@/lib/clients";
 import { Dashboard } from "@/components/Dashboard";
 import { AccessDenied } from "@/components/AccessDenied";
-import { Sidebar } from "@/components/Sidebar";
+import { AppFrame } from "@/components/AppFrame";
 import { verifyClientToken } from "@/lib/access";
 
 export default async function ClientPage({
@@ -21,11 +21,8 @@ export default async function ClientPage({
   if (!authorized) return <AccessDenied />;
 
   return (
-    <div className="flex min-h-full">
-      <Sidebar clientId={found.id} accessKey={key!} active="dashboard" />
-      <div className="flex-1">
-        <Dashboard client={found} accessKey={key!} />
-      </div>
-    </div>
+    <AppFrame clientId={found.id} accessKey={key!} active="dashboard" pageLabel="Dashboard">
+      <Dashboard client={found} accessKey={key!} />
+    </AppFrame>
   );
 }

@@ -2,7 +2,7 @@
 import { notFound } from "next/navigation";
 import { CLIENTS } from "@/lib/clients";
 import { AccessDenied } from "@/components/AccessDenied";
-import { Sidebar } from "@/components/Sidebar";
+import { AppFrame } from "@/components/AppFrame";
 import { AtasPageClient } from "@/components/AtasPageClient";
 import { TimeZoneProvider } from "@/components/TimeZoneContext";
 import { verifyClientToken } from "@/lib/access";
@@ -26,13 +26,10 @@ export default async function ClientAtasPage({
   const { timeZone } = await fetchClientSettings(found.id);
 
   return (
-    <div className="flex min-h-full">
-      <Sidebar clientId={found.id} accessKey={key!} active="atas" />
-      <div className="min-w-0 flex-1">
-        <TimeZoneProvider timeZone={timeZone}>
-          <AtasPageClient clientId={found.id} accessKey={key!} />
-        </TimeZoneProvider>
-      </div>
-    </div>
+    <AppFrame clientId={found.id} accessKey={key!} active="atas" pageLabel="Atas">
+      <TimeZoneProvider timeZone={timeZone}>
+        <AtasPageClient clientId={found.id} accessKey={key!} />
+      </TimeZoneProvider>
+    </AppFrame>
   );
 }

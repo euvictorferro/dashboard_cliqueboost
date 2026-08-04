@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { CLIENTS } from "@/lib/clients";
 import { AccessDenied } from "@/components/AccessDenied";
-import { Sidebar } from "@/components/Sidebar";
+import { AppFrame } from "@/components/AppFrame";
 import { CalendarPageClient } from "@/components/CalendarPageClient";
 import { TimeZoneProvider } from "@/components/TimeZoneContext";
 import { verifyClientToken } from "@/lib/access";
@@ -25,13 +25,10 @@ export default async function ClientCalendarPage({
   const { timeZone } = await fetchClientSettings(found.id);
 
   return (
-    <div className="flex min-h-full">
-      <Sidebar clientId={found.id} accessKey={key!} active="calendario" />
-      <div className="min-w-0 flex-1">
-        <TimeZoneProvider timeZone={timeZone}>
-          <CalendarPageClient clientId={found.id} accessKey={key!} />
-        </TimeZoneProvider>
-      </div>
-    </div>
+    <AppFrame clientId={found.id} accessKey={key!} active="calendario" pageLabel="Calendário">
+      <TimeZoneProvider timeZone={timeZone}>
+        <CalendarPageClient clientId={found.id} accessKey={key!} />
+      </TimeZoneProvider>
+    </AppFrame>
   );
 }

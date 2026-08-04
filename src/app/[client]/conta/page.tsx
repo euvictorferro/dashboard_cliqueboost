@@ -2,7 +2,7 @@
 import { notFound } from "next/navigation";
 import { CLIENTS } from "@/lib/clients";
 import { AccessDenied } from "@/components/AccessDenied";
-import { Sidebar } from "@/components/Sidebar";
+import { AppFrame } from "@/components/AppFrame";
 import { ContaPageClient } from "@/components/ContaPageClient";
 import { verifyClientToken } from "@/lib/access";
 
@@ -22,11 +22,8 @@ export default async function ClientContaPage({
   if (!authorized) return <AccessDenied />;
 
   return (
-    <div className="flex min-h-full">
-      <Sidebar clientId={found.id} accessKey={key!} active="conta" />
-      <div className="min-w-0 flex-1">
-        <ContaPageClient clientId={found.id} clientName={found.name} accessKey={key!} />
-      </div>
-    </div>
+    <AppFrame clientId={found.id} accessKey={key!} active="conta" pageLabel="Conta">
+      <ContaPageClient clientId={found.id} clientName={found.name} accessKey={key!} />
+    </AppFrame>
   );
 }

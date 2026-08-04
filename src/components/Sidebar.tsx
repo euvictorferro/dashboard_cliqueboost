@@ -43,6 +43,17 @@ function ContaIcon() {
   );
 }
 
+function BoosterAiIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path d="M3 8.5c0-3 2.7-5.5 6-5.5s6 2.5 6 5.5-2.7 5.5-6 5.5c-.7 0-1.4-.1-2-.3L4 15l.8-2.8C3.7 11.1 3 9.9 3 8.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <circle cx="6.5" cy="8.5" r="0.9" fill="currentColor" />
+      <circle cx="9" cy="8.5" r="0.9" fill="currentColor" />
+      <circle cx="11.5" cy="8.5" r="0.9" fill="currentColor" />
+    </svg>
+  );
+}
+
 function ContentIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
@@ -101,7 +112,7 @@ function ChevronIcon({ open }: { open: boolean }) {
   );
 }
 
-type ActiveKey = "dashboard" | "tasks" | "atas" | "conta" | "conteudos" | "calendario" | "bunker";
+type ActiveKey = "dashboard" | "tasks" | "atas" | "booster-ai" | "conta" | "conteudos" | "calendario" | "bunker";
 
 type NavItemDef = { href: string; label: string; key: ActiveKey; icon: () => React.JSX.Element };
 
@@ -112,6 +123,7 @@ const ITEMS_BEFORE_SOCIAL: NavItemDef[] = [
 
 const ITEMS_AFTER_SOCIAL: NavItemDef[] = [
   { href: "/atas", label: "Atas", key: "atas", icon: AtasIcon },
+  { href: "/booster-ai", label: "Booster AI", key: "booster-ai", icon: BoosterAiIcon },
   { href: "/conta", label: "Conta", key: "conta", icon: ContaIcon },
 ];
 

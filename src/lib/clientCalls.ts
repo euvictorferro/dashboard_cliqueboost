@@ -37,10 +37,10 @@ export async function createCall(clientId: string, scheduledAt: number, googleEv
   return { id: data.id, scheduledAt: Date.parse(data.scheduled_at) };
 }
 
-export async function cancelActiveCall(clientId: string): Promise<{ googleEventId: string } | null> {
+export async function findActiveCallToCancel(clientId: string): Promise<{ id: string; googleEventId: string } | null> {
   const supabase = getSupabaseAdmin();
   if (!supabase) throw new Error("Supabase não configurado");
-  const { data: active, error: findError } = await supabase
+  const { data, error } = await supabase
     .from("client_calls")
     .select("id, google_event_id")
     .eq("client_id", clientId)
@@ -49,10 +49,14 @@ export async function cancelActiveCall(clientId: string): Promise<{ googleEventI
     .order("scheduled_at", { ascending: true })
     .limit(1)
     .maybeSingle();
-  if (findError) throw new Error(findError.message);
-  if (!active) return null;
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  return { id: data.id, googleEventId: data.google_event_id };
+}
 
-  const { error: updateError } = await supabase.from("client_calls").update({ status: "cancelled" }).eq("id", active.id);
-  if (updateError) throw new Error(updateError.message);
-  return { googleEventId: active.google_event_id };
+export async function cancelCallById(id: string): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) throw new Error("Supabase não configurado");
+  const { error } = await supabase.from("client_calls").update({ status: "cancelled" }).eq("id", id);
+  if (error) throw new Error(error.message);
 }

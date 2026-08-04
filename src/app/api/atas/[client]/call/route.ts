@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { CLIENTS } from "@/lib/clients";
 import { verifyClientToken } from "@/lib/access";
-import { fetchActiveCall, createCall, cancelActiveCall } from "@/lib/clientCalls";
+import { fetchActiveCall, createCall, findActiveCallToCancel, cancelCallById } from "@/lib/clientCalls";
 import { fetchFreeSlots, createCallEvent, cancelCallEvent } from "@/lib/googleCalendar";
 
 const DAYS_AHEAD = 10;
@@ -38,16 +38,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   try {
+    const previousActive = await findActiveCallToCancel(clientId);
+
     const googleEventId = await createCallEvent(scheduledAt, `Call com ${client.name} (Clique Boost)`);
     const call = await createCall(clientId, scheduledAt, googleEventId);
 
-    try {
-      const cancelled = await cancelActiveCall(clientId);
-      if (cancelled && cancelled.googleEventId !== googleEventId) {
-        await cancelCallEvent(cancelled.googleEventId);
+    if (previousActive) {
+      try {
+        await cancelCallEvent(previousActive.googleEventId);
+        await cancelCallById(previousActive.id);
+      } catch (cancelErr) {
+        console.error(`[atas/call] nova call criada, mas falha ao cancelar a antiga de ${clientId}:`, cancelErr);
       }
-    } catch (cancelErr) {
-      console.error(`[atas/call] nova call criada, mas falha ao cancelar a antiga de ${clientId}:`, cancelErr);
     }
 
     return Response.json({ call });

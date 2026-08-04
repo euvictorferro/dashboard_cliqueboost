@@ -40,7 +40,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try {
     const previousActive = await findActiveCallToCancel(clientId);
 
-    const googleEventId = await createCallEvent(scheduledAt, `Call com ${client.name} (Clique Boost)`);
+    const googleEventId = await createCallEvent(scheduledAt, client.name);
     const call = await createCall(clientId, scheduledAt, googleEventId);
 
     if (previousActive) {

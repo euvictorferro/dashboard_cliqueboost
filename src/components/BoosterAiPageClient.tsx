@@ -19,7 +19,19 @@ export function BoosterAiPageClient({ clientId, accessKey }: { clientId: string;
         if (!res.ok) throw new Error();
         return data as { messages: ChatMessage[] };
       })
-      .then((data) => setMessages(data.messages.map((m) => ({ role: m.role, content: m.content }))))
+      .then((data) => {
+        if (data.messages.length === 0) {
+          setMessages([
+            {
+              role: "assistant",
+              content:
+                "Oi! Sou o Booster AI. Posso te ajudar com suas métricas, conteúdos, tasks e atas — pergunta o que quiser sobre a sua conta.",
+            },
+          ]);
+        } else {
+          setMessages(data.messages.map((m) => ({ role: m.role, content: m.content })));
+        }
+      })
       .catch(() => setLoadError(true));
   }, [clientId, accessKey]);
 
@@ -27,10 +39,8 @@ export function BoosterAiPageClient({ clientId, accessKey }: { clientId: string;
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  async function sendMessage() {
-    const text = input.trim();
+  async function send(text: string) {
     if (!text || sending) return;
-    setInput("");
     setSending(true);
     setMessages((prev) => [...prev, { role: "user", content: text }, { role: "assistant", content: "" }]);
 
@@ -75,23 +85,66 @@ export function BoosterAiPageClient({ clientId, accessKey }: { clientId: string;
     }
   }
 
+  function sendMessage() {
+    const text = input.trim();
+    setInput("");
+    send(text);
+  }
+
+  function retry(userText: string) {
+    setMessages((prev) => prev.slice(0, -2));
+    send(userText);
+  }
+
+  function copy(text: string) {
+    navigator.clipboard?.writeText(text).catch(() => {});
+  }
+
   return (
-    <div className="mx-auto flex h-full w-full max-w-[900px] flex-col px-6 py-10 sm:px-10">
+    <div className="mx-auto flex h-full w-full max-w-[1600px] flex-col px-6 py-10 sm:px-10">
       <h1 className="mb-6 text-2xl font-bold text-foreground">Booster AI</h1>
       {loadError && (
         <p className="mb-4 rounded-[var(--radius-card)] bg-card p-4 text-sm text-muted-foreground shadow-[var(--shadow-soft)]">
           Não foi possível carregar o histórico agora.
         </p>
       )}
-      <div className="flex-1 space-y-3 overflow-y-auto">
+      <div className="flex-1 space-y-4 overflow-y-auto">
         {messages.map((m, i) => (
-          <div
-            key={i}
-            className={`max-w-[80%] rounded-[var(--radius-card)] p-3 text-sm shadow-[var(--shadow-soft)] ${
-              m.role === "user" ? "ml-auto bg-brand-primary text-white" : "bg-card text-card-foreground"
-            }`}
-          >
-            {m.content || (m.role === "assistant" && sending ? "..." : "")}
+          <div key={i} className={`flex items-start gap-2.5 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
+            {m.role === "assistant" && (
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-primary text-[10px] font-semibold text-white">
+                AI
+              </span>
+            )}
+            <div className="flex max-w-[80%] flex-col gap-1.5">
+              <div
+                className={`rounded-[var(--radius-card)] p-3 text-sm shadow-[var(--shadow-soft)] ${
+                  m.role === "user" ? "bg-brand-primary text-white" : "bg-card text-card-foreground"
+                }`}
+              >
+                {m.content || (m.role === "assistant" && sending ? "..." : "")}
+              </div>
+              {m.role === "assistant" && m.content && !sending && (
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => copy(m.content)}
+                    className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-card-foreground"
+                  >
+                    Copiar
+                  </button>
+                  {messages[i - 1]?.role === "user" && (
+                    <button
+                      type="button"
+                      onClick={() => retry(messages[i - 1].content)}
+                      className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-card-foreground"
+                    >
+                      Reenviar
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         ))}
         <div ref={bottomRef} />

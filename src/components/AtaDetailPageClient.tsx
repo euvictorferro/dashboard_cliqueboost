@@ -10,7 +10,7 @@ import { formatTZTime } from "@/lib/clientTime";
 import { useTimeZone } from "./TimeZoneContext";
 
 type Status = "loading" | "error" | "not_found" | "success";
-type ExtractStatus = "idle" | "extracting" | "done" | "error";
+type ExtractStatus = "idle" | "extracting" | "done" | "already_extracted" | "error";
 
 export function AtaDetailPageClient({
   clientId,
@@ -42,6 +42,7 @@ export function AtaDetailPageClient({
         if (!cancelled) {
           setNote(data.note);
           setStatus("success");
+          if (data.note.tasksExtractedAt !== null) setExtractStatus("already_extracted");
         }
       })
       .catch((err: Error) => {
@@ -101,7 +102,13 @@ export function AtaDetailPageClient({
               disabled={extractStatus === "extracting"}
               className="shrink-0 rounded-md bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-primary/90 disabled:opacity-50"
             >
-              {extractStatus === "extracting" ? "Extraindo..." : extractStatus === "done" ? `Tasks criadas (${createdCount})` : "Extrair tasks"}
+              {extractStatus === "extracting"
+                ? "Extraindo..."
+                : extractStatus === "done"
+                  ? `Tasks criadas (${createdCount})`
+                  : extractStatus === "already_extracted"
+                    ? "Tasks já extraídas"
+                    : "Extrair tasks"}
             </button>
           </div>
           {extractStatus === "error" && (

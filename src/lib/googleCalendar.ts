@@ -1,6 +1,6 @@
 // src/lib/googleCalendar.ts
 // ponytail: server-only — nunca importar isto de um componente "use client" (usa a chave da service account).
-import { createSign, randomUUID } from "node:crypto";
+import { createSign } from "node:crypto";
 
 const SLOT_MINUTES = 30;
 const BUSINESS_START_HOUR = 9;
@@ -132,24 +132,15 @@ export async function fetchFreeSlots(daysAhead: number): Promise<number[]> {
 export async function createCallEvent(startMs: number, clientName: string): Promise<string> {
   const accessToken = await getAccessToken();
   const endMs = startMs + SLOT_MINUTES * 60_000;
-  const res = await fetch(
-    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId())}/events?conferenceDataVersion=1`,
-    {
-      method: "POST",
-      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        summary: `Call ${clientName}, Clique Boost`,
-        start: { dateTime: new Date(startMs).toISOString(), timeZone: TIME_ZONE },
-        end: { dateTime: new Date(endMs).toISOString(), timeZone: TIME_ZONE },
-        conferenceData: {
-          createRequest: {
-            requestId: randomUUID(),
-            conferenceSolutionKey: { type: "hangoutsMeet" },
-          },
-        },
-      }),
-    }
-  );
+  const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId())}/events`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      summary: `Call ${clientName}, Clique Boost`,
+      start: { dateTime: new Date(startMs).toISOString(), timeZone: TIME_ZONE },
+      end: { dateTime: new Date(endMs).toISOString(), timeZone: TIME_ZONE },
+    }),
+  });
   const json = await res.json();
   if (!res.ok) throw new Error(`google_create_event_failed: ${JSON.stringify(json)}`);
   return json.id as string;

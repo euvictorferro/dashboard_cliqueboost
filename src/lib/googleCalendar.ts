@@ -55,6 +55,38 @@ function calendarId(): string {
   return id;
 }
 
+function getTimeZoneOffsetMs(date: Date, timeZone: string): number {
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const parts = dtf.formatToParts(date).reduce<Record<string, string>>((acc, p) => {
+    acc[p.type] = p.value;
+    return acc;
+  }, {});
+  const asUTC = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(parts.hour),
+    Number(parts.minute),
+    Number(parts.second)
+  );
+  return asUTC - date.getTime();
+}
+
+function zonedTimeToUtc(year: number, month: number, day: number, hour: number, minute: number, timeZone: string): number {
+  const naiveUTC = Date.UTC(year, month, day, hour, minute);
+  const offset = getTimeZoneOffsetMs(new Date(naiveUTC), timeZone);
+  return naiveUTC - offset;
+}
+
 function candidateSlots(daysAhead: number): number[] {
   const slots: number[] = [];
   const now = new Date();
@@ -64,8 +96,8 @@ function candidateSlots(daysAhead: number): number[] {
     if (weekday === 0 || weekday === 6) continue; // fim de semana fora
     for (let hour = BUSINESS_START_HOUR; hour < BUSINESS_END_HOUR; hour++) {
       for (let minute = 0; minute < 60; minute += SLOT_MINUTES) {
-        const slot = new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, minute);
-        if (slot.getTime() > now.getTime()) slots.push(slot.getTime());
+        const slotMs = zonedTimeToUtc(day.getFullYear(), day.getMonth(), day.getDate(), hour, minute, TIME_ZONE);
+        if (slotMs > now.getTime()) slots.push(slotMs);
       }
     }
   }

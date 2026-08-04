@@ -105,9 +105,12 @@ type ActiveKey = "dashboard" | "tasks" | "atas" | "conta" | "conteudos" | "calen
 
 type NavItemDef = { href: string; label: string; key: ActiveKey; icon: () => React.JSX.Element };
 
-const STANDALONE_ITEMS: NavItemDef[] = [
+const ITEMS_BEFORE_SOCIAL: NavItemDef[] = [
   { href: "", label: "Dashboard", key: "dashboard", icon: DashboardIcon },
   { href: "/tasks", label: "Tasks", key: "tasks", icon: TasksIcon },
+];
+
+const ITEMS_AFTER_SOCIAL: NavItemDef[] = [
   { href: "/atas", label: "Atas", key: "atas", icon: AtasIcon },
   { href: "/conta", label: "Conta", key: "conta", icon: ContaIcon },
 ];
@@ -172,7 +175,7 @@ export function Sidebar({
       <div>
         <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Menu</p>
         <div className="flex flex-col gap-1">
-          {STANDALONE_ITEMS.map((item) => (
+          {ITEMS_BEFORE_SOCIAL.map((item) => (
             <NavLink key={item.href} clientId={clientId} accessKey={accessKey} item={item} isActive={active === item.key} />
           ))}
 
@@ -195,6 +198,10 @@ export function Sidebar({
               ))}
             </div>
           )}
+
+          {ITEMS_AFTER_SOCIAL.map((item) => (
+            <NavLink key={item.href} clientId={clientId} accessKey={accessKey} item={item} isActive={active === item.key} />
+          ))}
         </div>
       </div>
     </nav>

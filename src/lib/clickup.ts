@@ -284,3 +284,13 @@ export async function postTaskComment(taskId: string, text: string): Promise<Tas
     authorColor: "#595d66",
   };
 }
+
+export async function createTask(listId: string, title: string, description: string): Promise<void> {
+  const res = await fetch(`${CLICKUP_API}/list/${listId}/task`, {
+    method: "POST",
+    headers: { Authorization: process.env.CLICKUP_API_TOKEN!, "Content-Type": "application/json" },
+    body: JSON.stringify({ name: title, description }),
+  });
+  const json = await res.json();
+  if (!res.ok || json.err) throw new Error(json.err ?? `clickup_create_task_failed: ${res.status}`);
+}

@@ -34,3 +34,14 @@ export async function fetchCallNote(clientId: string, id: string): Promise<CallN
   if (!data) return null;
   return { id: data.id, title: data.title, callAt: Date.parse(data.call_at), content: data.content };
 }
+
+export async function markTasksExtracted(clientId: string, noteId: string): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) throw new Error("Supabase não configurado");
+  const { error } = await supabase
+    .from("call_notes")
+    .update({ tasks_extracted_at: new Date().toISOString() })
+    .eq("client_id", clientId)
+    .eq("id", noteId);
+  if (error) throw new Error(error.message);
+}

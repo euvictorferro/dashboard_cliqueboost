@@ -38,11 +38,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   try {
-    const cancelled = await cancelActiveCall(clientId);
-    if (cancelled) await cancelCallEvent(cancelled.googleEventId);
-
     const googleEventId = await createCallEvent(scheduledAt, `Call com ${client.name} (Clique Boost)`);
     const call = await createCall(clientId, scheduledAt, googleEventId);
+
+    try {
+      const cancelled = await cancelActiveCall(clientId);
+      if (cancelled && cancelled.googleEventId !== googleEventId) {
+        await cancelCallEvent(cancelled.googleEventId);
+      }
+    } catch (cancelErr) {
+      console.error(`[atas/call] nova call criada, mas falha ao cancelar a antiga de ${clientId}:`, cancelErr);
+    }
+
     return Response.json({ call });
   } catch (err) {
     console.error(`[atas/call] falha ao agendar call de ${clientId}:`, err);

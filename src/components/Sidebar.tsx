@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Logo } from "./Logo";
+import { AccountCard } from "./AccountCard";
 
 function DashboardIcon() {
   return (
@@ -30,15 +31,6 @@ function AtasIcon() {
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
       <rect x="3" y="2" width="12" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
       <path d="M6 6h6M6 9h6M6 12h3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function ContaIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-      <circle cx="9" cy="6" r="3" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M3.5 15c0-3 2.5-5 5.5-5s5.5 2 5.5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
 }
@@ -124,7 +116,6 @@ const ITEMS_BEFORE_SOCIAL: NavItemDef[] = [
 const ITEMS_AFTER_SOCIAL: NavItemDef[] = [
   { href: "/atas", label: "Atas", key: "atas", icon: AtasIcon },
   { href: "/booster-ai", label: "Booster AI", key: "booster-ai", icon: BoosterAiIcon },
-  { href: "/conta", label: "Conta", key: "conta", icon: ContaIcon },
 ];
 
 const SOCIAL_MEDIA_ITEMS: NavItemDef[] = [
@@ -179,42 +170,48 @@ export function Sidebar({
   const socialOpen = isSocialActive || manuallyOpen;
 
   return (
-    <nav className="sticky top-0 flex h-screen w-56 shrink-0 flex-col gap-6 overflow-y-auto border-r border-border bg-card px-4 py-6">
-      <div className="px-2">
-        <Logo />
+    <nav className="sticky top-0 flex h-screen w-56 shrink-0 flex-col border-r border-border bg-card">
+      <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 py-6">
+        <div className="px-2">
+          <Logo />
+        </div>
+
+        <div>
+          <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Menu</p>
+          <div className="flex flex-col gap-1">
+            {ITEMS_BEFORE_SOCIAL.map((item) => (
+              <NavLink key={item.href} clientId={clientId} accessKey={accessKey} item={item} isActive={active === item.key} />
+            ))}
+
+            <button
+              type="button"
+              onClick={() => setManuallyOpen((o) => !o)}
+              className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm font-medium transition-colors ${
+                isSocialActive ? "text-brand-primary" : "text-muted-foreground hover:bg-muted hover:text-card-foreground"
+              }`}
+            >
+              <SocialMediaIcon />
+              <span className="flex-1">Social Media</span>
+              <ChevronIcon open={socialOpen} />
+            </button>
+
+            {socialOpen && (
+              <div className="ml-3 flex flex-col gap-1 border-l border-border pl-3">
+                {SOCIAL_MEDIA_ITEMS.map((item) => (
+                  <NavLink key={item.href} clientId={clientId} accessKey={accessKey} item={item} isActive={active === item.key} />
+                ))}
+              </div>
+            )}
+
+            {ITEMS_AFTER_SOCIAL.map((item) => (
+              <NavLink key={item.href} clientId={clientId} accessKey={accessKey} item={item} isActive={active === item.key} />
+            ))}
+          </div>
+        </div>
       </div>
 
-      <div>
-        <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Menu</p>
-        <div className="flex flex-col gap-1">
-          {ITEMS_BEFORE_SOCIAL.map((item) => (
-            <NavLink key={item.href} clientId={clientId} accessKey={accessKey} item={item} isActive={active === item.key} />
-          ))}
-
-          <button
-            type="button"
-            onClick={() => setManuallyOpen((o) => !o)}
-            className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm font-medium transition-colors ${
-              isSocialActive ? "text-brand-primary" : "text-muted-foreground hover:bg-muted hover:text-card-foreground"
-            }`}
-          >
-            <SocialMediaIcon />
-            <span className="flex-1">Social Media</span>
-            <ChevronIcon open={socialOpen} />
-          </button>
-
-          {socialOpen && (
-            <div className="ml-3 flex flex-col gap-1 border-l border-border pl-3">
-              {SOCIAL_MEDIA_ITEMS.map((item) => (
-                <NavLink key={item.href} clientId={clientId} accessKey={accessKey} item={item} isActive={active === item.key} />
-              ))}
-            </div>
-          )}
-
-          {ITEMS_AFTER_SOCIAL.map((item) => (
-            <NavLink key={item.href} clientId={clientId} accessKey={accessKey} item={item} isActive={active === item.key} />
-          ))}
-        </div>
+      <div className="px-4 pb-4">
+        <AccountCard clientId={clientId} accessKey={accessKey} />
       </div>
     </nav>
   );

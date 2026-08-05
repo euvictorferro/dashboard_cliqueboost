@@ -56,12 +56,16 @@ export function BugReportModal({
   const [status, setStatus] = useState<Status>("form");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const screenshotsRef = useRef<Screenshot[]>([]);
+
+  useEffect(() => {
+    screenshotsRef.current = screenshots;
+  }, [screenshots]);
 
   useEffect(() => {
     return () => {
-      for (const s of screenshots) URL.revokeObjectURL(s.previewUrl);
+      for (const s of screenshotsRef.current) URL.revokeObjectURL(s.previewUrl);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleFilesChosen(e: React.ChangeEvent<HTMLInputElement>) {

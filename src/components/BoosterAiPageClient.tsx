@@ -3,6 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import type { ChatMessage } from "@/lib/chatMessages";
 
+function ArrowUpIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <path d="M7 12V2M7 2L2.5 6.5M7 2L11.5 6.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 type UiMessage = { role: "user" | "assistant"; content: string };
 
 export function BoosterAiPageClient({ clientId, accessKey }: { clientId: string; accessKey: string }) {
@@ -11,6 +19,14 @@ export function BoosterAiPageClient({ clientId, accessKey }: { clientId: string;
   const [sending, setSending] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "0px";
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+  }, [input]);
 
   useEffect(() => {
     fetch(`/api/booster-ai/${clientId}/messages?key=${encodeURIComponent(accessKey)}`)
@@ -154,22 +170,35 @@ export function BoosterAiPageClient({ clientId, accessKey }: { clientId: string;
           e.preventDefault();
           sendMessage();
         }}
-        className="mt-4 flex gap-2"
+        className="mt-4 flex items-end gap-2 rounded-3xl border border-border bg-card px-4 py-2.5 shadow-[var(--shadow-soft)] focus-within:border-brand-primary/40"
       >
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          disabled={sending}
-          placeholder="Pergunte sobre seus números, conteúdos, tasks ou atas..."
-          className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground disabled:opacity-50"
-        />
+        <div className="flex flex-1 flex-col gap-1">
+          <span className="inline-flex w-fit items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+            Claude Haiku
+          </span>
+          <textarea
+            ref={textareaRef}
+            rows={1}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+              }
+            }}
+            disabled={sending}
+            placeholder="Pergunte sobre seus números, conteúdos, tasks ou atas..."
+            className="max-h-40 min-h-6 w-full resize-none bg-transparent text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground disabled:opacity-50"
+          />
+        </div>
         <button
           type="submit"
-          disabled={sending}
-          className="rounded-md bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-primary/90 disabled:opacity-50"
+          disabled={sending || !input.trim()}
+          aria-label="Enviar"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-primary text-white transition-opacity hover:opacity-90 disabled:opacity-40"
         >
-          Enviar
+          <ArrowUpIcon />
         </button>
       </form>
     </div>

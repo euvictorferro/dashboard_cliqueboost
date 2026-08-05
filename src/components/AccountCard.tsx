@@ -6,13 +6,63 @@ import { CLIENTS } from "@/lib/clients";
 import { getInitials, colorFromName } from "@/lib/avatar";
 import { useTheme } from "./ThemeProvider";
 
-const THEME_LABELS = { light: "Claro", dark: "Escuro", system: "Sistema" } as const;
+const THEME_ORDER = ["light", "dark", "system"] as const;
+type Theme = (typeof THEME_ORDER)[number];
+
+function SunIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <circle cx="7" cy="7" r="2.75" stroke="currentColor" strokeWidth="1.3" />
+      <path
+        d="M7 1v1.3M7 11.7V13M13 7h-1.3M2.3 7H1M11.2 2.8l-.9.9M3.7 10.3l-.9.9M11.2 11.2l-.9-.9M3.7 3.7l-.9-.9"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <path
+        d="M12 8.4A5.3 5.3 0 1 1 5.6 2a4.2 4.2 0 0 0 6.4 6.4z"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function MonitorIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <rect x="1" y="2.5" width="12" height="7.5" rx="1.2" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M4.5 12.5h5M7 10v2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function LogOutIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <path
+        d="M5.5 12.5H2.5a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h3M9.5 9.5L13 6 9.5 2.5M13 6H5"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 export function AccountCard({ clientId, accessKey }: { clientId: string; accessKey: string }) {
   const client = CLIENTS.find((c) => c.id === clientId);
   const [email, setEmail] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
-  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const { theme, setTheme } = useTheme();
 
   useEffect(() => {
@@ -26,63 +76,61 @@ export function AccountCard({ clientId, accessKey }: { clientId: string; accessK
 
   const initials = getInitials(client.name);
   const avatarColor = colorFromName(client.name);
+  const themeIndex = THEME_ORDER.indexOf(theme as Theme);
+
+  function cycleTheme() {
+    setTheme(THEME_ORDER[(themeIndex + 1) % THEME_ORDER.length]);
+  }
 
   return (
     <div className="relative border-t border-border pt-3">
       {open && (
         <div className="absolute bottom-full left-0 mb-2 w-full rounded-lg border border-border bg-card p-2 shadow-[var(--shadow-soft)]">
-          {!themeMenuOpen && (
-            <>
-              <button
-                type="button"
-                onClick={() => setThemeMenuOpen(true)}
-                className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-card-foreground hover:bg-muted"
-              >
-                Tema
-              </button>
-              <Link
-                href={`/${clientId}/conta?key=${encodeURIComponent(accessKey)}`}
-                className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-card-foreground hover:bg-muted"
-              >
-                Configurações
-              </Link>
-              <Link href="/sair" className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-card-foreground hover:bg-muted">
-                Sair
-              </Link>
-            </>
-          )}
-          {themeMenuOpen && (
-            <>
-              <button
-                type="button"
-                onClick={() => setThemeMenuOpen(false)}
-                className="mb-1 flex w-full items-center rounded-md px-3 py-2 text-left text-xs text-muted-foreground hover:bg-muted"
-              >
-                ← Voltar
-              </button>
-              {(Object.keys(THEME_LABELS) as Array<keyof typeof THEME_LABELS>).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setTheme(t)}
-                  className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm hover:bg-muted ${
-                    theme === t ? "text-brand-primary" : "text-card-foreground"
+          <Link
+            href={`/${clientId}/conta?key=${encodeURIComponent(accessKey)}`}
+            className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-card-foreground hover:bg-muted"
+          >
+            Ajustes
+          </Link>
+
+          <div className="flex items-center justify-between px-3 py-2">
+            <span className="text-sm text-card-foreground">Tema</span>
+            <button
+              type="button"
+              onClick={cycleTheme}
+              aria-label={`Tema: ${theme}. Clique pra alternar.`}
+              className="relative flex w-[76px] items-center rounded-full bg-muted p-1"
+            >
+              <span
+                className="absolute inset-y-1 w-1/3 rounded-full bg-card shadow-sm transition-transform"
+                style={{ transform: `translateX(${themeIndex * 100}%)` }}
+                aria-hidden="true"
+              />
+              {[SunIcon, MoonIcon, MonitorIcon].map((Icon, i) => (
+                <span
+                  key={i}
+                  className={`relative z-10 flex flex-1 items-center justify-center py-1 ${
+                    themeIndex === i ? "text-brand-primary" : "text-muted-foreground"
                   }`}
                 >
-                  {THEME_LABELS[t]}
-                  {theme === t && <span aria-hidden="true">✓</span>}
-                </button>
+                  <Icon />
+                </span>
               ))}
-            </>
-          )}
+            </button>
+          </div>
+
+          <Link
+            href="/sair"
+            className="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-600 hover:text-white"
+          >
+            Sair
+            <LogOutIcon />
+          </Link>
         </div>
       )}
       <button
         type="button"
-        onClick={() => {
-          setOpen((o) => !o);
-          setThemeMenuOpen(false);
-        }}
+        onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-muted"
       >
         <span

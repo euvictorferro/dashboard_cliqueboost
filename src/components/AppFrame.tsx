@@ -23,7 +23,7 @@ export function AppFrame({
   const client = CLIENTS.find((c) => c.id === clientId);
 
   return (
-    <div className="flex min-h-full">
+    <div className="flex min-h-full items-start">
       <Sidebar clientId={clientId} accessKey={accessKey} active={active} collapsed={collapsed} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Header
@@ -32,7 +32,7 @@ export function AppFrame({
           collapsed={collapsed}
           onToggleCollapse={() => setCollapsed((c) => !c)}
         />
-        <div className="min-w-0 flex-1">{children}</div>
+        <div className="min-w-0">{children}</div>
       </div>
       <CmdK clientId={clientId} accessKey={accessKey} />
     </div>

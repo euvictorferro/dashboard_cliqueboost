@@ -115,7 +115,7 @@ export function ContentBoard({
       {lists.map((list) => (
         <div
           key={list.id}
-          className="flex max-h-[calc(100vh-180px)] w-72 shrink-0 flex-col rounded-[var(--radius-card)] bg-muted/60 pb-3"
+          className="flex max-h-[calc(100vh-110px)] w-72 shrink-0 flex-col rounded-[var(--radius-card)] bg-muted/60 pb-3"
         >
           <div className="flex shrink-0 items-center justify-between gap-2 rounded-t-[var(--radius-card)] bg-muted px-3 py-2.5">
             <p className="text-sm font-bold text-card-foreground">{list.name}</p>

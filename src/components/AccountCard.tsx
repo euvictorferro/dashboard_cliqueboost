@@ -100,7 +100,7 @@ export function AccountCard({
       onMouseLeave={() => setOpen(false)}
     >
       {open && (
-        <div className="absolute bottom-full left-0 mb-2 w-full rounded-lg border border-border bg-card p-2 shadow-[var(--shadow-soft)]">
+        <div className="absolute bottom-full left-0 w-full rounded-lg border border-border bg-card p-2 shadow-[var(--shadow-soft)]">
           <Link
             href={`/${clientId}/conta?key=${encodeURIComponent(accessKey)}`}
             className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-card-foreground hover:bg-muted"

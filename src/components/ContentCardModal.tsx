@@ -960,7 +960,7 @@ function ImageLightbox({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 p-6"
+      className="fixed inset-0 z-[110] flex items-center justify-center bg-black/85 p-6"
       onClick={(e) => {
         e.stopPropagation();
         onClose();
@@ -1145,7 +1145,7 @@ export function ContentCardModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
       <div
         className="flex max-h-[85vh] w-full max-w-6xl flex-col overflow-hidden rounded-[var(--radius-card)] bg-card shadow-[var(--shadow-soft)]"
         onClick={(e) => e.stopPropagation()}

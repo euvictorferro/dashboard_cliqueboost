@@ -54,7 +54,7 @@ export function CmdK({ clientId, accessKey }: { clientId: string; accessKey: str
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/30 pt-[15vh]" onClick={() => setOpen(false)}>
+    <div className="fixed inset-0 z-[100] flex items-start justify-center bg-black/30 pt-[15vh]" onClick={() => setOpen(false)}>
       <div
         className="w-full max-w-lg overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-soft)]"
         onClick={(e) => e.stopPropagation()}

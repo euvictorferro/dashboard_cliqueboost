@@ -46,7 +46,7 @@ export function AddCompetitorModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
       <div
         className="w-full max-w-sm rounded-[var(--radius-card)] bg-card p-6 shadow-[var(--shadow-soft)]"
         onClick={(e) => e.stopPropagation()}

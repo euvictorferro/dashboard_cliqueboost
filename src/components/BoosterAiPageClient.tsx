@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { ChatMessage } from "@/lib/chatMessages";
 import { CLIENTS } from "@/lib/clients";
 import { getInitials, colorFromName } from "@/lib/avatar";
@@ -77,17 +77,7 @@ export function BoosterAiPageClient({ clientId, accessKey }: { clientId: string;
         return data as { messages: ChatMessage[] };
       })
       .then((data) => {
-        if (data.messages.length === 0) {
-          setMessages([
-            {
-              role: "assistant",
-              content:
-                "Oi! Sou o Booster AI. Posso te ajudar com suas métricas, conteúdos, tasks e atas — pergunta o que quiser sobre a sua conta.",
-            },
-          ]);
-        } else {
-          setMessages(data.messages.map((m) => ({ role: m.role, content: m.content })));
-        }
+        setMessages(data.messages.map((m) => ({ role: m.role, content: m.content })));
       })
       .catch(() => setLoadError(true));
   }, [clientId, accessKey]);
@@ -155,6 +145,48 @@ export function BoosterAiPageClient({ clientId, accessKey }: { clientId: string;
   }
 
   const reversedMessages = [...messages].reverse();
+  const hasStarted = messages.length > 0;
+
+  const submitForm = (e: FormEvent) => {
+    e.preventDefault();
+    sendMessage();
+  };
+
+  const composerFields = (
+    <>
+      <textarea
+        ref={textareaRef}
+        rows={1}
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+          }
+        }}
+        disabled={sending}
+        placeholder="Pergunte sobre seus números, conteúdos, tasks ou atas..."
+        className="max-h-40 min-h-6 w-full resize-none bg-transparent text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground disabled:opacity-50"
+      />
+      <div className="flex items-center justify-between border-t border-border pt-2.5">
+        <span className="inline-flex w-fit items-center gap-1 rounded-full bg-muted px-2 py-1 text-[10px] font-semibold text-muted-foreground">
+          <ClaudeIcon className="h-2.5 w-2.5" />
+          Claude Haiku
+        </span>
+        <button
+          type="submit"
+          disabled={sending || !input.trim()}
+          aria-label="Enviar"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-primary text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+        >
+          <ArrowUpIcon />
+        </button>
+      </div>
+    </>
+  );
 
   return (
     <div className="mx-auto flex h-[calc(100dvh-52px)] w-full max-w-[1600px] flex-col px-6 pt-6 pb-6 sm:px-10">
@@ -163,103 +195,120 @@ export function BoosterAiPageClient({ clientId, accessKey }: { clientId: string;
           Não foi possível carregar o histórico agora.
         </p>
       )}
-      <div className="flex flex-1 flex-col-reverse gap-5 overflow-y-auto">
-        {reversedMessages.map((m, ri) => {
-          const i = messages.length - 1 - ri;
-          return (
-          <div key={i} className={`flex items-start gap-2.5 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
-            {m.role === "assistant" ? (
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-primary text-white">
-                <ClaudeIcon className="h-3.5 w-3.5" />
-              </span>
-            ) : (
-              <span
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white"
-                style={{ backgroundColor: userColor }}
-              >
-                {userInitials}
-              </span>
-            )}
-            <div className="flex max-w-[80%] flex-col gap-1.5">
-              <div
-                className={`rounded-[var(--radius-card)] p-3 text-sm shadow-[var(--shadow-soft)] ${
-                  m.role === "user" ? "bg-brand-primary text-white" : "bg-card text-card-foreground"
-                }`}
-              >
-                {m.content || (m.role === "assistant" && sending ? "..." : "")}
-              </div>
-              {m.role === "assistant" && m.content && !sending && (
-                <div className="flex gap-1">
-                  <button
-                    type="button"
-                    onClick={() => copy(m.content)}
-                    aria-label="Copiar"
-                    title="Copiar"
-                    className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-card-foreground"
-                  >
-                    <CopyIcon />
-                  </button>
-                  {messages[i - 1]?.role === "user" && (
-                    <button
-                      type="button"
-                      onClick={() => retry(messages[i - 1].content)}
-                      aria-label="Reenviar"
-                      title="Reenviar"
-                      className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-card-foreground"
-                    >
-                      <RetryIcon />
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-          );
-        })}
-      </div>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          sendMessage();
-        }}
-        onClick={() => textareaRef.current?.focus()}
-        className={`mt-4 w-full border border-border bg-card shadow-[var(--shadow-soft)] transition-[border-radius] focus-within:border-brand-primary/40 ${
-          expanded ? "cursor-text rounded-3xl px-4 pb-2.5 pt-3" : "cursor-text rounded-full px-4 py-2.5"
-        }`}
-      >
-        <textarea
-          ref={textareaRef}
-          rows={1}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              sendMessage();
-            }
-          }}
-          disabled={sending}
-          placeholder="Pergunte sobre seus números, conteúdos, tasks ou atas..."
-          className="max-h-40 min-h-6 w-full resize-none bg-transparent text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground disabled:opacity-50"
-        />
-        <div className={`flex items-center justify-between overflow-hidden transition-[height,opacity] ${expanded ? "mt-1.5 h-7 opacity-100" : "h-0 opacity-0"}`}>
-          <span className="inline-flex w-fit items-center gap-1 rounded-full bg-muted px-2 py-1 text-[10px] font-semibold text-muted-foreground">
-            <ClaudeIcon className="h-2.5 w-2.5" />
-            Claude Haiku
+      {!hasStarted ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-6">
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-primary text-white">
+            <ClaudeIcon className="h-7 w-7" />
           </span>
-          <button
-            type="submit"
-            disabled={sending || !input.trim()}
-            aria-label="Enviar"
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-primary text-white transition-opacity hover:opacity-90 disabled:opacity-40"
-          >
-            <ArrowUpIcon />
-          </button>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-foreground">Booster pronto para te ajudar</h1>
+            <p className="mx-auto mt-1.5 max-w-md text-sm text-muted-foreground">
+              Pergunte sobre sua conta, conteúdos, métricas, tasks ou atas — sei de tudo sobre nossa parceria.
+            </p>
+          </div>
+          <form onSubmit={submitForm} className="w-full max-w-xl rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-soft)]">
+            {composerFields}
+          </form>
         </div>
-      </form>
+      ) : (
+        <>
+          <div className="flex flex-1 flex-col-reverse gap-5 overflow-y-auto">
+            {reversedMessages.map((m, ri) => {
+              const i = messages.length - 1 - ri;
+              return (
+                <div key={i} className={`flex items-start gap-2.5 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
+                  {m.role === "assistant" ? (
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-primary text-white">
+                      <ClaudeIcon className="h-3.5 w-3.5" />
+                    </span>
+                  ) : (
+                    <span
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white"
+                      style={{ backgroundColor: userColor }}
+                    >
+                      {userInitials}
+                    </span>
+                  )}
+                  <div className="flex max-w-[80%] flex-col gap-1.5">
+                    <div
+                      className={`rounded-[var(--radius-card)] p-3 text-sm shadow-[var(--shadow-soft)] ${
+                        m.role === "user" ? "bg-brand-primary text-white" : "bg-card text-card-foreground"
+                      }`}
+                    >
+                      {m.content || (m.role === "assistant" && sending ? "..." : "")}
+                    </div>
+                    {m.role === "assistant" && m.content && !sending && (
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => copy(m.content)}
+                          aria-label="Copiar"
+                          title="Copiar"
+                          className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-card-foreground"
+                        >
+                          <CopyIcon />
+                        </button>
+                        {messages[i - 1]?.role === "user" && (
+                          <button
+                            type="button"
+                            onClick={() => retry(messages[i - 1].content)}
+                            aria-label="Reenviar"
+                            title="Reenviar"
+                            className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-card-foreground"
+                          >
+                            <RetryIcon />
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <form
+            onSubmit={submitForm}
+            onClick={() => textareaRef.current?.focus()}
+            className={`mt-4 w-full border border-border bg-card shadow-[var(--shadow-soft)] transition-[border-radius] focus-within:border-brand-primary/40 ${
+              expanded ? "cursor-text rounded-3xl px-4 pb-2.5 pt-3" : "cursor-text rounded-full px-4 py-2.5"
+            }`}
+          >
+            <textarea
+              ref={textareaRef}
+              rows={1}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
+              disabled={sending}
+              placeholder="Pergunte sobre seus números, conteúdos, tasks ou atas..."
+              className="max-h-40 min-h-6 w-full resize-none bg-transparent text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground disabled:opacity-50"
+            />
+            <div className={`flex items-center justify-between overflow-hidden transition-[height,opacity] ${expanded ? "mt-1.5 h-7 opacity-100" : "h-0 opacity-0"}`}>
+              <span className="inline-flex w-fit items-center gap-1 rounded-full bg-muted px-2 py-1 text-[10px] font-semibold text-muted-foreground">
+                <ClaudeIcon className="h-2.5 w-2.5" />
+                Claude Haiku
+              </span>
+              <button
+                type="submit"
+                disabled={sending || !input.trim()}
+                aria-label="Enviar"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-primary text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+              >
+                <ArrowUpIcon />
+              </button>
+            </div>
+          </form>
+        </>
+      )}
     </div>
   );
 }

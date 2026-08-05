@@ -34,6 +34,7 @@ export function AtasPageClient({ clientId, accessKey }: { clientId: string; acce
   return (
     <div className="mx-auto w-full max-w-[1600px] px-6 pt-6 pb-10 sm:px-10">
       <CallScheduler clientId={clientId} accessKey={accessKey} />
+      <h2 className="mb-4 text-lg font-bold text-card-foreground">Atas</h2>
       {error && (
         <p className="rounded-[var(--radius-card)] bg-card p-6 text-center text-sm text-muted-foreground shadow-[var(--shadow-soft)]">
           Não foi possível carregar as atas agora.

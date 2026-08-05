@@ -202,12 +202,12 @@ export function CallScheduler({ clientId, accessKey }: { clientId: string; acces
       ) : (
         <>
           <div className="border-b border-border p-4">
-            <h2 className="text-center text-sm font-bold text-card-foreground">Agende sua call</h2>
+            <h2 className="text-sm font-bold text-card-foreground">Agende sua call</h2>
           </div>
-          <div className="flex flex-col md:flex-row">
-            <div className="flex-1 p-6">
+          <div className="flex flex-col items-start md:flex-row md:justify-center">
+            <div className="p-6">
               {visibleMonth && (
-                <div className="mx-auto w-full max-w-[280px]">
+                <div className="w-[280px]">
                   <div className="mb-3 flex items-center justify-between">
                     <p className="text-sm font-semibold text-card-foreground">
                       {MONTH_LABELS[visibleMonth.getMonth()]} {visibleMonth.getFullYear()}

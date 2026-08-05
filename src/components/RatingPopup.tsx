@@ -2,20 +2,56 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import confetti from "canvas-confetti";
 
 const INVITE_MESSAGES = [
-  "Como está sendo sua experiência com a Clique Boost esse mês? Sua avaliação nos ajuda a evoluir!",
+  "Compartilhe como está sendo sua experiência com a Clique Boost esse mês. Sua avaliação nos ajuda a evoluir!",
   "Ei, ainda não recebemos sua nota desse mês — leva 10 segundos, prometemos!",
   "Sei que já te perguntei, mas... avalia a gente aí? 👀",
   "Terceira tentativa! Sua opinião realmente importa pra gente (e pro seu contentzinho).",
   "Tá bom, última insistência por hoje: como foi o mês? 🙏",
 ];
 
-const STAR_VALUES = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+const MONTHS_PT_FULL = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+
+const STAR_LABELS = [
+  "Insatisfeito",
+  "Deixou a desejar",
+  "Não atendeu as expectativas",
+  "Tá ruim",
+  "Razoável",
+  "Bom",
+  "Muito bom",
+  "Ótimo",
+  "Top demais",
+  "Ultramegablaster avaliação 🚀",
+];
 
 function inviteMessageFor(dismissCount: number): string {
   const index = Math.min(dismissCount, INVITE_MESSAGES.length - 1);
   return INVITE_MESSAGES[index];
+}
+
+function monthNameFor(monthRef: string): string {
+  const monthIndex0 = Number(monthRef.slice(5, 7)) - 1;
+  return MONTHS_PT_FULL[monthIndex0] ?? monthRef;
+}
+
+function fireConfetti() {
+  confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } });
 }
 
 function CloseIcon() {
@@ -26,19 +62,40 @@ function CloseIcon() {
   );
 }
 
-function StarIcon({ filled }: { filled: "full" | "half" | "empty" }) {
-  const fillId = "rating-star-half";
+function StarRatingIcon() {
   return (
-    <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true">
-      <defs>
-        <linearGradient id={fillId}>
-          <stop offset="50%" stopColor="currentColor" />
-          <stop offset="50%" stopColor="transparent" />
-        </linearGradient>
-      </defs>
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
         d="M12 2.5l2.9 6.2 6.6.7-5 4.6 1.4 6.6L12 17l-5.9 3.6 1.4-6.6-5-4.6 6.6-.7L12 2.5z"
-        fill={filled === "full" ? "currentColor" : filled === "half" ? `url(#${fillId})` : "none"}
+        fill="currentColor"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function StarIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M12 2.5l2.9 6.2 6.6.7-5 4.6 1.4 6.6L12 17l-5.9 3.6 1.4-6.6-5-4.6 6.6-.7L12 2.5z"
+        fill={filled ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function HeartIcon() {
+  return (
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 20.5s-7.5-4.6-10-9.4C.5 7.6 2.4 4 6 4c2.1 0 3.6 1.1 4.5 2.4.3.4.9.4 1.2 0C12.6 5.1 14.1 4 16.2 4c3.6 0 5.5 3.6 4 7.1-2.5 4.8-10 9.4-10 9.4z"
+        fill="currentColor"
         stroke="currentColor"
         strokeWidth="1.3"
         strokeLinejoin="round"
@@ -79,6 +136,11 @@ export function RatingPopup({
 
   const displayStars = hoverStars ?? stars ?? 0;
 
+  function handleClose() {
+    if (autoCloseTimeoutRef.current) clearTimeout(autoCloseTimeoutRef.current);
+    onClose();
+  }
+
   function handleSubmit() {
     if (!stars || status === "sending") return;
     setStatus("sending");
@@ -87,13 +149,14 @@ export function RatingPopup({
     fetch(`/api/ratings/${clientId}?key=${encodeURIComponent(accessKey)}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ month_ref: monthRef, stars, feedback: feedback.trim() || null }),
+      body: JSON.stringify({ month_ref: monthRef, stars: stars / 2, feedback: feedback.trim() || null }),
     })
       .then((res) => {
         if (!res.ok) throw new Error();
         setStatus("sent");
+        fireConfetti();
         // fecha sozinho depois de mostrar o agradecimento, sem depender de ação do cliente
-        autoCloseTimeoutRef.current = setTimeout(() => onSubmitted(), 2000);
+        autoCloseTimeoutRef.current = setTimeout(() => onSubmitted(), 2500);
       })
       .catch(() => {
         setStatus("form");
@@ -104,25 +167,30 @@ export function RatingPopup({
   // ponytail: portal pro <body> — mesmo motivo do BugReportModal (nasce dentro do AppFrame,
   // que tem a Sidebar com position:sticky, criando contexto de empilhamento próprio).
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-      <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={handleClose}>
+      <div
+        className="relative w-full max-w-sm rounded-lg border border-border bg-card p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
         {status === "invite" && (
-          <div className="flex flex-col gap-4">
-            <div className="flex items-start justify-between gap-2">
-              <p className="text-sm font-semibold text-card-foreground">{inviteMessageFor(dismissCount)}</p>
+          <div className="flex flex-col items-center gap-4 text-center">
+            <button
+              type="button"
+              onClick={handleClose}
+              aria-label="Fechar"
+              className="absolute right-4 top-4 flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-card-foreground"
+            >
+              <CloseIcon />
+            </button>
+            <span className="text-brand-primary">
+              <StarRatingIcon />
+            </span>
+            <h2 className="text-base font-bold text-card-foreground">Avaliação de {monthNameFor(monthRef)}</h2>
+            <p className="text-sm text-muted-foreground">{inviteMessageFor(dismissCount)}</p>
+            <div className="flex justify-center gap-2">
               <button
                 type="button"
-                onClick={onClose}
-                aria-label="Fechar"
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-card-foreground"
-              >
-                <CloseIcon />
-              </button>
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className="rounded-md border border-border px-4 py-2 text-sm font-semibold text-card-foreground transition-colors hover:bg-muted"
               >
                 Agora não
@@ -141,10 +209,10 @@ export function RatingPopup({
         {(status === "form" || status === "sending") && (
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-card-foreground">Sua avaliação</h2>
+              <h2 className="text-sm font-bold text-card-foreground">Compartilhe sua experiência</h2>
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 aria-label="Fechar"
                 className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-card-foreground"
               >
@@ -152,25 +220,23 @@ export function RatingPopup({
               </button>
             </div>
 
-            <div className="flex justify-center gap-1 text-brand-primary" onMouseLeave={() => setHoverStars(null)}>
-              {STAR_VALUES.map((value) => {
-                const filled: "full" | "half" | "empty" =
-                  displayStars >= value ? "full" : displayStars >= value - 0.5 ? "half" : "empty";
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onMouseEnter={() => setHoverStars(value)}
-                    onClick={() => setStars(value)}
-                    aria-label={`${value} estrelas`}
-                    className="cursor-pointer"
-                  >
-                    <StarIcon filled={filled} />
-                  </button>
-                );
-              })}
+            <div className="flex flex-wrap justify-center gap-1 text-brand-primary" onMouseLeave={() => setHoverStars(null)}>
+              {Array.from({ length: 10 }, (_, i) => i + 1).map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  onMouseEnter={() => setHoverStars(value)}
+                  onClick={() => setStars(value)}
+                  aria-label={`${value} estrelas`}
+                  className="cursor-pointer"
+                >
+                  <StarIcon filled={displayStars >= value} />
+                </button>
+              ))}
             </div>
-            {stars !== null && <p className="text-center text-xs text-muted-foreground">{stars} de 5 estrelas</p>}
+            {displayStars > 0 && (
+              <p className="text-center text-xs text-muted-foreground">{STAR_LABELS[displayStars - 1]}</p>
+            )}
 
             <textarea
               rows={3}
@@ -195,8 +261,10 @@ export function RatingPopup({
 
         {status === "sent" && (
           <div className="flex flex-col items-center gap-3 py-2 text-center">
-            <p className="text-sm font-semibold text-card-foreground">Valeu pela avaliação! 🎉</p>
-            <p className="text-sm text-muted-foreground">Isso nos ajuda demais a melhorar a plataforma.</p>
+            <span className="text-red-500">
+              <HeartIcon />
+            </span>
+            <p className="text-sm font-semibold text-card-foreground">Agradecemos sua avaliação!</p>
           </div>
         )}
       </div>

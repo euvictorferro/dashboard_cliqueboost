@@ -23,6 +23,13 @@ export async function fetchRecentMessages(clientId: string, limit: number): Prom
     .reverse();
 }
 
+export async function deleteMessages(clientId: string): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) throw new Error("Supabase não configurado");
+  const { error } = await supabase.from("chat_messages").delete().eq("client_id", clientId);
+  if (error) throw new Error(error.message);
+}
+
 export async function saveMessage(clientId: string, role: "user" | "assistant", content: string): Promise<void> {
   const supabase = getSupabaseAdmin();
   if (!supabase) throw new Error("Supabase não configurado");

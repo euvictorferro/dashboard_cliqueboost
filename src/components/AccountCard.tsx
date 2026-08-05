@@ -99,7 +99,7 @@ export function AccountCard({
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
-      {open && (
+      {open && !bugModalOpen && (
         <div className="absolute bottom-full left-0 w-full rounded-lg border border-border bg-card p-2 shadow-[var(--shadow-soft)]">
           <Link
             href={`/${clientId}/conta?key=${encodeURIComponent(accessKey)}`}

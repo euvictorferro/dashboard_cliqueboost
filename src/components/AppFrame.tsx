@@ -1,10 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CLIENTS } from "@/lib/clients";
 import { Sidebar, type ActiveKey } from "./Sidebar";
 import { Header } from "./Header";
 import { CmdK } from "./CmdK";
+import { RatingPopup } from "./RatingPopup";
+
+function todayKey(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
 
 export function AppFrame({
   clientId,
@@ -20,7 +26,41 @@ export function AppFrame({
   children: React.ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [pendingMonthRef, setPendingMonthRef] = useState<string | null>(null);
   const client = CLIENTS.find((c) => c.id === clientId);
+
+  const dismissedKey = `rating-dismissed-${clientId}`;
+  const dismissCountKey = `rating-dismiss-count-${clientId}`;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.localStorage.getItem(dismissedKey) === todayKey()) return;
+
+    fetch(`/api/ratings/${clientId}?key=${encodeURIComponent(accessKey)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { show: boolean; monthRef: string | null } | null) => {
+        if (data?.show && data.monthRef) setPendingMonthRef(data.monthRef);
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientId, accessKey]);
+
+  function handleDismiss() {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(dismissedKey, todayKey());
+      const count = Number(window.localStorage.getItem(dismissCountKey) ?? "0");
+      window.localStorage.setItem(dismissCountKey, String(count + 1));
+    }
+    setPendingMonthRef(null);
+  }
+
+  function handleSubmitted() {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(dismissCountKey);
+    }
+  }
+
+  const dismissCount = typeof window !== "undefined" ? Number(window.localStorage.getItem(dismissCountKey) ?? "0") : 0;
 
   return (
     <div className="flex min-h-full items-start">
@@ -35,6 +75,16 @@ export function AppFrame({
         <div className="min-w-0">{children}</div>
       </div>
       <CmdK clientId={clientId} accessKey={accessKey} />
+      {pendingMonthRef && (
+        <RatingPopup
+          clientId={clientId}
+          accessKey={accessKey}
+          monthRef={pendingMonthRef}
+          dismissCount={dismissCount}
+          onClose={handleDismiss}
+          onSubmitted={handleSubmitted}
+        />
+      )}
     </div>
   );
 }

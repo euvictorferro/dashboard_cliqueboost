@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { US_TIMEZONES } from "@/lib/clientTime";
+import { ContaSidebar, type ContaSection } from "./ContaSidebar";
+import { ContaPerfilSection } from "./ContaPerfilSection";
+import { ContaFusoSection } from "./ContaFusoSection";
+import { ContaFaturamentoSection, type Payment } from "./ContaFaturamentoSection";
+import { ContaIndicacoesSection, type ReferralLead } from "./ContaIndicacoesSection";
+import { ContaSegurancaSection } from "./ContaSegurancaSection";
 
 type Status = "loading" | "error" | "ready";
 type SaveStatus = "idle" | "saving" | "saved" | "error";
-type Payment = { id: string; paidAt: string; amount: number | null };
-type ReferralLead = { id: string; name: string; contact: string; createdAt: string };
 
 export function ContaPageClient({
   clientId,
@@ -18,6 +21,8 @@ export function ContaPageClient({
   accessKey: string;
 }) {
   const [status, setStatus] = useState<Status>("loading");
+  const [section, setSection] = useState<ContaSection>("perfil");
+
   const [timeZone, setTimeZone] = useState<string>("America/New_York");
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
 
@@ -133,178 +138,65 @@ export function ContaPageClient({
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] px-6 pt-6 pb-10 sm:px-10">
-      {status === "loading" && <p className="text-sm text-muted-foreground">Carregando...</p>}
-      {status === "error" && (
-        <p className="rounded-[var(--radius-card)] bg-card p-6 text-center text-sm text-muted-foreground shadow-[var(--shadow-soft)]">
-          Não foi possível carregar as configurações agora.
-        </p>
-      )}
-      {status === "ready" && (
-        <div className="flex max-w-md flex-col gap-6">
-          <div className="rounded-[var(--radius-card)] bg-card p-6 shadow-[var(--shadow-soft)]">
-            <h2 className="mb-1 text-sm font-bold text-card-foreground">Perfil</h2>
-            <p className="mb-4 text-xs text-muted-foreground">Informações básicas da sua conta.</p>
+    <div className="mx-auto flex w-full max-w-[1600px] gap-8 px-6 pt-6 pb-10 sm:px-10">
+      <ContaSidebar clientName={clientName} email={contactEmail} logoUrl={logoUrl} active={section} onSelect={setSection} />
 
-            <label className="mb-1 block text-xs font-semibold text-card-foreground">Nome</label>
-            <p className="mb-4 text-sm text-foreground">{clientName}</p>
-
-            <label className="mb-1 block text-xs font-semibold text-card-foreground">E-mail cadastrado</label>
-            <input
-              type="email"
-              value={contactEmail}
-              onChange={(e) => {
-                setContactEmail(e.target.value);
-                setEmailSaveStatus("idle");
-              }}
-              placeholder="seu@email.com"
-              className="mb-3 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-            />
-            <button
-              type="button"
-              onClick={handleSaveEmail}
-              disabled={emailSaveStatus === "saving"}
-              className="mb-6 rounded-md bg-brand-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-primary/90 disabled:opacity-50"
-            >
-              {emailSaveStatus === "saving" ? "Salvando..." : "Salvar e-mail"}
-            </button>
-            {emailSaveStatus === "saved" && <p className="-mt-4 mb-6 text-xs text-green-600">Salvo com sucesso.</p>}
-            {emailSaveStatus === "error" && <p className="-mt-4 mb-6 text-xs text-red-500">Não foi possível salvar.</p>}
-
-            <label className="mb-1 block text-xs font-semibold text-card-foreground">Foto de perfil</label>
-            <div className="flex items-center gap-3">
-              {logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={logoUrl}
-                  alt="Foto de perfil"
-                  className="h-14 w-14 rounded-md border border-border bg-background object-contain"
-                />
-              ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground">
-                  Sem foto
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadStatus === "saving"}
-                className="rounded-md border border-border px-4 py-2 text-sm font-semibold text-card-foreground transition-colors hover:bg-muted disabled:opacity-50"
-              >
-                {uploadStatus === "saving" ? "Enviando..." : "Enviar foto"}
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/svg+xml"
-                onChange={handleLogoChange}
-                className="hidden"
+      <div className="min-w-0 flex-1">
+        {status === "loading" && <p className="text-sm text-muted-foreground">Carregando...</p>}
+        {status === "error" && (
+          <p className="rounded-lg border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+            Não foi possível carregar as configurações agora.
+          </p>
+        )}
+        {status === "ready" && (
+          <>
+            {section === "perfil" && (
+              <ContaPerfilSection
+                clientName={clientName}
+                contactEmail={contactEmail}
+                onEmailChange={(value) => {
+                  setContactEmail(value);
+                  setEmailSaveStatus("idle");
+                }}
+                emailSaveStatus={emailSaveStatus}
+                onSaveEmail={handleSaveEmail}
+                logoUrl={logoUrl}
+                uploadStatus={uploadStatus}
+                fileInputRef={fileInputRef}
+                onLogoChange={handleLogoChange}
               />
-            </div>
-            {uploadStatus === "saved" && <p className="mt-2 text-xs text-green-600">Foto atualizada.</p>}
-            {uploadStatus === "error" && <p className="mt-2 text-xs text-red-500">Não foi possível enviar a foto.</p>}
-          </div>
-
-          <div className="rounded-[var(--radius-card)] bg-card p-6 shadow-[var(--shadow-soft)]">
-            <h2 className="mb-1 text-sm font-bold text-card-foreground">Fuso horário</h2>
-            <p className="mb-4 text-xs text-muted-foreground">Define o horário exibido no Calendário e nas Atas.</p>
-            <select
-              value={timeZone}
-              onChange={(e) => {
-                setTimeZone(e.target.value);
-                setSaveStatus("idle");
-              }}
-              className="mb-4 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-            >
-              {US_TIMEZONES.map((tz) => (
-                <option key={tz.value} value={tz.value}>
-                  {tz.label}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={handleSaveTimeZone}
-              disabled={saveStatus === "saving"}
-              className="rounded-md bg-brand-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-primary/90 disabled:opacity-50"
-            >
-              {saveStatus === "saving" ? "Salvando..." : "Salvar"}
-            </button>
-            {saveStatus === "saved" && <p className="mt-2 text-xs text-green-600">Salvo com sucesso.</p>}
-            {saveStatus === "error" && <p className="mt-2 text-xs text-red-500">Não foi possível salvar.</p>}
-          </div>
-
-          <div className="rounded-[var(--radius-card)] bg-card p-6 shadow-[var(--shadow-soft)]">
-            <h2 className="mb-1 text-sm font-bold text-card-foreground">Faturamento</h2>
-            <p className="mb-4 text-xs text-muted-foreground">Plano, pagamentos e tempo de contrato.</p>
-
-            <div className="mb-4 grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs font-semibold text-card-foreground">Plano</p>
-                <p className="text-sm text-foreground">{planName ?? "Não configurado"}</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-card-foreground">Status de pagamento</p>
-                <p className="text-sm text-foreground">{paymentStatus ?? "Não configurado"}</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-card-foreground">Tempo de contrato</p>
-                <p className="text-sm text-foreground">{contractDuration}</p>
-              </div>
-            </div>
-
-            <p className="mb-2 text-xs font-semibold text-card-foreground">Histórico de pagamentos</p>
-            {payments.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhum pagamento registrado ainda.</p>
-            ) : (
-              <ul className="flex flex-col gap-1">
-                {payments.map((p) => (
-                  <li key={p.id} className="flex justify-between text-sm text-foreground">
-                    <span>{p.paidAt}</span>
-                    {p.amount != null && <span>R$ {p.amount.toFixed(2)}</span>}
-                  </li>
-                ))}
-              </ul>
             )}
-          </div>
-
-          <div className="rounded-[var(--radius-card)] bg-card p-6 shadow-[var(--shadow-soft)]">
-            <h2 className="mb-1 text-sm font-bold text-card-foreground">Indicação de amigos</h2>
-            <p className="mb-4 text-xs text-muted-foreground">Compartilhe seu link e acompanhe quem você já indicou.</p>
-
-            <div className="mb-4 flex items-center gap-2">
-              <input
-                type="text"
-                readOnly
-                value={referralLink}
-                className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+            {section === "fuso" && (
+              <ContaFusoSection
+                timeZone={timeZone}
+                onTimeZoneChange={(value) => {
+                  setTimeZone(value);
+                  setSaveStatus("idle");
+                }}
+                saveStatus={saveStatus}
+                onSave={handleSaveTimeZone}
               />
-              <button
-                type="button"
-                onClick={handleCopyLink}
-                className="rounded-md border border-border px-4 py-2 text-sm font-semibold text-card-foreground transition-colors hover:bg-muted"
-              >
-                {copyStatus === "copied" ? "Copiado!" : "Copiar"}
-              </button>
-            </div>
-
-            <p className="mb-2 text-xs font-semibold text-card-foreground">Quem você já indicou</p>
-            {referralLeads.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhuma indicação ainda.</p>
-            ) : (
-              <ul className="flex flex-col gap-1">
-                {referralLeads.map((lead) => (
-                  <li key={lead.id} className="flex justify-between text-sm text-foreground">
-                    <span>{lead.name}</span>
-                    <span className="text-muted-foreground">{lead.contact}</span>
-                    <span className="text-muted-foreground">{lead.createdAt.slice(0, 10)}</span>
-                  </li>
-                ))}
-              </ul>
             )}
-          </div>
-        </div>
-      )}
+            {section === "faturamento" && (
+              <ContaFaturamentoSection
+                planName={planName}
+                paymentStatus={paymentStatus}
+                contractDuration={contractDuration}
+                payments={payments}
+              />
+            )}
+            {section === "indicacoes" && (
+              <ContaIndicacoesSection
+                referralLink={referralLink}
+                copyStatus={copyStatus}
+                onCopy={handleCopyLink}
+                referralLeads={referralLeads}
+              />
+            )}
+            {section === "seguranca" && <ContaSegurancaSection />}
+          </>
+        )}
+      </div>
     </div>
   );
 }

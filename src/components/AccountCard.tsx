@@ -77,13 +77,18 @@ export function AccountCard({ clientId, accessKey }: { clientId: string; accessK
   const initials = getInitials(client.name);
   const avatarColor = colorFromName(client.name);
   const themeIndex = THEME_ORDER.indexOf(theme as Theme);
+  const ThemeIcon = [SunIcon, MoonIcon, MonitorIcon][themeIndex];
 
   function cycleTheme() {
     setTheme(THEME_ORDER[(themeIndex + 1) % THEME_ORDER.length]);
   }
 
   return (
-    <div className="relative border-t border-border pt-3">
+    <div
+      className="relative border-t border-border pt-3"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
       {open && (
         <div className="absolute bottom-full left-0 mb-2 w-full rounded-lg border border-border bg-card p-2 shadow-[var(--shadow-soft)]">
           <Link
@@ -99,23 +104,14 @@ export function AccountCard({ clientId, accessKey }: { clientId: string; accessK
               type="button"
               onClick={cycleTheme}
               aria-label={`Tema: ${theme}. Clique pra alternar.`}
-              className="relative flex w-[76px] items-center rounded-full bg-muted p-1"
+              className="relative h-6 w-[52px] rounded-full bg-muted p-1"
             >
               <span
-                className="absolute inset-y-1 w-1/3 rounded-full bg-card shadow-sm transition-transform"
-                style={{ transform: `translateX(${themeIndex * 100}%)` }}
-                aria-hidden="true"
-              />
-              {[SunIcon, MoonIcon, MonitorIcon].map((Icon, i) => (
-                <span
-                  key={i}
-                  className={`relative z-10 flex flex-1 items-center justify-center py-1 ${
-                    themeIndex === i ? "text-brand-primary" : "text-muted-foreground"
-                  }`}
-                >
-                  <Icon />
-                </span>
-              ))}
+                className="absolute top-1 flex h-4 w-4 items-center justify-center rounded-full bg-card text-brand-primary shadow-sm transition-all"
+                style={{ left: `${4 + themeIndex * 14}px` }}
+              >
+                <ThemeIcon />
+              </span>
             </button>
           </div>
 

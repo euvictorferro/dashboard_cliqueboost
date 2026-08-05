@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ContaSidebar, type ContaSection } from "./ContaSidebar";
+import { ContaSidebar } from "./ContaSidebar";
 import { ContaPerfilSection } from "./ContaPerfilSection";
 import { ContaFusoSection } from "./ContaFusoSection";
 import { ContaFaturamentoSection, type Payment } from "./ContaFaturamentoSection";
@@ -21,7 +21,6 @@ export function ContaPageClient({
   accessKey: string;
 }) {
   const [status, setStatus] = useState<Status>("loading");
-  const [section, setSection] = useState<ContaSection>("perfil");
 
   const [timeZone, setTimeZone] = useState<string>("America/New_York");
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
@@ -139,7 +138,7 @@ export function ContaPageClient({
 
   return (
     <div className="mx-auto flex w-full max-w-[1600px] gap-8 px-6 pt-6 pb-10 sm:px-10">
-      <ContaSidebar clientName={clientName} email={contactEmail} logoUrl={logoUrl} active={section} onSelect={setSection} />
+      <ContaSidebar clientName={clientName} email={contactEmail} logoUrl={logoUrl} />
 
       <div className="min-w-0 flex-1">
         {status === "loading" && <p className="text-sm text-muted-foreground">Carregando...</p>}
@@ -149,8 +148,8 @@ export function ContaPageClient({
           </p>
         )}
         {status === "ready" && (
-          <>
-            {section === "perfil" && (
+          <div className="flex flex-col gap-6">
+            <section id="perfil">
               <ContaPerfilSection
                 clientName={clientName}
                 contactEmail={contactEmail}
@@ -165,8 +164,8 @@ export function ContaPageClient({
                 fileInputRef={fileInputRef}
                 onLogoChange={handleLogoChange}
               />
-            )}
-            {section === "fuso" && (
+            </section>
+            <section id="fuso">
               <ContaFusoSection
                 timeZone={timeZone}
                 onTimeZoneChange={(value) => {
@@ -176,25 +175,27 @@ export function ContaPageClient({
                 saveStatus={saveStatus}
                 onSave={handleSaveTimeZone}
               />
-            )}
-            {section === "faturamento" && (
+            </section>
+            <section id="faturamento">
               <ContaFaturamentoSection
                 planName={planName}
                 paymentStatus={paymentStatus}
                 contractDuration={contractDuration}
                 payments={payments}
               />
-            )}
-            {section === "indicacoes" && (
+            </section>
+            <section id="indicacoes">
               <ContaIndicacoesSection
                 referralLink={referralLink}
                 copyStatus={copyStatus}
                 onCopy={handleCopyLink}
                 referralLeads={referralLeads}
               />
-            )}
-            {section === "seguranca" && <ContaSegurancaSection />}
-          </>
+            </section>
+            <section id="seguranca">
+              <ContaSegurancaSection />
+            </section>
+          </div>
         )}
       </div>
     </div>

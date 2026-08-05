@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { getInitials, colorFromName } from "@/lib/avatar";
 import { UserIcon, ClockIcon, CreditCardIcon, LinkIcon, LockIcon } from "./ContaIcons";
 
@@ -17,20 +18,34 @@ export function ContaSidebar({
   clientName,
   email,
   logoUrl,
-  active,
-  onSelect,
 }: {
   clientName: string;
   email: string;
   logoUrl: string | null;
-  active: ContaSection;
-  onSelect: (section: ContaSection) => void;
 }) {
   const initials = getInitials(clientName);
   const avatarColor = colorFromName(clientName);
+  const [active, setActive] = useState<ContaSection>("perfil");
+
+  // ponytail: scroll-spy simples via IntersectionObserver — a página agora é uma rolagem única
+  // com todas as seções, então o "ativo" segue o scroll em vez de trocar o conteúdo visível.
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((e) => e.isIntersecting);
+        if (visible.length > 0) setActive(visible[0].target.id as ContaSection);
+      },
+      { rootMargin: "-15% 0px -70% 0px" }
+    );
+    for (const { id } of NAV_ITEMS) {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    }
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <div className="w-60 shrink-0">
+    <div className="sticky top-20 w-60 shrink-0 self-start">
       <div className="mb-6 flex flex-col items-start gap-3">
         {logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -53,10 +68,9 @@ export function ContaSidebar({
         {NAV_ITEMS.map(({ id, label, Icon }) => {
           const isActive = active === id;
           return (
-            <button
+            <a
               key={id}
-              type="button"
-              onClick={() => onSelect(id)}
+              href={`#${id}`}
               className={`flex items-center gap-2.5 rounded-md border-l-2 py-2 pl-3 pr-2 text-left text-sm transition-colors ${
                 isActive
                   ? "border-brand-primary bg-brand-primary/5 font-semibold text-brand-primary"
@@ -65,7 +79,7 @@ export function ContaSidebar({
             >
               <Icon />
               {label}
-            </button>
+            </a>
           );
         })}
       </nav>

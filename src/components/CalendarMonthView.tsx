@@ -4,8 +4,9 @@
 import { useState } from "react";
 import type { ContentCard as ContentCardData } from "@/lib/trello";
 import { getContentFormat, FORMAT_BAR_CLASSES } from "@/lib/contentFormat";
-import { getTimeZoneDateParts, isSameTZDay } from "@/lib/clientTime";
+import { getTimeZoneDateParts, isSameTZDay, formatTZTime } from "@/lib/clientTime";
 import { useTimeZone } from "./TimeZoneContext";
+import { ContentLabelPills } from "./ContentLabelPills";
 
 const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const MONTH_LABELS = [
@@ -128,14 +129,7 @@ export function CalendarMonthView({
                 </p>
                 <div className="space-y-1">
                   {cardsForDay(day).map((card) => (
-                    <button
-                      key={card.id}
-                      type="button"
-                      onClick={() => onSelectCard(card)}
-                      className={`block w-full truncate rounded px-1.5 py-1 text-left text-[11px] font-medium transition-colors ${FORMAT_BAR_CLASSES[getContentFormat(card) ?? "default"]}`}
-                    >
-                      {card.name}
-                    </button>
+                    <MonthCardChip key={card.id} card={card} timeZone={timeZone} onSelect={onSelectCard} />
                   ))}
                 </div>
               </>
@@ -143,6 +137,37 @@ export function CalendarMonthView({
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function MonthCardChip({
+  card,
+  timeZone,
+  onSelect,
+}: {
+  card: ContentCardData;
+  timeZone: string;
+  onSelect: (card: ContentCardData) => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div className="relative" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+      <button
+        type="button"
+        onClick={() => onSelect(card)}
+        className={`block w-full truncate rounded px-1.5 py-1 text-left text-[11px] font-medium transition-colors ${FORMAT_BAR_CLASSES[getContentFormat(card) ?? "default"]}`}
+      >
+        {card.name}
+      </button>
+      {hovered && (
+        <div className="absolute left-0 top-full z-20 mt-1 w-56 rounded-[var(--radius-card)] border border-border bg-card p-3 text-left shadow-[var(--shadow-soft)]">
+          <p className="mb-1 text-sm font-semibold leading-tight text-card-foreground">{card.name}</p>
+          {card.dueDate && <p className="mb-1.5 text-xs text-muted-foreground">{formatTZTime(card.dueDate, timeZone)}</p>}
+          <ContentLabelPills labels={card.labels} size="xs" />
+        </div>
+      )}
     </div>
   );
 }

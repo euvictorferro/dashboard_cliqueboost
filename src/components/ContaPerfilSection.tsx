@@ -73,6 +73,7 @@ export function ContaPerfilSection({
             <ContaField label="E-mail de contato" badge={emailBadge}>
               <input
                 type="email"
+                aria-label="E-mail de contato"
                 value={contactEmail}
                 onChange={(e) => onEmailChange(e.target.value)}
                 placeholder="seu@email.com"

@@ -3,7 +3,7 @@
 export type Payment = { id: string; paidAt: string; amount: number | null };
 
 function paymentStatusTone(status: string): "success" | "warning" {
-  return /atras|pend|falh/i.test(status) ? "warning" : "success";
+  return /em dia|ativo|pago|adimplente/i.test(status) ? "success" : "warning";
 }
 
 export function ContaFaturamentoSection({

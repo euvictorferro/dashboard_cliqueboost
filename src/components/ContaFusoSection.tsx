@@ -31,6 +31,7 @@ export function ContaFusoSection({
       <div className="max-w-sm">
         <ContaField label="Fuso" badge={badge}>
           <select
+            aria-label="Fuso horário"
             value={timeZone}
             onChange={(e) => onTimeZoneChange(e.target.value)}
             className="w-full bg-transparent text-sm font-medium text-card-foreground outline-none"

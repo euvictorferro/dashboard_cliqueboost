@@ -111,7 +111,7 @@ export function ContentBoard({
   }
 
   return (
-    <div className="flex items-start gap-4 overflow-x-auto pb-4">
+    <div className="flex items-start gap-4 overflow-x-auto px-6 pb-4 sm:px-10">
       {lists.map((list) => (
         <div
           key={list.id}

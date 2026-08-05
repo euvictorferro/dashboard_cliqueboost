@@ -39,13 +39,13 @@ export function ContentPageClient({ clientId, accessKey }: { clientId: string; a
       : "Não foi possível carregar os conteúdos agora.";
 
   return (
-    <div className="w-full pt-6 pb-10 pl-6 sm:pl-10">
+    <div className="w-full pt-6 pb-10">
       {error && (
-        <p className="rounded-[var(--radius-card)] bg-card p-6 text-center text-sm text-muted-foreground shadow-[var(--shadow-soft)]">
+        <p className="mx-6 rounded-[var(--radius-card)] bg-card p-6 text-center text-sm text-muted-foreground shadow-[var(--shadow-soft)] sm:mx-10">
           {errorMessage}
         </p>
       )}
-      {!error && !lists && <p className="text-sm text-muted-foreground">Carregando...</p>}
+      {!error && !lists && <p className="mx-6 text-sm text-muted-foreground sm:mx-10">Carregando...</p>}
       {!error && lists && <ContentBoard lists={lists} clientId={clientId} accessKey={accessKey} />}
     </div>
   );

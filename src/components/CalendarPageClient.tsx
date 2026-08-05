@@ -41,7 +41,7 @@ export function CalendarPageClient({ clientId, accessKey }: { clientId: string; 
   const cards = lists ? lists.flatMap((l) => l.cards) : [];
 
   return (
-    <div className="w-full py-10 px-6 sm:px-10">
+    <div className="w-full pt-6 pb-10 px-6 sm:px-10">
       {error && (
         <p className="rounded-[var(--radius-card)] bg-card p-6 text-center text-sm text-muted-foreground shadow-[var(--shadow-soft)]">
           {errorMessage}

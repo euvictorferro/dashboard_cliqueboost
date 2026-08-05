@@ -124,11 +124,7 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
   const activeReachBreakdown = comparing ? compareSnapshots!.a.reachBreakdown : snapshot.reachBreakdown;
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] px-6 py-10 sm:px-10">
-      <header className="mb-6 flex flex-wrap items-center justify-end gap-4">
-        <ExportPdfButton clientId={client.id} range={range} accessKey={accessKey} disabled={compareWindows !== null} />
-      </header>
-
+    <div className="mx-auto w-full max-w-[1600px] px-6 pt-6 pb-10 sm:px-10">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <nav className="flex w-fit gap-1 rounded-xl bg-card p-1 shadow-[var(--shadow-soft)]">
           {([
@@ -146,13 +142,14 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
             </button>
           ))}
         </nav>
-        {tab === "organic" && (
-          <div className="flex items-center gap-2">
-            {!compareWindows && loading && <span className="text-xs text-muted-foreground">Atualizando…</span>}
-            {compareWindows && !compareSnapshots && <span className="text-xs text-muted-foreground">Comparando…</span>}
+        <div className="flex items-center gap-2">
+          {tab === "organic" && !compareWindows && loading && <span className="text-xs text-muted-foreground">Atualizando…</span>}
+          {tab === "organic" && compareWindows && !compareSnapshots && <span className="text-xs text-muted-foreground">Comparando…</span>}
+          {tab === "organic" && (
             <DateRangeFilter value={range} onChange={handleRangeChange} onApplyCompare={handleApplyCompare} />
-          </div>
-        )}
+          )}
+          <ExportPdfButton clientId={client.id} range={range} accessKey={accessKey} disabled={compareWindows !== null} />
+        </div>
       </div>
 
       {tab === "organic" && compareWindows && (

@@ -32,7 +32,7 @@ export function AtasPageClient({ clientId, accessKey }: { clientId: string; acce
   }, [clientId, accessKey]);
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] px-6 py-10 sm:px-10">
+    <div className="mx-auto w-full max-w-[1600px] px-6 pt-6 pb-10 sm:px-10">
       <CallScheduler clientId={clientId} accessKey={accessKey} />
       {error && (
         <p className="rounded-[var(--radius-card)] bg-card p-6 text-center text-sm text-muted-foreground shadow-[var(--shadow-soft)]">

@@ -160,7 +160,7 @@ export function BoosterAiPageClient({ clientId, accessKey }: { clientId: string;
   }
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-[1600px] flex-col px-6 py-10 sm:px-10">
+    <div className="mx-auto flex h-full w-full max-w-[1600px] flex-col px-6 pt-6 pb-10 sm:px-10">
       {loadError && (
         <p className="mb-4 rounded-[var(--radius-card)] bg-card p-4 text-sm text-muted-foreground shadow-[var(--shadow-soft)]">
           Não foi possível carregar o histórico agora.

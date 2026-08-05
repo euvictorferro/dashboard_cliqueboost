@@ -68,7 +68,7 @@ export function BunkerPageClient({ clientId, accessKey }: { clientId: string; ac
   const ideasList = lists ? findIdeasList(lists) : null;
 
   return (
-    <div className="w-full py-10 px-6 sm:px-10">
+    <div className="w-full pt-6 pb-10 px-6 sm:px-10">
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <div className="min-h-0">
           <h2 className="mb-4 text-lg font-bold text-card-foreground">Ideias</h2>

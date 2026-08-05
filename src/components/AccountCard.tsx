@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CLIENTS } from "@/lib/clients";
 import { getInitials, colorFromName } from "@/lib/avatar";
 import { useTheme } from "./ThemeProvider";
+import { BugReportModal } from "./BugReportModal";
 
 const THEME_ORDER = ["light", "dark", "system"] as const;
 type Theme = (typeof THEME_ORDER)[number];
@@ -59,10 +60,19 @@ function LogOutIcon() {
   );
 }
 
-export function AccountCard({ clientId, accessKey }: { clientId: string; accessKey: string }) {
+export function AccountCard({
+  clientId,
+  accessKey,
+  pageLabel,
+}: {
+  clientId: string;
+  accessKey: string;
+  pageLabel: string;
+}) {
   const client = CLIENTS.find((c) => c.id === clientId);
   const [email, setEmail] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [bugModalOpen, setBugModalOpen] = useState(false);
   const { theme, setTheme } = useTheme();
 
   useEffect(() => {
@@ -97,6 +107,17 @@ export function AccountCard({ clientId, accessKey }: { clientId: string; accessK
           >
             Ajustes
           </Link>
+
+          <button
+            type="button"
+            onClick={() => {
+              setBugModalOpen(true);
+              setOpen(false);
+            }}
+            className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-card-foreground hover:bg-muted"
+          >
+            Reportar bug
+          </button>
 
           <div className="flex items-center justify-between px-3 py-2">
             <span className="text-sm text-card-foreground">Tema</span>
@@ -140,6 +161,14 @@ export function AccountCard({ clientId, accessKey }: { clientId: string; accessK
           <span className="block truncate text-xs text-muted-foreground">{email ?? "..."}</span>
         </span>
       </button>
+      {bugModalOpen && (
+        <BugReportModal
+          clientId={clientId}
+          accessKey={accessKey}
+          currentPageLabel={pageLabel}
+          onClose={() => setBugModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

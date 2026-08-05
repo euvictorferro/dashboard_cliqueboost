@@ -155,11 +155,13 @@ export function Sidebar({
   clientId,
   accessKey,
   active,
+  pageLabel,
   collapsed = false,
 }: {
   clientId: string;
   accessKey: string;
   active: ActiveKey;
+  pageLabel: string;
   collapsed?: boolean;
 }) {
   const isSocialActive = SOCIAL_MEDIA_KEYS.includes(active);
@@ -222,7 +224,7 @@ export function Sidebar({
         </div>
 
         <div className="px-4 pb-4">
-          <AccountCard clientId={clientId} accessKey={accessKey} />
+          <AccountCard clientId={clientId} accessKey={accessKey} pageLabel={pageLabel} />
         </div>
       </div>
     </nav>

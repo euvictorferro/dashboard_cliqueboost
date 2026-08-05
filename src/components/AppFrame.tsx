@@ -24,7 +24,7 @@ export function AppFrame({
 
   return (
     <div className="flex min-h-full items-start">
-      <Sidebar clientId={clientId} accessKey={accessKey} active={active} collapsed={collapsed} />
+      <Sidebar clientId={clientId} accessKey={accessKey} active={active} pageLabel={pageLabel} collapsed={collapsed} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Header
           clientName={client?.name ?? clientId}

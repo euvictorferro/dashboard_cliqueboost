@@ -3,42 +3,12 @@
 
 import { useState } from "react";
 import type { ContentCard as ContentCardData } from "@/lib/trello";
-import { getContentFormat, FORMAT_BAR_CLASSES } from "@/lib/contentFormat";
+import { getContentFormat, FORMAT_SOLID_CLASSES } from "@/lib/contentFormat";
 import { getTimeZoneDateParts, isSameTZDay, formatTZTime } from "@/lib/clientTime";
 import { useTimeZone } from "./TimeZoneContext";
 import { ContentLabelPills } from "./ContentLabelPills";
 
 const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-const MONTH_LABELS = [
-  "Janeiro",
-  "Fevereiro",
-  "Março",
-  "Abril",
-  "Maio",
-  "Junho",
-  "Julho",
-  "Agosto",
-  "Setembro",
-  "Outubro",
-  "Novembro",
-  "Dezembro",
-];
-
-function ChevronLeftIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M10 3.5L5.5 8l4.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function ChevronRightIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M6 3.5L10.5 8 6 12.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 // ponytail: grade sempre múltipla de 7 (preenche com null antes do dia 1 e depois do último
 // dia, pra alinhar as colunas de domingo a sábado) — sem lib de calendário, é só aritmética de data.
@@ -54,18 +24,19 @@ function buildMonthGrid(year: number, month: number): (Date | null)[] {
 }
 
 export function CalendarMonthView({
+  currentDate,
   cards,
   onSelectCard,
 }: {
+  currentDate: Date;
   cards: ContentCardData[];
   onSelectCard: (card: ContentCardData) => void;
 }) {
   const timeZone = useTimeZone();
   const todayParts = getTimeZoneDateParts(Date.now(), timeZone);
-  const [currentMonth, setCurrentMonth] = useState(new Date(todayParts.year, todayParts.month, 1));
 
   const datedCards = cards.filter((c) => c.dueDate !== null);
-  const cells = buildMonthGrid(currentMonth.getFullYear(), currentMonth.getMonth());
+  const cells = buildMonthGrid(currentDate.getFullYear(), currentDate.getMonth());
 
   function cardsForDay(day: Date): ContentCardData[] {
     return datedCards.filter((c) =>
@@ -77,56 +48,35 @@ export function CalendarMonthView({
     return day.getFullYear() === todayParts.year && day.getMonth() === todayParts.month && day.getDate() === todayParts.day;
   }
 
-  function goToPrevMonth() {
-    setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
-  }
-
-  function goToNextMonth() {
-    setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
-  }
-
   return (
-    <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-bold text-card-foreground">
-          {MONTH_LABELS[currentMonth.getMonth()]} {currentMonth.getFullYear()}
-        </h2>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={goToPrevMonth}
-            aria-label="Mês anterior"
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-card-foreground"
-          >
-            <ChevronLeftIcon />
-          </button>
-          <button
-            type="button"
-            onClick={goToNextMonth}
-            aria-label="Próximo mês"
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-card-foreground"
-          >
-            <ChevronRightIcon />
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-7 gap-px overflow-hidden rounded-[var(--radius-card)] border border-border bg-border">
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
+      <div className="grid grid-cols-7 border-b border-border">
         {WEEKDAY_LABELS.map((label) => (
           <div
             key={label}
-            className="bg-muted px-2 py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+            className="border-r border-border p-2 text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground last:border-r-0"
           >
             {label}
           </div>
         ))}
+      </div>
+      <div className="grid grid-cols-7">
         {cells.map((day, i) => (
-          <div key={i} className="min-h-[110px] bg-card p-1.5">
+          <div
+            key={i}
+            className={`min-h-24 border-b border-r border-border p-1.5 transition-colors last:border-r-0 hover:bg-muted/50 ${
+              !day ? "bg-muted/30" : ""
+            }`}
+          >
             {day && (
               <>
-                <p className={`mb-1 text-xs font-medium ${isToday(day) ? "text-brand-primary" : "text-muted-foreground"}`}>
+                <div
+                  className={`mb-1 flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
+                    isToday(day) ? "bg-brand-primary font-semibold text-white" : "text-muted-foreground"
+                  }`}
+                >
                   {day.getDate()}
-                </p>
+                </div>
                 <div className="space-y-1">
                   {cardsForDay(day).map((card) => (
                     <MonthCardChip key={card.id} card={card} timeZone={timeZone} onSelect={onSelectCard} />
@@ -157,12 +107,14 @@ function MonthCardChip({
       <button
         type="button"
         onClick={() => onSelect(card)}
-        className={`block w-full truncate rounded px-1.5 py-1 text-left text-[11px] font-medium transition-colors ${FORMAT_BAR_CLASSES[getContentFormat(card) ?? "default"]}`}
+        className={`block w-full truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium transition-all ${
+          FORMAT_SOLID_CLASSES[getContentFormat(card) ?? "default"]
+        } ${hovered ? "z-10 scale-105 shadow-lg" : ""}`}
       >
         {card.name}
       </button>
       {hovered && (
-        <div className="absolute left-0 top-full z-20 mt-1 w-56 rounded-[var(--radius-card)] border border-border bg-card p-3 text-left shadow-[var(--shadow-soft)]">
+        <div className="absolute left-0 top-full z-20 mt-1 w-56 rounded-[var(--radius-card)] border border-border bg-card p-3 text-left shadow-xl">
           <p className="mb-1 text-sm font-semibold leading-tight text-card-foreground">{card.name}</p>
           {card.dueDate && <p className="mb-1.5 text-xs text-muted-foreground">{formatTZTime(card.dueDate, timeZone)}</p>}
           <ContentLabelPills labels={card.labels} size="xs" />

@@ -20,3 +20,18 @@ export const FORMAT_BAR_CLASSES: Record<"video" | "text" | "default", string> = 
   text: "bg-blue-500/15 text-blue-600 hover:bg-blue-500/25",
   default: "bg-brand-primary/10 text-brand-primary hover:bg-brand-primary/20",
 };
+
+// ponytail: versão sólida (fundo cheio + texto branco) pra bater com o estilo do chip de
+// evento do exemplo — usada nos chips do mês/semana/dia, o translúcido acima continua servindo
+// pra linhas maiores (lista).
+export const FORMAT_SOLID_CLASSES: Record<"video" | "text" | "default", string> = {
+  video: "bg-purple-500 text-white hover:bg-purple-600",
+  text: "bg-blue-500 text-white hover:bg-blue-600",
+  default: "bg-brand-primary text-white hover:bg-brand-primary/90",
+};
+
+export const FORMAT_DOT_CLASSES: Record<"video" | "text" | "default", string> = {
+  video: "bg-purple-500",
+  text: "bg-blue-500",
+  default: "bg-brand-primary",
+};

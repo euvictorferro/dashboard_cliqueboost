@@ -131,6 +131,8 @@ export function ContentBoard({
                 onClick={() => setSelectedCard(card)}
               />
             ))}
+          </div>
+          <div className="shrink-0 px-3 pt-2">
             <AddCardForm listId={list.id} onAdd={addCard} />
           </div>
         </div>

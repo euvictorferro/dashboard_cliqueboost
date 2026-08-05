@@ -72,7 +72,7 @@ export function BunkerPageClient({ clientId, accessKey }: { clientId: string; ac
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <div className="min-h-0">
           <h2 className="mb-4 text-lg font-bold text-card-foreground">Ideias</h2>
-          <div>
+          <div className="max-h-[calc(100vh-8rem)] overflow-y-auto pr-2">
             {error && (
               <p className="rounded-[var(--radius-card)] bg-card p-6 text-center text-sm text-muted-foreground shadow-[var(--shadow-soft)]">
                 {errorMessage}
@@ -85,7 +85,7 @@ export function BunkerPageClient({ clientId, accessKey }: { clientId: string; ac
 
         <div className="min-h-0">
           <h2 className="mb-4 text-lg font-bold text-card-foreground">Concorrentes e referências</h2>
-          <div>
+          <div className="max-h-[calc(100vh-8rem)] overflow-y-auto pr-2">
             {competitorsError && (
               <p className="rounded-[var(--radius-card)] bg-card p-6 text-center text-sm text-muted-foreground shadow-[var(--shadow-soft)]">
                 Não foi possível carregar os concorrentes agora.

@@ -59,7 +59,6 @@ export function BoosterAiPageClient({ clientId, accessKey }: { clientId: string;
   const [focused, setFocused] = useState(false);
   const [sending, setSending] = useState(false);
   const [loadError, setLoadError] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const expanded = focused || input.trim() !== "";
 
@@ -92,10 +91,6 @@ export function BoosterAiPageClient({ clientId, accessKey }: { clientId: string;
       })
       .catch(() => setLoadError(true));
   }, [clientId, accessKey]);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
 
   async function send(text: string) {
     if (!text || sending) return;
@@ -159,15 +154,19 @@ export function BoosterAiPageClient({ clientId, accessKey }: { clientId: string;
     navigator.clipboard?.writeText(text).catch(() => {});
   }
 
+  const reversedMessages = [...messages].reverse();
+
   return (
-    <div className="mx-auto flex h-full w-full max-w-[1600px] flex-col px-6 pt-6 pb-10 sm:px-10">
+    <div className="mx-auto flex h-[calc(100dvh-52px)] w-full max-w-[1600px] flex-col px-6 pt-6 pb-6 sm:px-10">
       {loadError && (
         <p className="mb-4 rounded-[var(--radius-card)] bg-card p-4 text-sm text-muted-foreground shadow-[var(--shadow-soft)]">
           Não foi possível carregar o histórico agora.
         </p>
       )}
-      <div className="flex-1 space-y-5 overflow-y-auto">
-        {messages.map((m, i) => (
+      <div className="flex flex-1 flex-col-reverse gap-5 overflow-y-auto">
+        {reversedMessages.map((m, ri) => {
+          const i = messages.length - 1 - ri;
+          return (
           <div key={i} className={`flex items-start gap-2.5 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
             {m.role === "assistant" ? (
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-primary text-white">
@@ -215,8 +214,8 @@ export function BoosterAiPageClient({ clientId, accessKey }: { clientId: string;
               )}
             </div>
           </div>
-        ))}
-        <div ref={bottomRef} />
+          );
+        })}
       </div>
 
       <form

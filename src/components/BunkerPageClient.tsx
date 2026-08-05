@@ -69,8 +69,6 @@ export function BunkerPageClient({ clientId, accessKey }: { clientId: string; ac
 
   return (
     <div className="w-full py-10 px-6 sm:px-10">
-      <h1 className="mb-6 text-2xl font-bold text-foreground">Bunker</h1>
-
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <div className="min-h-0">
           <h2 className="mb-4 text-lg font-bold text-card-foreground">Ideias</h2>

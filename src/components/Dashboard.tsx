@@ -125,8 +125,7 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
 
   return (
     <div className="mx-auto w-full max-w-[1600px] px-6 py-10 sm:px-10">
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+      <header className="mb-6 flex flex-wrap items-center justify-end gap-4">
         <ExportPdfButton clientId={client.id} range={range} accessKey={accessKey} disabled={compareWindows !== null} />
       </header>
 

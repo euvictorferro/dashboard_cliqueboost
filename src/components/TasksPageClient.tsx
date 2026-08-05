@@ -46,7 +46,6 @@ export function TasksPageClient({ clientId, accessKey }: { clientId: string; acc
 
   return (
     <div className="mx-auto w-full max-w-[1600px] px-6 py-10 sm:px-10">
-      <h1 className="mb-6 text-2xl font-bold text-foreground">Tasks</h1>
       {error && (
         <p className="rounded-[var(--radius-card)] bg-card p-6 text-center text-sm text-muted-foreground shadow-[var(--shadow-soft)]">
           {errorMessage}

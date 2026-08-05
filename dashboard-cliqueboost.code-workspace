@@ -1,0 +1,13 @@
+{
+  "folders": [
+    { "name": "Root", "path": "." },
+    { "name": "Frontend (src/app - páginas e rotas de API juntas)", "path": "src/app" },
+    { "name": "Backend (src/lib - acesso a dado / Supabase)", "path": "src/lib" }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/.next": true
+    }
+  }
+}

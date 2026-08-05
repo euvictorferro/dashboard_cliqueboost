@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 const PAGE_OPTIONS = ["Dashboard", "Tasks", "Conteúdos", "Calendário", "Atas", "Bunker", "Booster AI", "Conta", "Outra"];
 const MAX_SCREENSHOTS = 3;
@@ -109,7 +110,11 @@ export function BugReportModal({
       });
   }
 
-  return (
+  // ponytail: portal pro <body> — o modal é renderizado dentro da sidebar (AccountCard →
+  // Sidebar), que tem position:sticky e por isso cria seu próprio contexto de empilhamento;
+  // sem o portal, o z-index do modal só vale dentro desse contexto e perde pro conteúdo da
+  // página (irmão da sidebar, não filho), deixando gráficos/header por cima do modal.
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-lg border border-border bg-card p-6" onClick={(e) => e.stopPropagation()}>
         {status === "sent" ? (
@@ -227,6 +232,7 @@ export function BugReportModal({
           </form>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

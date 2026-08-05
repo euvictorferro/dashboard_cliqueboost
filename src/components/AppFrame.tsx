@@ -58,6 +58,7 @@ export function AppFrame({
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(dismissCountKey);
     }
+    setPendingMonthRef(null);
   }
 
   const dismissCount = typeof window !== "undefined" ? Number(window.localStorage.getItem(dismissCountKey) ?? "0") : 0;

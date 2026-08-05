@@ -61,5 +61,7 @@ export async function createRating(
   const { error } = await supabase
     .from("client_ratings")
     .insert({ client_id: clientId, month_ref: monthRef, stars, feedback });
-  if (error) throw new Error(error.message);
+  // violação de unique(client_id, month_ref) = duplo-envio do mesmo formulário (duplo-clique,
+  // retry de rede); a avaliação já foi gravada antes, então trata como sucesso (idempotência).
+  if (error && error.code !== "23505") throw new Error(error.message);
 }

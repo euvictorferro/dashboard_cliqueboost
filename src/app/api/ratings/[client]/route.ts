@@ -37,6 +37,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
   const feedback = typeof body.feedback === "string" && body.feedback.trim().length > 0 ? body.feedback.trim() : null;
 
+  const pendingMonth = await getPendingRatingMonth(clientId);
+  if (pendingMonth !== body.month_ref) {
+    return Response.json({ error: "invalid_body" }, { status: 400 });
+  }
+
   try {
     await createRating(clientId, body.month_ref, body.stars, feedback);
     return Response.json({ ok: true });

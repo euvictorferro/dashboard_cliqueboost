@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 const INVITE_MESSAGES = [
@@ -69,6 +69,13 @@ export function RatingPopup({
   const [hoverStars, setHoverStars] = useState<number | null>(null);
   const [feedback, setFeedback] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const autoCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (autoCloseTimeoutRef.current) clearTimeout(autoCloseTimeoutRef.current);
+    };
+  }, []);
 
   const displayStars = hoverStars ?? stars ?? 0;
 
@@ -85,7 +92,8 @@ export function RatingPopup({
       .then((res) => {
         if (!res.ok) throw new Error();
         setStatus("sent");
-        onSubmitted();
+        // fecha sozinho depois de mostrar o agradecimento, sem depender de ação do cliente
+        autoCloseTimeoutRef.current = setTimeout(() => onSubmitted(), 2000);
       })
       .catch(() => {
         setStatus("form");
@@ -96,8 +104,8 @@ export function RatingPopup({
   // ponytail: portal pro <body> — mesmo motivo do BugReportModal (nasce dentro do AppFrame,
   // que tem a Sidebar com position:sticky, criando contexto de empilhamento próprio).
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6" onClick={(e) => e.stopPropagation()}>
         {status === "invite" && (
           <div className="flex flex-col gap-4">
             <div className="flex items-start justify-between gap-2">

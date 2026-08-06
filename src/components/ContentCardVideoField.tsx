@@ -87,10 +87,10 @@ export function VideoUploadField({
         const { uploadUrl } = await initRes.json();
         await uploadWithProgress(uploadUrl, file, (percent) => setProgress((prev) => ({ ...prev, [file.name]: percent })));
       }
-      await refreshVideos();
     } catch {
       setError("Não foi possível enviar um dos vídeos. Tenta de novo.");
     } finally {
+      await refreshVideos();
       setUploading(false);
       setProgress({});
       if (fileInputRef.current) fileInputRef.current.value = "";

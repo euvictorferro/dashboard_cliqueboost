@@ -50,10 +50,17 @@ export function VideoUploadField({
   }
 
   async function refreshVideos() {
-    const res = await fetch(videosUrl());
-    if (!res.ok) return;
-    const data: { videos: ContentVideo[] } = await res.json();
-    setVideos(data.videos);
+    try {
+      const res = await fetch(videosUrl());
+      if (!res.ok) {
+        setError("Não foi possível carregar os vídeos.");
+        return;
+      }
+      const data: { videos: ContentVideo[] } = await res.json();
+      setVideos(data.videos);
+    } catch {
+      setError("Não foi possível carregar os vídeos.");
+    }
   }
 
   useEffect(() => {
@@ -83,14 +90,32 @@ export function VideoUploadField({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fileName: file.name, mimeType: file.type, fileSize: file.size, cardName }),
         });
-        if (!initRes.ok) throw new Error("init_failed");
+        if (!initRes.ok) {
+          const body = await initRes.json().catch(() => null);
+          if (body?.error === "unauthorized") {
+            throw new Error("unauthorized");
+          } else if (body?.error === "max_videos_reached") {
+            throw new Error("max_videos_reached");
+          }
+          throw new Error("init_failed");
+        }
         const { uploadUrl } = await initRes.json();
         await uploadWithProgress(uploadUrl, file, (percent) => setProgress((prev) => ({ ...prev, [file.name]: percent })));
       }
-    } catch {
-      setError("Não foi possível enviar um dos vídeos. Tenta de novo.");
+    } catch (err) {
+      if (err instanceof Error && err.message === "unauthorized") {
+        setError("Sua sessão expirou, recarregue a página.");
+      } else if (err instanceof Error && err.message === "max_videos_reached") {
+        setError("Limite de 20 vídeos atingido.");
+      } else {
+        setError("Não foi possível enviar um dos vídeos. Tenta de novo.");
+      }
     } finally {
-      await refreshVideos();
+      try {
+        await refreshVideos();
+      } catch {
+        // ponytail: cleanup below must still run even if refresh fails
+      }
       setUploading(false);
       setProgress({});
       if (fileInputRef.current) fileInputRef.current.value = "";

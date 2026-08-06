@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { verifyClientToken } from "@/lib/access";
 import { CLIENTS } from "@/lib/clients";
-import { findOrCreateClientFolder, findOrCreatePostFolder, listVideosInFolder, hasGoogleDriveCredentials } from "@/lib/googleDrive";
+import { findClientFolder, findPostFolder, listVideosInFolder, hasGoogleDriveCredentials } from "@/lib/googleDrive";
 
 export async function GET(
   request: NextRequest,
@@ -9,7 +9,6 @@ export async function GET(
 ) {
   const { client: clientId, cardId } = await params;
   const key = request.nextUrl.searchParams.get("key") ?? undefined;
-  const cardName = request.nextUrl.searchParams.get("cardName") ?? cardId;
 
   if (!(await verifyClientToken(clientId, key))) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
@@ -22,8 +21,10 @@ export async function GET(
   const clientName = CLIENTS.find((c) => c.id === clientId)?.name ?? clientId;
 
   try {
-    const clientFolderId = await findOrCreateClientFolder(clientName);
-    const postFolder = await findOrCreatePostFolder(clientFolderId, cardId, cardName);
+    const clientFolderId = await findClientFolder(clientName);
+    if (!clientFolderId) return Response.json({ videos: [] });
+    const postFolder = await findPostFolder(clientFolderId, cardId);
+    if (!postFolder) return Response.json({ videos: [] });
     const videos = await listVideosInFolder(postFolder.id);
     return Response.json({ videos });
   } catch (err) {

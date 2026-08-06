@@ -20,9 +20,13 @@ function getServiceAccount(): { client_email: string; private_key: string } {
   return { client_email: parsed.client_email, private_key: parsed.private_key };
 }
 
+let cachedToken: { token: string; expiresAt: number } | null = null;
+
 async function getAccessToken(): Promise<string> {
-  const { client_email, private_key } = getServiceAccount();
   const now = Math.floor(Date.now() / 1000);
+  if (cachedToken && cachedToken.expiresAt - now > 300) return cachedToken.token;
+
+  const { client_email, private_key } = getServiceAccount();
   const header = base64url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
   const claim = base64url(
     JSON.stringify({
@@ -47,7 +51,8 @@ async function getAccessToken(): Promise<string> {
   });
   const json = await res.json();
   if (!res.ok) throw new Error(`google_drive_auth_failed: ${JSON.stringify(json)}`);
-  return json.access_token as string;
+  cachedToken = { token: json.access_token, expiresAt: now + 3600 };
+  return cachedToken.token;
 }
 
 function clientsFolderId(): string {
@@ -70,10 +75,36 @@ async function driveFetch(path: string, accessToken: string, init?: RequestInit)
   return json;
 }
 
+function clientFolderQuery(clientName: string): string {
+  return `name = '${escapeQueryValue(clientName)}' and '${clientsFolderId()}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+}
+
+function postFolderQuery(clientFolderId: string, cardId: string): string {
+  return `appProperties has { key='trelloCardId' and value='${escapeQueryValue(cardId)}' } and '${clientFolderId}' in parents and trashed = false`;
+}
+
+export async function findClientFolder(clientName: string): Promise<string | null> {
+  const accessToken = await getAccessToken();
+  const found = await driveFetch(`files?q=${encodeURIComponent(clientFolderQuery(clientName))}&fields=files(id)`, accessToken);
+  return found.files?.[0]?.id ?? null;
+}
+
+export async function findPostFolder(
+  clientFolderId: string,
+  cardId: string
+): Promise<{ id: string; webViewLink: string } | null> {
+  const accessToken = await getAccessToken();
+  const found = await driveFetch(
+    `files?q=${encodeURIComponent(postFolderQuery(clientFolderId, cardId))}&fields=files(id,webViewLink)`,
+    accessToken
+  );
+  if (!found.files?.[0]?.id) return null;
+  return { id: found.files[0].id, webViewLink: found.files[0].webViewLink };
+}
+
 export async function findOrCreateClientFolder(clientName: string): Promise<string> {
   const accessToken = await getAccessToken();
-  const query = `name = '${escapeQueryValue(clientName)}' and '${clientsFolderId()}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
-  const found = await driveFetch(`files?q=${encodeURIComponent(query)}&fields=files(id)`, accessToken);
+  const found = await driveFetch(`files?q=${encodeURIComponent(clientFolderQuery(clientName))}&fields=files(id)`, accessToken);
   if (found.files?.[0]?.id) return found.files[0].id;
 
   const created = await driveFetch("files?fields=id", accessToken, {
@@ -94,8 +125,10 @@ export async function findOrCreatePostFolder(
   cardName: string
 ): Promise<{ id: string; webViewLink: string; isNew: boolean }> {
   const accessToken = await getAccessToken();
-  const query = `appProperties has { key='trelloCardId' and value='${escapeQueryValue(cardId)}' } and '${clientFolderId}' in parents and trashed = false`;
-  const found = await driveFetch(`files?q=${encodeURIComponent(query)}&fields=files(id,webViewLink)`, accessToken);
+  const found = await driveFetch(
+    `files?q=${encodeURIComponent(postFolderQuery(clientFolderId, cardId))}&fields=files(id,webViewLink)`,
+    accessToken
+  );
   if (found.files?.[0]?.id) {
     return { id: found.files[0].id, webViewLink: found.files[0].webViewLink, isNew: false };
   }

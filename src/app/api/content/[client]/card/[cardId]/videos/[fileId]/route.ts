@@ -2,8 +2,8 @@ import { NextRequest } from "next/server";
 import { verifyClientToken } from "@/lib/access";
 import { CLIENTS } from "@/lib/clients";
 import {
-  findOrCreateClientFolder,
-  findOrCreatePostFolder,
+  findClientFolder,
+  findPostFolder,
   listVideosInFolder,
   deleteFile,
   hasGoogleDriveCredentials,
@@ -15,7 +15,6 @@ export async function DELETE(
 ) {
   const { client: clientId, cardId, fileId } = await params;
   const key = request.nextUrl.searchParams.get("key") ?? undefined;
-  const cardName = request.nextUrl.searchParams.get("cardName") ?? cardId;
 
   if (!(await verifyClientToken(clientId, key))) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
@@ -28,8 +27,10 @@ export async function DELETE(
   const clientName = CLIENTS.find((c) => c.id === clientId)?.name ?? clientId;
 
   try {
-    const clientFolderId = await findOrCreateClientFolder(clientName);
-    const postFolder = await findOrCreatePostFolder(clientFolderId, cardId, cardName);
+    const clientFolderId = await findClientFolder(clientName);
+    if (!clientFolderId) return Response.json({ error: "not_found" }, { status: 404 });
+    const postFolder = await findPostFolder(clientFolderId, cardId);
+    if (!postFolder) return Response.json({ error: "not_found" }, { status: 404 });
     const videos = await listVideosInFolder(postFolder.id);
     if (!videos.some((v) => v.id === fileId)) {
       return Response.json({ error: "not_found" }, { status: 404 });

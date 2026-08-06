@@ -10,17 +10,23 @@ export type ClientSettings = {
   contactEmail: string | null;
   planName: string | null;
   paymentStatus: string | null;
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
 };
 
-export async function fetchClientSettings(clientId: string): Promise<ClientSettings> {
-  const supabase = getSupabaseAdmin();
-  if (!supabase) throw new Error("Supabase não configurado");
-  const { data, error } = await supabase
-    .from("client_settings")
-    .select("time_zone, logo_url, contract_start_date, contact_email, plan_name, payment_status")
-    .eq("client_id", clientId)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
+const CLIENT_SETTINGS_COLUMNS =
+  "time_zone, logo_url, contract_start_date, contact_email, plan_name, payment_status, stripe_customer_id, stripe_subscription_id";
+
+function mapClientSettingsRow(data: {
+  time_zone?: string | null;
+  logo_url?: string | null;
+  contract_start_date?: string | null;
+  contact_email?: string | null;
+  plan_name?: string | null;
+  payment_status?: string | null;
+  stripe_customer_id?: string | null;
+  stripe_subscription_id?: string | null;
+} | null): ClientSettings {
   return {
     timeZone: data?.time_zone ?? DEFAULT_TIME_ZONE,
     logoUrl: data?.logo_url ?? null,
@@ -28,7 +34,33 @@ export async function fetchClientSettings(clientId: string): Promise<ClientSetti
     contactEmail: data?.contact_email ?? null,
     planName: data?.plan_name ?? null,
     paymentStatus: data?.payment_status ?? null,
+    stripeCustomerId: data?.stripe_customer_id ?? null,
+    stripeSubscriptionId: data?.stripe_subscription_id ?? null,
   };
+}
+
+export async function fetchClientSettings(clientId: string): Promise<ClientSettings> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) throw new Error("Supabase não configurado");
+  const { data, error } = await supabase
+    .from("client_settings")
+    .select(CLIENT_SETTINGS_COLUMNS)
+    .eq("client_id", clientId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return mapClientSettingsRow(data);
+}
+
+export async function fetchClientIdByStripeCustomerId(stripeCustomerId: string): Promise<string | null> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) throw new Error("Supabase não configurado");
+  const { data, error } = await supabase
+    .from("client_settings")
+    .select("client_id")
+    .eq("stripe_customer_id", stripeCustomerId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data?.client_id ?? null;
 }
 
 export async function updateContactEmail(clientId: string, email: string): Promise<void> {

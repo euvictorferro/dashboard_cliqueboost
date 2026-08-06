@@ -15,3 +15,23 @@ export async function fetchClientPayments(clientId: string): Promise<ClientPayme
   if (error) throw new Error(error.message);
   return (data ?? []).map((row) => ({ id: row.id, paidAt: row.paid_at, amount: row.amount }));
 }
+
+export async function hasClientPayments(clientId: string): Promise<boolean> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) throw new Error("Supabase não configurado");
+  const { count, error } = await supabase
+    .from("client_payments")
+    .select("id", { count: "exact", head: true })
+    .eq("client_id", clientId);
+  if (error) throw new Error(error.message);
+  return (count ?? 0) > 0;
+}
+
+export async function createClientPayment(clientId: string, paidAt: string, amount: number | null): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) throw new Error("Supabase não configurado");
+  const { error } = await supabase
+    .from("client_payments")
+    .insert({ client_id: clientId, paid_at: paidAt, amount });
+  if (error) throw new Error(error.message);
+}

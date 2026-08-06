@@ -24,3 +24,26 @@ export async function createReferralLead(referrerClientId: string, name: string,
     .insert({ referrer_client_id: referrerClientId, name, contact });
   if (error) throw new Error(error.message);
 }
+
+export async function findPendingConversion(convertedClientId: string): Promise<{ id: string; referrerClientId: string } | null> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) throw new Error("Supabase não configurado");
+  const { data, error } = await supabase
+    .from("referral_leads")
+    .select("id, referrer_client_id")
+    .eq("converted_client_id", convertedClientId)
+    .is("discount_applied_at", null)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ? { id: data.id, referrerClientId: data.referrer_client_id } : null;
+}
+
+export async function markDiscountApplied(leadId: string): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) throw new Error("Supabase não configurado");
+  const { error } = await supabase
+    .from("referral_leads")
+    .update({ discount_applied_at: new Date().toISOString() })
+    .eq("id", leadId);
+  if (error) throw new Error(error.message);
+}

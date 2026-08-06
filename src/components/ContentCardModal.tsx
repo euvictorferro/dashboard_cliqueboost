@@ -16,6 +16,7 @@ import type {
 import { renderMarkdown } from "./markdown";
 import { AssigneeAvatars } from "./AssigneeAvatars";
 import { AttachmentIcon, ChecklistIcon, CommentsIcon, DescriptionIcon, DownloadIcon, LinkIcon, TrashIcon } from "./icons";
+import { VideoUploadField } from "./ContentCardVideoField";
 
 type LightboxTarget = { name: string; imageUrl: string; downloadUrl: string };
 
@@ -75,7 +76,7 @@ function CheckboxIcon({ checked }: { checked: boolean }) {
   );
 }
 
-function Field({
+export function Field({
   label,
   icon,
   action,
@@ -1225,6 +1226,8 @@ export function ContentCardModal({
                   onAddLink={addLinkAttachmentLocal}
                   onAddFile={addFileAttachmentLocal}
                 />
+
+                <VideoUploadField clientId={clientId} accessKey={accessKey} cardId={card.id} cardName={card.name} />
 
                 {checklist && (
                   <ChecklistField

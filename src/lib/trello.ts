@@ -323,6 +323,11 @@ export async function fetchCardActivity(cardId: string): Promise<ContentActivity
   return activity.sort((a, b) => b.date - a.date);
 }
 
+export async function fetchCardDescription(cardId: string): Promise<string> {
+  const card: { desc: string } = await trelloGet(`cards/${cardId}`, { fields: "desc" });
+  return card.desc;
+}
+
 export async function setChecklistItemState(cardId: string, checkItemId: string, checked: boolean): Promise<void> {
   await trelloMutate("PUT", `cards/${cardId}/checkItem/${checkItemId}`, { state: checked ? "complete" : "incomplete" });
 }

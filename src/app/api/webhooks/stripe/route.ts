@@ -5,13 +5,23 @@ import Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { fetchClientIdByStripeCustomerId, fetchClientSettings } from "@/lib/clientSettings";
 import { createClientPayment, hasClientPayments } from "@/lib/clientPayments";
-import { findPendingConversion, markDiscountApplied } from "@/lib/referralLeads";
+import { findPendingConversion, markDiscountApplied, markDisqualified } from "@/lib/referralLeads";
 
 const REFERRAL_DISCOUNT_PERCENT_OFF = 20;
+// Indicação só qualifica se o 1º pagamento do indicado for >= o plano mínimo (US$ 350).
+const REFERRAL_MIN_QUALIFYING_AMOUNT_CENTS = 350_00;
 
-async function applyReferralDiscount(convertedClientId: string, stripe: Stripe) {
+async function applyReferralDiscount(convertedClientId: string, amountPaidCents: number, stripe: Stripe) {
   const pending = await findPendingConversion(convertedClientId);
   if (!pending) return;
+
+  if (amountPaidCents < REFERRAL_MIN_QUALIFYING_AMOUNT_CENTS) {
+    console.log(
+      `[webhooks/stripe] indicação ${pending.id}: 1º pagamento de ${amountPaidCents / 100} abaixo do plano mínimo — não qualifica`
+    );
+    await markDisqualified(pending.id);
+    return;
+  }
 
   const referrerSettings = await fetchClientSettings(pending.referrerClientId);
   if (!referrerSettings.stripeSubscriptionId) {
@@ -19,9 +29,15 @@ async function applyReferralDiscount(convertedClientId: string, stripe: Stripe) 
     return;
   }
 
+  // `discounts` no update SUBSTITUI a lista — preservamos os descontos existentes pra que
+  // duas indicações convertidas no mesmo ciclo rendam dois cupons, não um só.
+  const subscription = await stripe.subscriptions.retrieve(referrerSettings.stripeSubscriptionId);
+  const existingDiscounts = (subscription.discounts ?? [])
+    .map((d) => (typeof d === "string" ? { discount: d } : { discount: d.id }));
+
   const coupon = await stripe.coupons.create({ percent_off: REFERRAL_DISCOUNT_PERCENT_OFF, duration: "once" });
   await stripe.subscriptions.update(referrerSettings.stripeSubscriptionId, {
-    discounts: [{ coupon: coupon.id }],
+    discounts: [...existingDiscounts, { coupon: coupon.id }],
   });
   await markDiscountApplied(pending.id);
 }
@@ -41,7 +57,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice, stripe: Stripe) {
   await createClientPayment(clientId, paidAt, invoice.amount_paid ? invoice.amount_paid / 100 : null);
 
   if (isFirstPayment) {
-    await applyReferralDiscount(clientId, stripe);
+    await applyReferralDiscount(clientId, invoice.amount_paid ?? 0, stripe);
   }
 }
 

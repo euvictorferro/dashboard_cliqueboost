@@ -11,7 +11,7 @@ import { verifyAdminSession, ADMIN_SESSION_COOKIE_NAME } from "@/lib/adminSessio
 // visitantes sem sessão.
 const PUBLIC_PATHS = ["/login", "/api/auth/login", "/sair", "/api/auth/logout", "/api/referrals"];
 
-const ADMIN_PUBLIC_PATHS = ["/admin/login", "/api/admin/auth/login", "/api/admin/auth/logout"];
+const ADMIN_PUBLIC_PATHS = ["/admin/login", "/api/admin/auth/login", "/api/admin/auth/logout", "/api/admin/auth/google"];
 
 export function proxy(request: NextRequest) {
   const { pathname: originalPathname } = request.nextUrl;

@@ -11,6 +11,7 @@ import {
   hasGoogleDriveCredentials,
 } from "@/lib/googleDrive";
 import { hasVideoTakesCredentials, isAlreadyNamedAsTake, transcribeVideo, matchTakesToScript } from "@/lib/videoTakes";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export async function POST(
   request: NextRequest,
@@ -20,6 +21,9 @@ export async function POST(
 
   if (!(await verifyClientSession(clientId))) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
+  }
+  if (!(await checkRateLimit(`match-takes:${clientId}`, 60 * 60, 20))) {
+    return Response.json({ error: "too_many_requests" }, { status: 429 });
   }
   if (!hasGoogleDriveCredentials() || !hasVideoTakesCredentials()) {
     console.error("[content] credenciais de Drive ou IA de takes não configuradas (match-takes)");

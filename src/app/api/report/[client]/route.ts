@@ -4,7 +4,7 @@ import { CLIENTS } from "@/lib/clients";
 import { getOrganicSnapshot, DATE_RANGES, type DateRangeId } from "@/lib/metrics";
 import { getAudienceSnapshot } from "@/lib/audience";
 import { fetchOrganicSnapshotLive, fetchAudienceSnapshotLive, hasMetaCredentials } from "@/lib/meta";
-import { verifyClientToken } from "@/lib/access";
+import { verifyClientSession } from "@/lib/access";
 import { ReportDocument } from "@/lib/pdf-report";
 
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -22,7 +22,6 @@ function formatPeriod(days: number): string {
 export async function GET(request: NextRequest, { params }: { params: Promise<{ client: string }> }) {
   const { client: clientId } = await params;
   const range = (request.nextUrl.searchParams.get("range") ?? "30d") as DateRangeId;
-  const key = request.nextUrl.searchParams.get("key") ?? undefined;
 
   const rangeInfo = DATE_RANGES.find((r) => r.id === range);
   if (!rangeInfo) {
@@ -34,7 +33,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return Response.json({ error: "unknown client" }, { status: 404 });
   }
 
-  if (!(await verifyClientToken(clientId, key))) {
+  if (!(await verifyClientSession(clientId))) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
 

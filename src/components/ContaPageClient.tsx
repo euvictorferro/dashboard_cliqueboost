@@ -14,11 +14,9 @@ type SaveStatus = "idle" | "saving" | "saved" | "error";
 export function ContaPageClient({
   clientId,
   clientName,
-  accessKey,
 }: {
   clientId: string;
   clientName: string;
-  accessKey: string;
 }) {
   const [status, setStatus] = useState<Status>("loading");
 
@@ -53,7 +51,7 @@ export function ContaPageClient({
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/conta/${clientId}?key=${encodeURIComponent(accessKey)}`)
+    fetch(`/api/conta/${clientId}`)
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error();
@@ -87,11 +85,11 @@ export function ContaPageClient({
     return () => {
       cancelled = true;
     };
-  }, [clientId, accessKey]);
+  }, [clientId]);
 
   function handleSaveTimeZone() {
     setSaveStatus("saving");
-    fetch(`/api/conta/${clientId}?key=${encodeURIComponent(accessKey)}`, {
+    fetch(`/api/conta/${clientId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ timeZone }),
@@ -105,7 +103,7 @@ export function ContaPageClient({
 
   function handleSaveEmail() {
     setEmailSaveStatus("saving");
-    fetch(`/api/conta/${clientId}/email?key=${encodeURIComponent(accessKey)}`, {
+    fetch(`/api/conta/${clientId}/email`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: contactEmail }),
@@ -123,7 +121,7 @@ export function ContaPageClient({
     setUploadStatus("saving");
     const formData = new FormData();
     formData.append("logo", file);
-    fetch(`/api/conta/${clientId}/logo?key=${encodeURIComponent(accessKey)}`, {
+    fetch(`/api/conta/${clientId}/logo`, {
       method: "POST",
       body: formData,
     })

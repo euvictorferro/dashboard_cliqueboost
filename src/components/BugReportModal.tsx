@@ -42,12 +42,10 @@ function PaperclipIcon() {
 
 export function BugReportModal({
   clientId,
-  accessKey,
   currentPageLabel,
   onClose,
 }: {
   clientId: string;
-  accessKey: string;
   currentPageLabel: string;
   onClose: () => void;
 }) {
@@ -96,7 +94,7 @@ export function BugReportModal({
     formData.append("description", description.trim());
     for (const s of screenshots) formData.append("screenshots", s.file);
 
-    fetch(`/api/bug-reports/${clientId}?key=${encodeURIComponent(accessKey)}`, {
+    fetch(`/api/bug-reports/${clientId}`, {
       method: "POST",
       body: formData,
     })

@@ -10,12 +10,10 @@ import { AttachmentIcon, ChecklistIcon, ClockIcon, DescriptionIcon } from "./ico
 export function ContentCard({
   card,
   clientId,
-  accessKey,
   onClick,
 }: {
   card: ContentCardData;
   clientId: string;
-  accessKey: string;
   onClick: () => void;
 }) {
   const [coverFailed, setCoverFailed] = useState(false);
@@ -37,7 +35,7 @@ export function ContentCard({
       {showCover && (
         // eslint-disable-next-line @next/next/no-img-element -- imagem vem do proxy autenticado, não é asset local
         <img
-          src={`/api/content/${clientId}/cover-proxy?key=${encodeURIComponent(accessKey)}&url=${encodeURIComponent(card.coverImageUrl!)}`}
+          src={`/api/content/${clientId}/cover-proxy?url=${encodeURIComponent(card.coverImageUrl!)}`}
           alt=""
           className="aspect-[3/4] w-full object-cover"
           onError={() => setCoverFailed(true)}

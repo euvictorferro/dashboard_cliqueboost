@@ -128,19 +128,17 @@ const SOCIAL_MEDIA_KEYS: ActiveKey[] = ["conteudos", "calendario", "bunker"];
 
 function NavLink({
   clientId,
-  accessKey,
   item,
   isActive,
 }: {
   clientId: string;
-  accessKey: string;
   item: NavItemDef;
   isActive: boolean;
 }) {
   const Icon = item.icon;
   return (
     <Link
-      href={`/${clientId}${item.href}?key=${encodeURIComponent(accessKey)}`}
+      href={`/${clientId}${item.href}`}
       className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors ${
         isActive ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-card-foreground"
       }`}
@@ -153,13 +151,11 @@ function NavLink({
 
 export function Sidebar({
   clientId,
-  accessKey,
   active,
   pageLabel,
   collapsed = false,
 }: {
   clientId: string;
-  accessKey: string;
   active: ActiveKey;
   pageLabel: string;
   collapsed?: boolean;
@@ -193,7 +189,7 @@ export function Sidebar({
             <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Menu</p>
             <div className="flex flex-col gap-1">
               {ITEMS_BEFORE_SOCIAL.map((item) => (
-                <NavLink key={item.href} clientId={clientId} accessKey={accessKey} item={item} isActive={active === item.key} />
+                <NavLink key={item.href} clientId={clientId} item={item} isActive={active === item.key} />
               ))}
 
               <button
@@ -211,20 +207,20 @@ export function Sidebar({
             {socialOpen && (
               <div className="ml-3 flex flex-col gap-1 border-l border-border pl-3">
                 {SOCIAL_MEDIA_ITEMS.map((item) => (
-                  <NavLink key={item.href} clientId={clientId} accessKey={accessKey} item={item} isActive={active === item.key} />
+                  <NavLink key={item.href} clientId={clientId} item={item} isActive={active === item.key} />
                 ))}
               </div>
             )}
 
               {ITEMS_AFTER_SOCIAL.map((item) => (
-                <NavLink key={item.href} clientId={clientId} accessKey={accessKey} item={item} isActive={active === item.key} />
+                <NavLink key={item.href} clientId={clientId} item={item} isActive={active === item.key} />
               ))}
             </div>
           </div>
         </div>
 
         <div className="px-4 pb-4">
-          <AccountCard clientId={clientId} accessKey={accessKey} pageLabel={pageLabel} />
+          <AccountCard clientId={clientId} pageLabel={pageLabel} />
         </div>
       </div>
     </nav>

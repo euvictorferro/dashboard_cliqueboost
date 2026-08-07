@@ -49,7 +49,7 @@ function RetryIcon() {
 
 type UiMessage = { role: "user" | "assistant"; content: string };
 
-export function BoosterAiPageClient({ clientId, accessKey }: { clientId: string; accessKey: string }) {
+export function BoosterAiPageClient({ clientId }: { clientId: string;  }) {
   const client = CLIENTS.find((c) => c.id === clientId);
   const userInitials = getInitials(client?.name ?? clientId);
   const userColor = colorFromName(client?.name ?? clientId);
@@ -70,7 +70,7 @@ export function BoosterAiPageClient({ clientId, accessKey }: { clientId: string;
   }, [input, expanded]);
 
   useEffect(() => {
-    fetch(`/api/booster-ai/${clientId}/messages?key=${encodeURIComponent(accessKey)}`)
+    fetch(`/api/booster-ai/${clientId}/messages`)
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error();
@@ -80,7 +80,7 @@ export function BoosterAiPageClient({ clientId, accessKey }: { clientId: string;
         setMessages(data.messages.map((m) => ({ role: m.role, content: m.content })));
       })
       .catch(() => setLoadError(true));
-  }, [clientId, accessKey]);
+  }, [clientId]);
 
   async function send(text: string) {
     if (!text || sending) return;
@@ -88,7 +88,7 @@ export function BoosterAiPageClient({ clientId, accessKey }: { clientId: string;
     setMessages((prev) => [...prev, { role: "user", content: text }, { role: "assistant", content: "" }]);
 
     try {
-      const res = await fetch(`/api/booster-ai/${clientId}/chat?key=${encodeURIComponent(accessKey)}`, {
+      const res = await fetch(`/api/booster-ai/${clientId}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text }),

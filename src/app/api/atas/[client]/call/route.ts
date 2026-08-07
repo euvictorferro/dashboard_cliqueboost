@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { CLIENTS } from "@/lib/clients";
-import { verifyClientToken } from "@/lib/access";
+import { verifyClientSession } from "@/lib/access";
 import { fetchActiveCall, createCall, findActiveCallToCancel, cancelCallById } from "@/lib/clientCalls";
 import { fetchFreeSlots, createCallEvent, cancelCallEvent } from "@/lib/googleCalendar";
 
@@ -8,11 +8,10 @@ const DAYS_AHEAD = 10;
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ client: string }> }) {
   const { client: clientId } = await params;
-  const key = request.nextUrl.searchParams.get("key") ?? undefined;
 
   const client = CLIENTS.find((c) => c.id === clientId);
   if (!client) return Response.json({ error: "unknown_client" }, { status: 404 });
-  if (!(await verifyClientToken(clientId, key))) return Response.json({ error: "unauthorized" }, { status: 401 });
+  if (!(await verifyClientSession(clientId))) return Response.json({ error: "unauthorized" }, { status: 401 });
 
   try {
     const [activeCall, freeSlots] = await Promise.all([fetchActiveCall(clientId), fetchFreeSlots(DAYS_AHEAD)]);
@@ -25,11 +24,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ client: string }> }) {
   const { client: clientId } = await params;
-  const key = request.nextUrl.searchParams.get("key") ?? undefined;
 
   const client = CLIENTS.find((c) => c.id === clientId);
   if (!client) return Response.json({ error: "unknown_client" }, { status: 404 });
-  if (!(await verifyClientToken(clientId, key))) return Response.json({ error: "unauthorized" }, { status: 401 });
+  if (!(await verifyClientSession(clientId))) return Response.json({ error: "unauthorized" }, { status: 401 });
 
   const body = await request.json().catch(() => null);
   const scheduledAt = body?.scheduledAt;

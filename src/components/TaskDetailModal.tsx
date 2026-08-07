@@ -106,14 +106,12 @@ function StatusField({
   status,
   statusColor,
   clientId,
-  accessKey,
   taskId,
   onChanged,
 }: {
   status: string;
   statusColor: string;
   clientId: string;
-  accessKey: string;
   taskId: string;
   onChanged: (status: string, color: string) => void;
 }) {
@@ -124,11 +122,11 @@ function StatusField({
 
   useEffect(() => {
     if (!open || statuses !== null) return;
-    fetch(`/api/tasks/${clientId}/list-meta?key=${encodeURIComponent(accessKey)}`)
+    fetch(`/api/tasks/${clientId}/list-meta`)
       .then((res) => res.json())
       .then((data: { statuses: TaskStatus[] }) => setStatuses(data.statuses ?? []))
       .catch(() => setStatuses([]));
-  }, [open, statuses, clientId, accessKey]);
+  }, [open, statuses, clientId]);
 
   async function handleSelect(next: TaskStatus) {
     if (next.status === status) {
@@ -137,7 +135,7 @@ function StatusField({
     }
     setSaving(true);
     try {
-      const res = await fetch(`/api/tasks/${clientId}/task/${taskId}/status?key=${encodeURIComponent(accessKey)}`, {
+      const res = await fetch(`/api/tasks/${clientId}/task/${taskId}/status`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: next.status }),
@@ -189,13 +187,11 @@ function StatusField({
 function AssigneesField({
   assignees,
   clientId,
-  accessKey,
   taskId,
   onToggle,
 }: {
   assignees: TaskItem["assignees"];
   clientId: string;
-  accessKey: string;
   taskId: string;
   onToggle: (member: TaskListMember, adding: boolean) => void;
 }) {
@@ -206,17 +202,17 @@ function AssigneesField({
 
   useEffect(() => {
     if (!open || members !== null) return;
-    fetch(`/api/tasks/${clientId}/list-meta?key=${encodeURIComponent(accessKey)}`)
+    fetch(`/api/tasks/${clientId}/list-meta`)
       .then((res) => res.json())
       .then((data: { members: TaskListMember[] }) => setMembers(data.members ?? []))
       .catch(() => setMembers([]));
-  }, [open, members, clientId, accessKey]);
+  }, [open, members, clientId]);
 
   async function handleToggle(member: TaskListMember) {
     const isAssigned = assignees.some((a) => a.id === member.id);
     setBusyId(member.id);
     try {
-      const res = await fetch(`/api/tasks/${clientId}/task/${taskId}/assignees?key=${encodeURIComponent(accessKey)}`, {
+      const res = await fetch(`/api/tasks/${clientId}/task/${taskId}/assignees`, {
         method: isAssigned ? "DELETE" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ memberId: member.id }),
@@ -283,13 +279,11 @@ function AssigneesField({
 function DueDateField({
   dueDate,
   clientId,
-  accessKey,
   taskId,
   onSaved,
 }: {
   dueDate: number | null;
   clientId: string;
-  accessKey: string;
   taskId: string;
   onSaved: (dueDate: number | null) => void;
 }) {
@@ -302,7 +296,7 @@ function DueDateField({
     setSaving(true);
     const next = draft ? new Date(`${draft}T00:00:00`).getTime() : null;
     try {
-      const res = await fetch(`/api/tasks/${clientId}/task/${taskId}/due-date?key=${encodeURIComponent(accessKey)}`, {
+      const res = await fetch(`/api/tasks/${clientId}/task/${taskId}/due-date`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ dueDate: next }),
@@ -369,13 +363,11 @@ function DueDateField({
 function DescriptionField({
   text,
   clientId,
-  accessKey,
   taskId,
   onSaved,
 }: {
   text: string;
   clientId: string;
-  accessKey: string;
   taskId: string;
   onSaved: (desc: string) => void;
 }) {
@@ -387,7 +379,7 @@ function DescriptionField({
     if (saving) return;
     setSaving(true);
     try {
-      const res = await fetch(`/api/tasks/${clientId}/task/${taskId}/description?key=${encodeURIComponent(accessKey)}`, {
+      const res = await fetch(`/api/tasks/${clientId}/task/${taskId}/description`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ desc: draft }),
@@ -459,12 +451,10 @@ function DescriptionField({
 
 function CommentBox({
   clientId,
-  accessKey,
   taskId,
   onPosted,
 }: {
   clientId: string;
-  accessKey: string;
   taskId: string;
   onPosted: (comment: TaskComment) => void;
 }) {
@@ -477,7 +467,7 @@ function CommentBox({
     setPosting(true);
     setError(false);
     try {
-      const res = await fetch(`/api/tasks/${clientId}/task/${taskId}/comments?key=${encodeURIComponent(accessKey)}`, {
+      const res = await fetch(`/api/tasks/${clientId}/task/${taskId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: text.trim() }),
@@ -517,7 +507,7 @@ function CommentBox({
   );
 }
 
-function CommentsField({ clientId, accessKey, task }: { clientId: string; accessKey: string; task: TaskItem }) {
+function CommentsField({ clientId, task }: { clientId: string; task: TaskItem }) {
   const [comments, setComments] = useState<TaskComment[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [showActivity, setShowActivity] = useState(false);
@@ -526,7 +516,7 @@ function CommentsField({ clientId, accessKey, task }: { clientId: string; access
     let cancelled = false;
     setComments(null);
     setFailed(false);
-    fetch(`/api/tasks/${clientId}/task/${task.id}/comments?key=${encodeURIComponent(accessKey)}`)
+    fetch(`/api/tasks/${clientId}/task/${task.id}/comments`)
       .then((res) => {
         if (!res.ok) throw new Error("fetch_failed");
         return res.json();
@@ -540,7 +530,7 @@ function CommentsField({ clientId, accessKey, task }: { clientId: string; access
     return () => {
       cancelled = true;
     };
-  }, [clientId, accessKey, task.id]);
+  }, [clientId, task.id]);
 
   return (
     <div>
@@ -562,7 +552,6 @@ function CommentsField({ clientId, accessKey, task }: { clientId: string; access
 
       <CommentBox
         clientId={clientId}
-        accessKey={accessKey}
         taskId={task.id}
         onPosted={(comment) => {
           setComments((prev) => (prev ? [comment, ...prev] : [comment]));
@@ -636,12 +625,10 @@ function CommentsField({ clientId, accessKey, task }: { clientId: string; access
 export function TaskDetailModal({
   task,
   clientId,
-  accessKey,
   onClose,
 }: {
   task: TaskItem;
   clientId: string;
-  accessKey: string;
   onClose: () => void;
 }) {
   const [status, setStatus] = useState(task.status);
@@ -705,7 +692,6 @@ export function TaskDetailModal({
                     status={status}
                     statusColor={statusColor}
                     clientId={clientId}
-                    accessKey={accessKey}
                     taskId={task.id}
                     onChanged={(s, c) => {
                       setStatus(s);
@@ -716,7 +702,6 @@ export function TaskDetailModal({
                   <AssigneesField
                     assignees={assignees}
                     clientId={clientId}
-                    accessKey={accessKey}
                     taskId={task.id}
                     onToggle={toggleAssigneeLocal}
                   />
@@ -724,7 +709,6 @@ export function TaskDetailModal({
                   <DueDateField
                     dueDate={dueDate}
                     clientId={clientId}
-                    accessKey={accessKey}
                     taskId={task.id}
                     onSaved={setDueDate}
                   />
@@ -764,7 +748,6 @@ export function TaskDetailModal({
                 <DescriptionField
                   text={description}
                   clientId={clientId}
-                  accessKey={accessKey}
                   taskId={task.id}
                   onSaved={setDescription}
                 />
@@ -774,7 +757,7 @@ export function TaskDetailModal({
 
           <div className="min-w-0 shrink-0 overflow-y-auto border-l border-border bg-muted/30 md:w-[380px]">
             <div className="p-6">
-              <CommentsField clientId={clientId} accessKey={accessKey} task={task} />
+              <CommentsField clientId={clientId} task={task} />
             </div>
           </div>
         </div>

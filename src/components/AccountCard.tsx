@@ -62,11 +62,9 @@ function LogOutIcon() {
 
 export function AccountCard({
   clientId,
-  accessKey,
   pageLabel,
 }: {
   clientId: string;
-  accessKey: string;
   pageLabel: string;
 }) {
   const client = CLIENTS.find((c) => c.id === clientId);
@@ -76,11 +74,11 @@ export function AccountCard({
   const { theme, setTheme } = useTheme();
 
   useEffect(() => {
-    fetch(`/api/conta/${clientId}?key=${encodeURIComponent(accessKey)}`)
+    fetch(`/api/conta/${clientId}`)
       .then((res) => res.json())
       .then((data) => setEmail(typeof data.contactEmail === "string" ? data.contactEmail : null))
       .catch(() => setEmail(null));
-  }, [clientId, accessKey]);
+  }, [clientId]);
 
   if (!client) return null;
 
@@ -102,7 +100,7 @@ export function AccountCard({
       {open && !bugModalOpen && (
         <div className="absolute bottom-full left-0 w-full rounded-lg border border-border bg-card p-2 shadow-[var(--shadow-soft)]">
           <Link
-            href={`/${clientId}/conta?key=${encodeURIComponent(accessKey)}`}
+            href={`/${clientId}/conta`}
             className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-card-foreground hover:bg-muted"
           >
             Ajustes
@@ -164,7 +162,6 @@ export function AccountCard({
       {bugModalOpen && (
         <BugReportModal
           clientId={clientId}
-          accessKey={accessKey}
           currentPageLabel={pageLabel}
           onClose={() => setBugModalOpen(false)}
         />

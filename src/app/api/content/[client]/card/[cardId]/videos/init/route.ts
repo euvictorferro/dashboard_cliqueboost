@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { verifyClientToken } from "@/lib/access";
+import { verifyClientSession } from "@/lib/access";
 import { CLIENTS } from "@/lib/clients";
 import { addLinkAttachment } from "@/lib/trello";
 import {
@@ -17,9 +17,8 @@ export async function POST(
   { params }: { params: Promise<{ client: string; cardId: string }> }
 ) {
   const { client: clientId, cardId } = await params;
-  const key = request.nextUrl.searchParams.get("key") ?? undefined;
 
-  if (!(await verifyClientToken(clientId, key))) {
+  if (!(await verifyClientSession(clientId))) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
   if (!hasGoogleDriveCredentials()) {

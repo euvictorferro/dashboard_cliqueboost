@@ -7,11 +7,9 @@ import { ContentCardModal } from "./ContentCardModal";
 export function IdeasList({
   cards,
   clientId,
-  accessKey,
 }: {
   cards: ContentCardData[];
   clientId: string;
-  accessKey: string;
 }) {
   const [selectedCard, setSelectedCard] = useState<ContentCardData | null>(null);
 
@@ -51,7 +49,7 @@ export function IdeasList({
       ))}
 
       {selectedCard && (
-        <ContentCardModal card={selectedCard} clientId={clientId} accessKey={accessKey} onClose={() => setSelectedCard(null)} />
+        <ContentCardModal card={selectedCard} clientId={clientId} onClose={() => setSelectedCard(null)} />
       )}
     </div>
   );

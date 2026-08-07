@@ -40,11 +40,9 @@ function groupByDay(notes: CallNote[], timeZone: string): DateGroup[] {
 export function AtasList({
   notes,
   clientId,
-  accessKey,
 }: {
   notes: CallNote[];
   clientId: string;
-  accessKey: string;
 }) {
   const timeZone = useTimeZone();
 
@@ -67,7 +65,7 @@ export function AtasList({
             {group.notes.map((note) => (
               <Link
                 key={note.id}
-                href={`/${clientId}/atas/${note.id}?key=${encodeURIComponent(accessKey)}`}
+                href={`/${clientId}/atas/${note.id}`}
                 className="flex items-center gap-3 rounded-[var(--radius-card)] bg-card px-4 py-3 shadow-[var(--shadow-soft)] transition-colors hover:bg-muted"
               >
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">

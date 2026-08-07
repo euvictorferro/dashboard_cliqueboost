@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
 import { addTaskAssignee, hasClickUpCredentials, removeTaskAssignee } from "@/lib/clickup";
-import { verifyClientToken } from "@/lib/access";
+import { verifyClientSession } from "@/lib/access";
 
-async function auth(clientId: string, key: string | undefined) {
-  if (!(await verifyClientToken(clientId, key))) return { error: "unauthorized" as const, status: 401 };
+async function auth(clientId: string) {
+  if (!(await verifyClientSession(clientId))) return { error: "unauthorized" as const, status: 401 };
   if (!hasClickUpCredentials()) {
     console.error("[tasks] CLICKUP_API_TOKEN não configurado (assignees)");
     return { error: "fetch_failed" as const, status: 502 };
@@ -16,8 +16,7 @@ export async function POST(
   { params }: { params: Promise<{ client: string; taskId: string }> },
 ) {
   const { client: clientId, taskId } = await params;
-  const key = request.nextUrl.searchParams.get("key") ?? undefined;
-  const authError = await auth(clientId, key);
+  const authError = await auth(clientId);
   if (authError) return Response.json({ error: authError.error }, { status: authError.status });
 
   const { memberId } = await request.json();
@@ -37,8 +36,7 @@ export async function DELETE(
   { params }: { params: Promise<{ client: string; taskId: string }> },
 ) {
   const { client: clientId, taskId } = await params;
-  const key = request.nextUrl.searchParams.get("key") ?? undefined;
-  const authError = await auth(clientId, key);
+  const authError = await auth(clientId);
   if (authError) return Response.json({ error: authError.error }, { status: authError.status });
 
   const { memberId } = await request.json();

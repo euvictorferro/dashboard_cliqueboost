@@ -33,12 +33,10 @@ function SpinnerIcon() {
 export function ExportPdfButton({
   clientId,
   range,
-  accessKey,
   disabled,
 }: {
   clientId: string;
   range: string;
-  accessKey: string;
   disabled?: boolean;
 }) {
   const [downloading, setDownloading] = useState(false);
@@ -47,7 +45,7 @@ export function ExportPdfButton({
     if (downloading || disabled) return;
     setDownloading(true);
     try {
-      const res = await fetch(`/api/report/${clientId}?range=${range}&key=${encodeURIComponent(accessKey)}`);
+      const res = await fetch(`/api/report/${clientId}?range=${range}`);
       if (!res.ok) throw new Error("falha ao gerar relatório");
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);

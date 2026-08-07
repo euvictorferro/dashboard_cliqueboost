@@ -11,12 +11,10 @@ const PLATFORMS: { value: Competitor["platform"]; label: string }[] = [
 
 export function AddCompetitorModal({
   clientId,
-  accessKey,
   onAdded,
   onClose,
 }: {
   clientId: string;
-  accessKey: string;
   onAdded: (competitor: Competitor) => void;
   onClose: () => void;
 }) {
@@ -30,7 +28,7 @@ export function AddCompetitorModal({
     setSaving(true);
     setError(false);
     try {
-      const res = await fetch(`/api/content/${clientId}/competitors?key=${encodeURIComponent(accessKey)}`, {
+      const res = await fetch(`/api/content/${clientId}/competitors`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ handle: handle.trim(), platform }),

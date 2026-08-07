@@ -28,7 +28,7 @@ function formatDateBR(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
-export function Dashboard({ client, accessKey }: { client: Client; accessKey: string }) {
+export function Dashboard({ client }: { client: Client;  }) {
   const [range, setRange] = useState<DateRangeId>("30d");
   const [tab, setTab] = useState<Tab>("organic");
   // ponytail: mock síncrono cobre o 1º render; o fetch troca por dado real (ou mock do servidor) assim que chega.
@@ -45,7 +45,7 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
     if (compareWindows) return; // modo comparação usa o efeito abaixo
     let cancelled = false;
     const key = `${client.id}:${range}`;
-    fetch(`/api/organic/${client.id}?range=${range}&key=${encodeURIComponent(accessKey)}`)
+    fetch(`/api/organic/${client.id}?range=${range}`)
       .then((res) => res.json())
       .then((data: OrganicSnapshot) => {
         if (cancelled) return;
@@ -60,7 +60,7 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
     return () => {
       cancelled = true;
     };
-  }, [client.id, range, accessKey, compareWindows]);
+  }, [client.id, range, compareWindows]);
 
   useEffect(() => {
     if (!compareWindows) {
@@ -69,7 +69,7 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
     }
     let cancelled = false;
     const fetchWindow = (w: { since: string; until: string }) =>
-      fetch(`/api/organic/${client.id}?since=${w.since}&until=${w.until}&key=${encodeURIComponent(accessKey)}`).then(
+      fetch(`/api/organic/${client.id}?since=${w.since}&until=${w.until}`).then(
         (res) => res.json()
       );
     const windowDays = (w: { since: string; until: string }) =>
@@ -93,7 +93,7 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
     return () => {
       cancelled = true;
     };
-  }, [client.id, compareWindows, accessKey]);
+  }, [client.id, compareWindows]);
 
   function handleRangeChange(id: DateRangeId) {
     setRange(id);
@@ -148,7 +148,7 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
           {tab === "organic" && (
             <DateRangeFilter value={range} onChange={handleRangeChange} onApplyCompare={handleApplyCompare} />
           )}
-          <ExportPdfButton clientId={client.id} range={range} accessKey={accessKey} disabled={compareWindows !== null} />
+          <ExportPdfButton clientId={client.id} range={range} disabled={compareWindows !== null} />
         </div>
       </div>
 
@@ -264,7 +264,7 @@ export function Dashboard({ client, accessKey }: { client: Client; accessKey: st
 
           <TopVideosList posts={activeTopPosts} />
 
-          <AudiencePanel clientId={client.id} accessKey={accessKey} reachBreakdown={activeReachBreakdown} />
+          <AudiencePanel clientId={client.id} reachBreakdown={activeReachBreakdown} />
         </div>
       )}
       {tab === "ads" && <AdsPanel clientId={client.id} active={client.adsActive} />}

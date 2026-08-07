@@ -37,8 +37,8 @@ function formatRelativeTime(ts: number): string {
   return new Date(ts).toLocaleDateString("pt-BR");
 }
 
-function coverProxyUrl(clientId: string, accessKey: string, url: string): string {
-  return `/api/content/${clientId}/cover-proxy?key=${encodeURIComponent(accessKey)}&url=${encodeURIComponent(url)}`;
+function coverProxyUrl(clientId: string, url: string): string {
+  return `/api/content/${clientId}/cover-proxy?url=${encodeURIComponent(url)}`;
 }
 
 function checklistBarColor(percent: number): string {
@@ -129,13 +129,11 @@ function PlusButton({ onClick }: { onClick: () => void }) {
 function MembersField({
   assignees,
   clientId,
-  accessKey,
   cardId,
   onToggle,
 }: {
   assignees: ContentAssignee[];
   clientId: string;
-  accessKey: string;
   cardId: string;
   onToggle: (member: ContentBoardMember, adding: boolean) => void;
 }) {
@@ -146,17 +144,17 @@ function MembersField({
 
   useEffect(() => {
     if (!open || boardMembers !== null) return;
-    fetch(`/api/content/${clientId}/board-meta?key=${encodeURIComponent(accessKey)}`)
+    fetch(`/api/content/${clientId}/board-meta`)
       .then((res) => res.json())
       .then((data: { members: ContentBoardMember[] }) => setBoardMembers(data.members ?? []))
       .catch(() => setBoardMembers([]));
-  }, [open, boardMembers, clientId, accessKey]);
+  }, [open, boardMembers, clientId]);
 
   async function handleToggle(member: ContentBoardMember) {
     const isAssigned = assignees.some((a) => a.id === member.id);
     setBusyId(member.id);
     try {
-      const res = await fetch(`/api/content/${clientId}/card/${cardId}/members?key=${encodeURIComponent(accessKey)}`, {
+      const res = await fetch(`/api/content/${clientId}/card/${cardId}/members`, {
         method: isAssigned ? "DELETE" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ memberId: member.id }),
@@ -220,13 +218,11 @@ function MembersField({
 function LabelsField({
   labels,
   clientId,
-  accessKey,
   cardId,
   onToggle,
 }: {
   labels: ContentLabel[];
   clientId: string;
-  accessKey: string;
   cardId: string;
   onToggle: (label: ContentBoardLabel, adding: boolean) => void;
 }) {
@@ -237,17 +233,17 @@ function LabelsField({
 
   useEffect(() => {
     if (!open || boardLabels !== null) return;
-    fetch(`/api/content/${clientId}/board-meta?key=${encodeURIComponent(accessKey)}`)
+    fetch(`/api/content/${clientId}/board-meta`)
       .then((res) => res.json())
       .then((data: { labels: ContentBoardLabel[] }) => setBoardLabels(data.labels ?? []))
       .catch(() => setBoardLabels([]));
-  }, [open, boardLabels, clientId, accessKey]);
+  }, [open, boardLabels, clientId]);
 
   async function handleToggle(label: ContentBoardLabel) {
     const isApplied = labels.some((l) => l.id === label.id);
     setBusyId(label.id);
     try {
-      const res = await fetch(`/api/content/${clientId}/card/${cardId}/labels?key=${encodeURIComponent(accessKey)}`, {
+      const res = await fetch(`/api/content/${clientId}/card/${cardId}/labels`, {
         method: isApplied ? "DELETE" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ labelId: label.id }),
@@ -318,13 +314,11 @@ function LabelsField({
 function DescriptionField({
   text,
   clientId,
-  accessKey,
   cardId,
   onSaved,
 }: {
   text: string;
   clientId: string;
-  accessKey: string;
   cardId: string;
   onSaved: (desc: string) => void;
 }) {
@@ -339,7 +333,7 @@ function DescriptionField({
     if (saving) return;
     setSaving(true);
     try {
-      const res = await fetch(`/api/content/${clientId}/card/${cardId}/description?key=${encodeURIComponent(accessKey)}`, {
+      const res = await fetch(`/api/content/${clientId}/card/${cardId}/description`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ desc: draft }),
@@ -536,12 +530,10 @@ function LinkRow({ attachment }: { attachment: ContentAttachment }) {
 function FileRow({
   attachment,
   clientId,
-  accessKey,
   onOpenImage,
 }: {
   attachment: ContentAttachment;
   clientId: string;
-  accessKey: string;
   onOpenImage: (target: LightboxTarget) => void;
 }) {
   const canPreview = attachment.previewUrl !== null;
@@ -560,7 +552,7 @@ function FileRow({
         <button type="button" onClick={open} className="shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element -- imagem vem do proxy autenticado */}
           <img
-            src={coverProxyUrl(clientId, accessKey, attachment.previewUrl!)}
+            src={coverProxyUrl(clientId, attachment.previewUrl!)}
             alt=""
             className="h-10 w-10 rounded object-cover"
           />
@@ -589,14 +581,12 @@ function FileRow({
 function AttachmentsField({
   attachments,
   clientId,
-  accessKey,
   onOpenImage,
   onAddLink,
   onAddFile,
 }: {
   attachments: ContentAttachment[];
   clientId: string;
-  accessKey: string;
   onOpenImage: (target: LightboxTarget) => void;
   onAddLink: (url: string) => Promise<void>;
   onAddFile: (file: File) => Promise<void>;
@@ -709,7 +699,7 @@ function AttachmentsField({
               <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Arquivos</p>
               <ul className="space-y-2">
                 {files.map((a) => (
-                  <FileRow key={a.url} attachment={a} clientId={clientId} accessKey={accessKey} onOpenImage={onOpenImage} />
+                  <FileRow key={a.url} attachment={a} clientId={clientId} onOpenImage={onOpenImage} />
                 ))}
               </ul>
             </div>
@@ -756,12 +746,10 @@ function renderCommentText(text: string): ReactNode[] {
 
 function CommentBox({
   clientId,
-  accessKey,
   cardId,
   onPosted,
 }: {
   clientId: string;
-  accessKey: string;
   cardId: string;
   onPosted: (activity: ContentActivity) => void;
 }) {
@@ -774,7 +762,7 @@ function CommentBox({
     setPosting(true);
     setError(false);
     try {
-      const res = await fetch(`/api/content/${clientId}/card/${cardId}/activity?key=${encodeURIComponent(accessKey)}`, {
+      const res = await fetch(`/api/content/${clientId}/card/${cardId}/activity`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: text.trim() }),
@@ -816,12 +804,10 @@ function CommentBox({
 
 function ActivityField({
   clientId,
-  accessKey,
   cardId,
   onOpenImage,
 }: {
   clientId: string;
-  accessKey: string;
   cardId: string;
   onOpenImage: (target: LightboxTarget) => void;
 }) {
@@ -834,7 +820,7 @@ function ActivityField({
     setActivity(null);
     setFailed(false);
     setShowDetails(false);
-    fetch(`/api/content/${clientId}/card/${cardId}/activity?key=${encodeURIComponent(accessKey)}`)
+    fetch(`/api/content/${clientId}/card/${cardId}/activity`)
       .then((res) => {
         if (!res.ok) throw new Error("fetch_failed");
         return res.json();
@@ -848,13 +834,13 @@ function ActivityField({
     return () => {
       cancelled = true;
     };
-  }, [clientId, accessKey, cardId]);
+  }, [clientId, cardId]);
 
   function openAttachmentRef(ref: NonNullable<ContentActivity["attachmentRef"]>) {
     if (ref.previewUrl) {
       onOpenImage({ name: ref.name, imageUrl: ref.previewUrl, downloadUrl: ref.url });
     } else {
-      window.open(coverProxyUrl(clientId, accessKey, ref.url), "_blank", "noopener,noreferrer");
+      window.open(coverProxyUrl(clientId, ref.url), "_blank", "noopener,noreferrer");
     }
   }
 
@@ -882,7 +868,6 @@ function ActivityField({
 
       <CommentBox
         clientId={clientId}
-        accessKey={accessKey}
         cardId={cardId}
         onPosted={(newActivity) => {
           setActivity((prev) => (prev ? [newActivity, ...prev] : [newActivity]));
@@ -940,16 +925,14 @@ function ActivityField({
 function ImageLightbox({
   target,
   clientId,
-  accessKey,
   onClose,
 }: {
   target: LightboxTarget;
   clientId: string;
-  accessKey: string;
   onClose: () => void;
 }) {
-  const src = coverProxyUrl(clientId, accessKey, target.imageUrl);
-  const downloadSrc = coverProxyUrl(clientId, accessKey, target.downloadUrl);
+  const src = coverProxyUrl(clientId, target.imageUrl);
+  const downloadSrc = coverProxyUrl(clientId, target.downloadUrl);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -996,12 +979,10 @@ function ImageLightbox({
 export function ContentCardModal({
   card,
   clientId,
-  accessKey,
   onClose,
 }: {
   card: ContentCard;
   clientId: string;
-  accessKey: string;
   onClose: () => void;
 }) {
   const [coverFailed, setCoverFailed] = useState(false);
@@ -1053,7 +1034,7 @@ export function ContentCardModal({
         : prev,
     );
     try {
-      const res = await fetch(`/api/content/${clientId}/card/${card.id}/checklist/toggle?key=${encodeURIComponent(accessKey)}`, {
+      const res = await fetch(`/api/content/${clientId}/card/${card.id}/checklist/toggle`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ checkItemId: item.id, checked: nextChecked }),
@@ -1075,7 +1056,7 @@ export function ContentCardModal({
   async function addChecklistItemLocal(name: string) {
     const checklistId = checklist?.items[0]?.checklistId;
     if (!checklistId) return;
-    const res = await fetch(`/api/content/${clientId}/card/${card.id}/checklist/items?key=${encodeURIComponent(accessKey)}`, {
+    const res = await fetch(`/api/content/${clientId}/card/${card.id}/checklist/items`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ checklistId, name }),
@@ -1097,7 +1078,7 @@ export function ContentCardModal({
         : prev,
     );
     try {
-      const res = await fetch(`/api/content/${clientId}/card/${card.id}/checklist/items?key=${encodeURIComponent(accessKey)}`, {
+      const res = await fetch(`/api/content/${clientId}/card/${card.id}/checklist/items`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ checklistId: item.checklistId, checkItemId: item.id }),
@@ -1109,7 +1090,7 @@ export function ContentCardModal({
   }
 
   async function addLinkAttachmentLocal(url: string) {
-    const res = await fetch(`/api/content/${clientId}/card/${card.id}/attachments?key=${encodeURIComponent(accessKey)}`, {
+    const res = await fetch(`/api/content/${clientId}/card/${card.id}/attachments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url }),
@@ -1123,7 +1104,7 @@ export function ContentCardModal({
     const formData = new FormData();
     formData.append("file", file);
     const res = await fetch(
-      `/api/content/${clientId}/card/${card.id}/attachments/upload?key=${encodeURIComponent(accessKey)}`,
+      `/api/content/${clientId}/card/${card.id}/attachments/upload`,
       { method: "POST", body: formData },
     );
     if (!res.ok) throw new Error();
@@ -1168,7 +1149,7 @@ export function ContentCardModal({
           <div className="flex shrink-0 items-center justify-center border-b border-border bg-muted/40 py-4">
             {/* eslint-disable-next-line @next/next/no-img-element -- imagem vem do proxy autenticado, não é asset local */}
             <img
-              src={coverProxyUrl(clientId, accessKey, card.coverImageUrl!)}
+              src={coverProxyUrl(clientId, card.coverImageUrl!)}
               alt=""
               className="max-h-56 max-w-[70%] rounded-[var(--radius-card)] object-contain"
               onError={() => setCoverFailed(true)}
@@ -1194,7 +1175,6 @@ export function ContentCardModal({
                   <MembersField
                     assignees={assignees}
                     clientId={clientId}
-                    accessKey={accessKey}
                     cardId={card.id}
                     onToggle={toggleMemberLocal}
                   />
@@ -1202,7 +1182,6 @@ export function ContentCardModal({
                   <LabelsField
                     labels={labels}
                     clientId={clientId}
-                    accessKey={accessKey}
                     cardId={card.id}
                     onToggle={toggleLabelLocal}
                   />
@@ -1213,7 +1192,6 @@ export function ContentCardModal({
                 <DescriptionField
                   text={description}
                   clientId={clientId}
-                  accessKey={accessKey}
                   cardId={card.id}
                   onSaved={setDescription}
                 />
@@ -1221,13 +1199,12 @@ export function ContentCardModal({
                 <AttachmentsField
                   attachments={attachments}
                   clientId={clientId}
-                  accessKey={accessKey}
                   onOpenImage={setLightboxTarget}
                   onAddLink={addLinkAttachmentLocal}
                   onAddFile={addFileAttachmentLocal}
                 />
 
-                <VideoUploadField clientId={clientId} accessKey={accessKey} cardId={card.id} cardName={card.name} />
+                <VideoUploadField clientId={clientId} cardId={card.id} cardName={card.name} />
 
                 {checklist && (
                   <ChecklistField
@@ -1243,7 +1220,7 @@ export function ContentCardModal({
 
           <div className="min-w-0 shrink-0 overflow-y-auto border-l border-border bg-muted/30 md:w-[420px]">
             <div className="p-6">
-              <ActivityField clientId={clientId} accessKey={accessKey} cardId={card.id} onOpenImage={setLightboxTarget} />
+              <ActivityField clientId={clientId} cardId={card.id} onOpenImage={setLightboxTarget} />
             </div>
           </div>
         </div>
@@ -1253,7 +1230,6 @@ export function ContentCardModal({
         <ImageLightbox
           target={lightboxTarget}
           clientId={clientId}
-          accessKey={accessKey}
           onClose={() => setLightboxTarget(null)}
         />
       )}

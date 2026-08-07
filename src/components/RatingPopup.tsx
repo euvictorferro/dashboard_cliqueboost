@@ -108,14 +108,12 @@ type Status = "invite" | "form" | "sending" | "sent";
 
 export function RatingPopup({
   clientId,
-  accessKey,
   monthRef,
   dismissCount,
   onClose,
   onSubmitted,
 }: {
   clientId: string;
-  accessKey: string;
   monthRef: string;
   dismissCount: number;
   onClose: () => void;
@@ -146,7 +144,7 @@ export function RatingPopup({
     setStatus("sending");
     setErrorMsg(null);
 
-    fetch(`/api/ratings/${clientId}?key=${encodeURIComponent(accessKey)}`, {
+    fetch(`/api/ratings/${clientId}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ month_ref: monthRef, stars: stars / 2, feedback: feedback.trim() || null }),

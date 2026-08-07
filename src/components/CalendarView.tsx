@@ -47,11 +47,9 @@ function getWeekStart(date: Date): Date {
 export function CalendarView({
   cards,
   clientId,
-  accessKey,
 }: {
   cards: ContentCardData[];
   clientId: string;
-  accessKey: string;
 }) {
   const timeZone = useTimeZone();
   const todayParts = getTimeZoneDateParts(Date.now(), timeZone);
@@ -221,7 +219,7 @@ export function CalendarView({
       {viewMode === "list" && <CalendarListView cards={filteredCards} onSelectCard={setSelectedCard} />}
 
       {selectedCard && (
-        <ContentCardModal card={selectedCard} clientId={clientId} accessKey={accessKey} onClose={() => setSelectedCard(null)} />
+        <ContentCardModal card={selectedCard} clientId={clientId} onClose={() => setSelectedCard(null)} />
       )}
     </div>
   );

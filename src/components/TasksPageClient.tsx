@@ -7,7 +7,7 @@ import { TasksTable } from "./TasksTable";
 
 type ErrorKind = "no_list" | "fetch_failed";
 
-export function TasksPageClient({ clientId, accessKey }: { clientId: string; accessKey: string }) {
+export function TasksPageClient({ clientId }: { clientId: string;  }) {
   const [tasks, setTasks] = useState<TaskItem[] | null>(null);
   const [statuses, setStatuses] = useState<TaskStatus[]>([]);
   const [error, setError] = useState<ErrorKind | null>(null);
@@ -17,7 +17,7 @@ export function TasksPageClient({ clientId, accessKey }: { clientId: string; acc
     setTasks(null);
     setStatuses([]);
     setError(null);
-    fetch(`/api/tasks/${clientId}?key=${encodeURIComponent(accessKey)}`)
+    fetch(`/api/tasks/${clientId}`)
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) {
@@ -37,7 +37,7 @@ export function TasksPageClient({ clientId, accessKey }: { clientId: string; acc
     return () => {
       cancelled = true;
     };
-  }, [clientId, accessKey]);
+  }, [clientId]);
 
   const errorMessage =
     error === "no_list"
@@ -52,7 +52,7 @@ export function TasksPageClient({ clientId, accessKey }: { clientId: string; acc
         </p>
       )}
       {!error && !tasks && <p className="text-sm text-muted-foreground">Carregando...</p>}
-      {!error && tasks && <TasksTable tasks={tasks} statuses={statuses} clientId={clientId} accessKey={accessKey} />}
+      {!error && tasks && <TasksTable tasks={tasks} statuses={statuses} clientId={clientId} />}
     </div>
   );
 }

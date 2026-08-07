@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { CLIENTS } from "@/lib/clients";
-import { verifyClientToken } from "@/lib/access";
+import { verifyClientSession } from "@/lib/access";
 import { createBugReport } from "@/lib/bugReports";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
@@ -11,11 +11,10 @@ const EXT_BY_TYPE: Record<string, string> = { "image/png": "png", "image/jpeg": 
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ client: string }> }) {
   const { client: clientId } = await params;
-  const key = request.nextUrl.searchParams.get("key") ?? undefined;
 
   const client = CLIENTS.find((c) => c.id === clientId);
   if (!client) return Response.json({ error: "unknown_client" }, { status: 404 });
-  if (!(await verifyClientToken(clientId, key))) return Response.json({ error: "unauthorized" }, { status: 401 });
+  if (!(await verifyClientSession(clientId))) return Response.json({ error: "unauthorized" }, { status: 401 });
 
   const formData = await request.formData().catch(() => null);
   if (!formData) return Response.json({ error: "invalid_body" }, { status: 400 });

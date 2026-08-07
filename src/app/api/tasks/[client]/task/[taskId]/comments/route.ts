@@ -1,15 +1,14 @@
 import { NextRequest } from "next/server";
 import { fetchTaskComments, hasClickUpCredentials, postTaskComment } from "@/lib/clickup";
-import { verifyClientToken } from "@/lib/access";
+import { verifyClientSession } from "@/lib/access";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ client: string; taskId: string }> },
 ) {
   const { client: clientId, taskId } = await params;
-  const key = request.nextUrl.searchParams.get("key") ?? undefined;
 
-  if (!(await verifyClientToken(clientId, key))) {
+  if (!(await verifyClientSession(clientId))) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
   if (!hasClickUpCredentials()) {
@@ -31,9 +30,8 @@ export async function POST(
   { params }: { params: Promise<{ client: string; taskId: string }> },
 ) {
   const { client: clientId, taskId } = await params;
-  const key = request.nextUrl.searchParams.get("key") ?? undefined;
 
-  if (!(await verifyClientToken(clientId, key))) {
+  if (!(await verifyClientSession(clientId))) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
   if (!hasClickUpCredentials()) {

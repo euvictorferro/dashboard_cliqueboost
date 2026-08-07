@@ -14,11 +14,9 @@ type ExtractStatus = "idle" | "extracting" | "done" | "already_extracted" | "err
 
 export function AtaDetailPageClient({
   clientId,
-  accessKey,
   noteId,
 }: {
   clientId: string;
-  accessKey: string;
   noteId: string;
 }) {
   const timeZone = useTimeZone();
@@ -31,7 +29,7 @@ export function AtaDetailPageClient({
     let cancelled = false;
     setStatus("loading");
     setNote(null);
-    fetch(`/api/atas/${clientId}/${noteId}?key=${encodeURIComponent(accessKey)}`)
+    fetch(`/api/atas/${clientId}/${noteId}`)
       .then(async (res) => {
         if (res.status === 404) throw new Error("not_found");
         const data = await res.json();
@@ -51,11 +49,11 @@ export function AtaDetailPageClient({
     return () => {
       cancelled = true;
     };
-  }, [clientId, accessKey, noteId]);
+  }, [clientId, noteId]);
 
   function extractTasks() {
     setExtractStatus("extracting");
-    fetch(`/api/atas/${clientId}/${noteId}/extract-tasks?key=${encodeURIComponent(accessKey)}`, { method: "POST" })
+    fetch(`/api/atas/${clientId}/${noteId}/extract-tasks`, { method: "POST" })
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error();
@@ -71,7 +69,7 @@ export function AtaDetailPageClient({
   return (
     <div className="mx-auto w-full max-w-[1600px] px-6 py-10 sm:px-10">
       <Link
-        href={`/${clientId}/atas?key=${encodeURIComponent(accessKey)}`}
+        href={`/${clientId}/atas`}
         className="mb-6 inline-block text-sm font-medium text-muted-foreground hover:text-card-foreground"
       >
         ← Voltar

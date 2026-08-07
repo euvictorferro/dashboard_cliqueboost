@@ -12,7 +12,7 @@ function findIdeasList(lists: ContentList[]): ContentList | null {
   return lists.find((l) => /ideias|backlog/i.test(l.name)) ?? null;
 }
 
-export function BunkerPageClient({ clientId, accessKey }: { clientId: string; accessKey: string }) {
+export function BunkerPageClient({ clientId }: { clientId: string;  }) {
   const [lists, setLists] = useState<ContentList[] | null>(null);
   const [error, setError] = useState<ErrorKind | null>(null);
   const [competitors, setCompetitors] = useState<Competitor[] | null>(null);
@@ -22,7 +22,7 @@ export function BunkerPageClient({ clientId, accessKey }: { clientId: string; ac
     let cancelled = false;
     setLists(null);
     setError(null);
-    fetch(`/api/content/${clientId}?key=${encodeURIComponent(accessKey)}`)
+    fetch(`/api/content/${clientId}`)
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) {
@@ -39,13 +39,13 @@ export function BunkerPageClient({ clientId, accessKey }: { clientId: string; ac
     return () => {
       cancelled = true;
     };
-  }, [clientId, accessKey]);
+  }, [clientId]);
 
   useEffect(() => {
     let cancelled = false;
     setCompetitors(null);
     setCompetitorsError(false);
-    fetch(`/api/content/${clientId}/competitors?key=${encodeURIComponent(accessKey)}`)
+    fetch(`/api/content/${clientId}/competitors`)
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error();
@@ -60,7 +60,7 @@ export function BunkerPageClient({ clientId, accessKey }: { clientId: string; ac
     return () => {
       cancelled = true;
     };
-  }, [clientId, accessKey]);
+  }, [clientId]);
 
   const errorMessage =
     error === "no_board" ? "Nenhum board configurado pra esse cliente." : "Não foi possível carregar as ideias agora.";
@@ -79,7 +79,7 @@ export function BunkerPageClient({ clientId, accessKey }: { clientId: string; ac
               </p>
             )}
             {!error && !lists && <p className="text-sm text-muted-foreground">Carregando...</p>}
-            {!error && lists && <IdeasList cards={ideasList?.cards ?? []} clientId={clientId} accessKey={accessKey} />}
+            {!error && lists && <IdeasList cards={ideasList?.cards ?? []} clientId={clientId} />}
           </div>
         </div>
 
@@ -93,7 +93,7 @@ export function BunkerPageClient({ clientId, accessKey }: { clientId: string; ac
             )}
             {!competitorsError && competitors === null && <p className="text-sm text-muted-foreground">Carregando...</p>}
             {!competitorsError && competitors && (
-              <CompetitorsSection clientId={clientId} accessKey={accessKey} initialCompetitors={competitors} />
+              <CompetitorsSection clientId={clientId} initialCompetitors={competitors} />
             )}
           </div>
         </div>

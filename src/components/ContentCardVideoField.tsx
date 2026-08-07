@@ -30,12 +30,10 @@ function uploadWithProgress(url: string, file: File, onProgress: (percent: numbe
 
 export function VideoUploadField({
   clientId,
-  accessKey,
   cardId,
   cardName,
 }: {
   clientId: string;
-  accessKey: string;
   cardId: string;
   cardName: string;
 }) {
@@ -47,7 +45,7 @@ export function VideoUploadField({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function videosUrl(): string {
-    return `/api/content/${clientId}/card/${cardId}/videos?key=${encodeURIComponent(accessKey)}&cardName=${encodeURIComponent(cardName)}`;
+    return `/api/content/${clientId}/card/${cardId}/videos?cardName=${encodeURIComponent(cardName)}`;
   }
 
   async function refreshVideos() {
@@ -86,7 +84,7 @@ export function VideoUploadField({
     try {
       for (const file of files) {
         setProgress((prev) => ({ ...prev, [file.name]: 0 }));
-        const initRes = await fetch(`/api/content/${clientId}/card/${cardId}/videos/init?key=${encodeURIComponent(accessKey)}`, {
+        const initRes = await fetch(`/api/content/${clientId}/card/${cardId}/videos/init`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fileName: file.name, mimeType: file.type, fileSize: file.size, cardName }),
@@ -122,7 +120,7 @@ export function VideoUploadField({
       if (fileInputRef.current) fileInputRef.current.value = "";
 
       setIdentifyingTakes(true);
-      fetch(`/api/content/${clientId}/card/${cardId}/videos/match-takes?key=${encodeURIComponent(accessKey)}`, {
+      fetch(`/api/content/${clientId}/card/${cardId}/videos/match-takes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ cardName }),
@@ -139,7 +137,7 @@ export function VideoUploadField({
     setVideos((prev) => (prev ? prev.filter((v) => v.id !== video.id) : prev));
     try {
       const res = await fetch(
-        `/api/content/${clientId}/card/${cardId}/videos/${video.id}?key=${encodeURIComponent(accessKey)}&cardName=${encodeURIComponent(cardName)}`,
+        `/api/content/${clientId}/card/${cardId}/videos/${video.id}?cardName=${encodeURIComponent(cardName)}`,
         { method: "DELETE" }
       );
       if (!res.ok) throw new Error();

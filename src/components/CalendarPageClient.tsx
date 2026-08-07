@@ -6,7 +6,7 @@ import { CalendarView } from "./CalendarView";
 
 type ErrorKind = "no_board" | "fetch_failed";
 
-export function CalendarPageClient({ clientId, accessKey }: { clientId: string; accessKey: string }) {
+export function CalendarPageClient({ clientId }: { clientId: string;  }) {
   const [lists, setLists] = useState<ContentList[] | null>(null);
   const [error, setError] = useState<ErrorKind | null>(null);
 
@@ -14,7 +14,7 @@ export function CalendarPageClient({ clientId, accessKey }: { clientId: string; 
     let cancelled = false;
     setLists(null);
     setError(null);
-    fetch(`/api/content/${clientId}?key=${encodeURIComponent(accessKey)}`)
+    fetch(`/api/content/${clientId}`)
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) {
@@ -31,7 +31,7 @@ export function CalendarPageClient({ clientId, accessKey }: { clientId: string; 
     return () => {
       cancelled = true;
     };
-  }, [clientId, accessKey]);
+  }, [clientId]);
 
   const errorMessage =
     error === "no_board"
@@ -48,7 +48,7 @@ export function CalendarPageClient({ clientId, accessKey }: { clientId: string; 
         </p>
       )}
       {!error && !lists && <p className="text-sm text-muted-foreground">Carregando...</p>}
-      {!error && lists && <CalendarView cards={cards} clientId={clientId} accessKey={accessKey} />}
+      {!error && lists && <CalendarView cards={cards} clientId={clientId} />}
     </div>
   );
 }

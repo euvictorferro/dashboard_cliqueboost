@@ -1,5 +1,5 @@
 // src/app/api/webhooks/stripe/route.ts
-// Rota pública: autenticada pela assinatura Stripe (STRIPE_WEBHOOK_SECRET), não por verifyClientToken.
+// Rota pública: autenticada pela assinatura Stripe (STRIPE_WEBHOOK_SECRET), não por verifyClientSession.
 import { NextRequest } from "next/server";
 import Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";

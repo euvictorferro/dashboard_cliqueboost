@@ -16,7 +16,7 @@ const NAV_ENTRIES: NavEntry[] = [
   { label: "Conta", href: "/conta" },
 ];
 
-export function CmdK({ clientId, accessKey }: { clientId: string; accessKey: string }) {
+export function CmdK({ clientId }: { clientId: string;  }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const router = useRouter();
@@ -50,7 +50,7 @@ export function CmdK({ clientId, accessKey }: { clientId: string; accessKey: str
 
   function go(href: string) {
     setOpen(false);
-    router.push(`/${clientId}${href}?key=${encodeURIComponent(accessKey)}`);
+    router.push(`/${clientId}${href}`);
   }
 
   return (

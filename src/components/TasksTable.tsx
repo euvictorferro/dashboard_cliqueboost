@@ -63,12 +63,10 @@ export function TasksTable({
   tasks,
   statuses,
   clientId,
-  accessKey,
 }: {
   tasks: TaskItem[];
   statuses: TaskStatus[];
   clientId: string;
-  accessKey: string;
 }) {
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
 
@@ -105,7 +103,7 @@ export function TasksTable({
         />
       ))}
       {selectedTask && (
-        <TaskDetailModal task={selectedTask} clientId={clientId} accessKey={accessKey} onClose={() => setSelectedTask(null)} />
+        <TaskDetailModal task={selectedTask} clientId={clientId} onClose={() => setSelectedTask(null)} />
       )}
     </div>
   );

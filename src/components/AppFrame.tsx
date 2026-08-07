@@ -14,13 +14,11 @@ function todayKey(): string {
 
 export function AppFrame({
   clientId,
-  accessKey,
   active,
   pageLabel,
   children,
 }: {
   clientId: string;
-  accessKey: string;
   active: ActiveKey;
   pageLabel: string;
   children: React.ReactNode;
@@ -36,14 +34,14 @@ export function AppFrame({
     if (typeof window === "undefined") return;
     if (window.localStorage.getItem(dismissedKey) === todayKey()) return;
 
-    fetch(`/api/ratings/${clientId}?key=${encodeURIComponent(accessKey)}`)
+    fetch(`/api/ratings/${clientId}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data: { show: boolean; monthRef: string | null } | null) => {
         if (data?.show && data.monthRef) setPendingMonthRef(data.monthRef);
       })
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clientId, accessKey]);
+  }, [clientId]);
 
   function handleDismiss() {
     if (typeof window !== "undefined") {
@@ -65,7 +63,7 @@ export function AppFrame({
 
   return (
     <div className="flex min-h-full items-start">
-      <Sidebar clientId={clientId} accessKey={accessKey} active={active} pageLabel={pageLabel} collapsed={collapsed} />
+      <Sidebar clientId={clientId} active={active} pageLabel={pageLabel} collapsed={collapsed} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Header
           clientName={client?.name ?? clientId}
@@ -75,11 +73,10 @@ export function AppFrame({
         />
         <div className="min-w-0">{children}</div>
       </div>
-      <CmdK clientId={clientId} accessKey={accessKey} />
+      <CmdK clientId={clientId} />
       {pendingMonthRef && (
         <RatingPopup
           clientId={clientId}
-          accessKey={accessKey}
           monthRef={pendingMonthRef}
           dismissCount={dismissCount}
           onClose={handleDismiss}

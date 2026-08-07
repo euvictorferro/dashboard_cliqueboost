@@ -81,18 +81,16 @@ function AddCardForm({ listId, onAdd }: { listId: string; onAdd: (listId: string
 export function ContentBoard({
   lists: initialLists,
   clientId,
-  accessKey,
 }: {
   lists: ContentList[];
   clientId: string;
-  accessKey: string;
 }) {
   const [lists, setLists] = useState(initialLists);
   const [selectedCard, setSelectedCard] = useState<ContentCardData | null>(null);
 
   async function addCard(listId: string, name: string) {
     const listName = lists.find((l) => l.id === listId)?.name ?? "";
-    const res = await fetch(`/api/content/${clientId}/list/${listId}/cards?key=${encodeURIComponent(accessKey)}`, {
+    const res = await fetch(`/api/content/${clientId}/list/${listId}/cards`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, listName }),
@@ -127,7 +125,6 @@ export function ContentBoard({
                 key={card.id}
                 card={card}
                 clientId={clientId}
-                accessKey={accessKey}
                 onClick={() => setSelectedCard(card)}
               />
             ))}
@@ -141,7 +138,6 @@ export function ContentBoard({
         <ContentCardModal
           card={selectedCard}
           clientId={clientId}
-          accessKey={accessKey}
           onClose={() => setSelectedCard(null)}
         />
       )}

@@ -85,11 +85,9 @@ function hasAnyData(set: AudienceSnapshot["followers"]): boolean {
 
 export function AudiencePanel({
   clientId,
-  accessKey,
   reachBreakdown,
 }: {
   clientId: string;
-  accessKey: string;
   reachBreakdown?: ReachBreakdown;
 }) {
   const [timeframe, setTimeframe] = useState<AudienceTimeframeId>("this_month");
@@ -98,7 +96,7 @@ export function AudiencePanel({
   useEffect(() => {
     let cancelled = false;
     setSnapshot(null); // ponytail: nunca mostra o mock por cima do período antigo enquanto o novo carrega
-    fetch(`/api/audience/${clientId}?timeframe=${timeframe}&key=${encodeURIComponent(accessKey)}`)
+    fetch(`/api/audience/${clientId}?timeframe=${timeframe}`)
       .then((res) => res.json())
       .then((data: AudienceSnapshot) => {
         if (!cancelled) setSnapshot(data);
@@ -109,7 +107,7 @@ export function AudiencePanel({
     return () => {
       cancelled = true;
     };
-  }, [clientId, timeframe, accessKey]);
+  }, [clientId, timeframe]);
 
   if (!snapshot) {
     return (

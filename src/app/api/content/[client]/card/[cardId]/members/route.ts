@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
 import { addMemberToCard, hasTrelloCredentials, removeMemberFromCard } from "@/lib/trello";
-import { verifyClientToken } from "@/lib/access";
+import { verifyClientSession } from "@/lib/access";
 
-async function auth(clientId: string, key: string | undefined) {
-  if (!(await verifyClientToken(clientId, key))) return { error: "unauthorized" as const, status: 401 };
+async function auth(clientId: string) {
+  if (!(await verifyClientSession(clientId))) return { error: "unauthorized" as const, status: 401 };
   if (!hasTrelloCredentials()) {
     console.error("[content] TRELLO_API_KEY/TRELLO_TOKEN não configurados (members)");
     return { error: "fetch_failed" as const, status: 502 };
@@ -16,8 +16,7 @@ export async function POST(
   { params }: { params: Promise<{ client: string; cardId: string }> },
 ) {
   const { client: clientId, cardId } = await params;
-  const key = request.nextUrl.searchParams.get("key") ?? undefined;
-  const authError = await auth(clientId, key);
+  const authError = await auth(clientId);
   if (authError) return Response.json({ error: authError.error }, { status: authError.status });
 
   const { memberId } = await request.json();
@@ -37,8 +36,7 @@ export async function DELETE(
   { params }: { params: Promise<{ client: string; cardId: string }> },
 ) {
   const { client: clientId, cardId } = await params;
-  const key = request.nextUrl.searchParams.get("key") ?? undefined;
-  const authError = await auth(clientId, key);
+  const authError = await auth(clientId);
   if (authError) return Response.json({ error: authError.error }, { status: authError.status });
 
   const { memberId } = await request.json();

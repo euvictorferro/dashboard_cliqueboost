@@ -36,12 +36,10 @@ function useClickOutside(onOutside: () => void) {
 function CompetitorCard({
   competitor,
   clientId,
-  accessKey,
   onDeleted,
 }: {
   competitor: Competitor;
   clientId: string;
-  accessKey: string;
   onDeleted: (id: string) => void;
 }) {
   const [feed, setFeed] = useState<CompetitorPost[] | null>(null);
@@ -53,7 +51,7 @@ function CompetitorCard({
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/content/${clientId}/competitors/${competitor.id}/feed?key=${encodeURIComponent(accessKey)}`)
+    fetch(`/api/content/${clientId}/competitors/${competitor.id}/feed`)
       .then((res) => {
         if (!res.ok) throw new Error();
         return res.json();
@@ -67,13 +65,13 @@ function CompetitorCard({
     return () => {
       cancelled = true;
     };
-  }, [clientId, accessKey, competitor.id]);
+  }, [clientId, competitor.id]);
 
   async function handleDelete() {
     if (deleting) return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/content/${clientId}/competitors/${competitor.id}?key=${encodeURIComponent(accessKey)}`, {
+      const res = await fetch(`/api/content/${clientId}/competitors/${competitor.id}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error();
@@ -158,7 +156,6 @@ function CompetitorCard({
         <CompetitorProfileModal
           competitor={competitor}
           clientId={clientId}
-          accessKey={accessKey}
           onClose={() => setProfileOpen(false)}
         />
       )}
@@ -168,11 +165,9 @@ function CompetitorCard({
 
 export function CompetitorsSection({
   clientId,
-  accessKey,
   initialCompetitors,
 }: {
   clientId: string;
-  accessKey: string;
   initialCompetitors: Competitor[];
 }) {
   const [competitors, setCompetitors] = useState(initialCompetitors);
@@ -213,7 +208,6 @@ export function CompetitorsSection({
               key={competitor.id}
               competitor={competitor}
               clientId={clientId}
-              accessKey={accessKey}
               onDeleted={handleDeleted}
             />
           ))}
@@ -221,7 +215,7 @@ export function CompetitorsSection({
       )}
 
       {adding && (
-        <AddCompetitorModal clientId={clientId} accessKey={accessKey} onAdded={handleAdded} onClose={() => setAdding(false)} />
+        <AddCompetitorModal clientId={clientId} onAdded={handleAdded} onClose={() => setAdding(false)} />
       )}
     </div>
   );

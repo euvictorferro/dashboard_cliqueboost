@@ -1,15 +1,14 @@
 // src/app/api/content/[client]/cover-proxy/route.ts
 import { NextRequest } from "next/server";
-import { verifyClientToken } from "@/lib/access";
+import { verifyClientSession } from "@/lib/access";
 
 const TRELLO_ATTACHMENT_URL_PREFIX = "https://trello.com/1/cards/";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ client: string }> }) {
   const { client: clientId } = await params;
-  const key = request.nextUrl.searchParams.get("key") ?? undefined;
   const url = request.nextUrl.searchParams.get("url");
 
-  if (!(await verifyClientToken(clientId, key))) {
+  if (!(await verifyClientSession(clientId))) {
     return new Response("unauthorized", { status: 401 });
   }
 

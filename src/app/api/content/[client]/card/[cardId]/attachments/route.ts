@@ -1,15 +1,14 @@
 import { NextRequest } from "next/server";
 import { addLinkAttachment, hasTrelloCredentials } from "@/lib/trello";
-import { verifyClientToken } from "@/lib/access";
+import { verifyClientSession } from "@/lib/access";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ client: string; cardId: string }> },
 ) {
   const { client: clientId, cardId } = await params;
-  const key = request.nextUrl.searchParams.get("key") ?? undefined;
 
-  if (!(await verifyClientToken(clientId, key))) {
+  if (!(await verifyClientSession(clientId))) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
   if (!hasTrelloCredentials()) {

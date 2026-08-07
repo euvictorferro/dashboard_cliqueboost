@@ -19,12 +19,10 @@ function CloseIcon() {
 export function CompetitorProfileModal({
   competitor,
   clientId,
-  accessKey,
   onClose,
 }: {
   competitor: Competitor;
   clientId: string;
-  accessKey: string;
   onClose: () => void;
 }) {
   const [profile, setProfile] = useState<CompetitorProfile | null>(null);
@@ -32,7 +30,7 @@ export function CompetitorProfileModal({
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/content/${clientId}/competitors/${competitor.id}/profile?key=${encodeURIComponent(accessKey)}`)
+    fetch(`/api/content/${clientId}/competitors/${competitor.id}/profile`)
       .then((res) => {
         if (!res.ok) throw new Error();
         return res.json();
@@ -46,7 +44,7 @@ export function CompetitorProfileModal({
     return () => {
       cancelled = true;
     };
-  }, [clientId, accessKey, competitor.id]);
+  }, [clientId, competitor.id]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {

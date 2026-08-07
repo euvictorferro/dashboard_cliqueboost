@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { verifyClientToken } from "@/lib/access";
+import { verifyClientSession } from "@/lib/access";
 import { CLIENTS } from "@/lib/clients";
 import {
   findClientFolder,
@@ -14,9 +14,8 @@ export async function DELETE(
   { params }: { params: Promise<{ client: string; cardId: string; fileId: string }> }
 ) {
   const { client: clientId, cardId, fileId } = await params;
-  const key = request.nextUrl.searchParams.get("key") ?? undefined;
 
-  if (!(await verifyClientToken(clientId, key))) {
+  if (!(await verifyClientSession(clientId))) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
   if (!hasGoogleDriveCredentials()) {

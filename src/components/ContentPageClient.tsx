@@ -6,7 +6,7 @@ import { ContentBoard } from "./ContentBoard";
 
 type ErrorKind = "no_board" | "fetch_failed";
 
-export function ContentPageClient({ clientId, accessKey }: { clientId: string; accessKey: string }) {
+export function ContentPageClient({ clientId }: { clientId: string;  }) {
   const [lists, setLists] = useState<ContentList[] | null>(null);
   const [error, setError] = useState<ErrorKind | null>(null);
 
@@ -14,7 +14,7 @@ export function ContentPageClient({ clientId, accessKey }: { clientId: string; a
     let cancelled = false;
     setLists(null);
     setError(null);
-    fetch(`/api/content/${clientId}?key=${encodeURIComponent(accessKey)}`)
+    fetch(`/api/content/${clientId}`)
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) {
@@ -31,7 +31,7 @@ export function ContentPageClient({ clientId, accessKey }: { clientId: string; a
     return () => {
       cancelled = true;
     };
-  }, [clientId, accessKey]);
+  }, [clientId]);
 
   const errorMessage =
     error === "no_board"
@@ -46,7 +46,7 @@ export function ContentPageClient({ clientId, accessKey }: { clientId: string; a
         </p>
       )}
       {!error && !lists && <p className="mx-6 text-sm text-muted-foreground sm:mx-10">Carregando...</p>}
-      {!error && lists && <ContentBoard lists={lists} clientId={clientId} accessKey={accessKey} />}
+      {!error && lists && <ContentBoard lists={lists} clientId={clientId} />}
     </div>
   );
 }

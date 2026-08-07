@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { CLIENTS } from "@/lib/clients";
 import { getOrganicSnapshot, getOrganicWindowSnapshot, DATE_RANGES, type DateRangeId } from "@/lib/metrics";
 import { fetchOrganicSnapshotLive, fetchOrganicSnapshotForWindow, hasMetaCredentials } from "@/lib/meta";
-import { verifyClientToken } from "@/lib/access";
+import { verifyClientSession } from "@/lib/access";
 
 function parseIsoDate(value: string): number | null {
   const ms = new Date(`${value}T00:00:00Z`).getTime();
@@ -13,14 +13,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { client: clientId } = await params;
   const sinceParam = request.nextUrl.searchParams.get("since");
   const untilParam = request.nextUrl.searchParams.get("until");
-  const key = request.nextUrl.searchParams.get("key") ?? undefined;
 
   const client = CLIENTS.find((c) => c.id === clientId);
   if (!client) {
     return Response.json({ error: "unknown client" }, { status: 404 });
   }
 
-  if (!(await verifyClientToken(clientId, key))) {
+  if (!(await verifyClientSession(clientId))) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
 

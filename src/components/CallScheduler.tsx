@@ -51,7 +51,7 @@ function CalendarPlusIcon() {
   );
 }
 
-export function CallScheduler({ clientId, accessKey }: { clientId: string; accessKey: string }) {
+export function CallScheduler({ clientId }: { clientId: string;  }) {
   const timeZone = useTimeZone();
   const clientName = CLIENTS.find((c) => c.id === clientId)?.name ?? clientId;
 
@@ -68,7 +68,7 @@ export function CallScheduler({ clientId, accessKey }: { clientId: string; acces
 
   function load() {
     setStatus("loading");
-    fetch(`/api/atas/${clientId}/call?key=${encodeURIComponent(accessKey)}`)
+    fetch(`/api/atas/${clientId}/call`)
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error();
@@ -82,7 +82,7 @@ export function CallScheduler({ clientId, accessKey }: { clientId: string; acces
       .catch(() => setStatus("error"));
   }
 
-  useEffect(load, [clientId, accessKey]);
+  useEffect(load, [clientId]);
 
   const slotsByDay = useMemo(() => {
     const map = new Map<string, number[]>();
@@ -119,7 +119,7 @@ export function CallScheduler({ clientId, accessKey }: { clientId: string; acces
   function schedule() {
     if (!selectedSlot) return;
     setScheduling(true);
-    fetch(`/api/atas/${clientId}/call?key=${encodeURIComponent(accessKey)}`, {
+    fetch(`/api/atas/${clientId}/call`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ scheduledAt: selectedSlot }),

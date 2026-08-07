@@ -32,6 +32,52 @@ export async function fetchReferralLeads(clientId: string): Promise<ReferralLead
   }));
 }
 
+export type AdminReferralLead = ReferralLead & { referrerClientId: string; convertedClientId: string | null };
+
+export async function fetchAllReferralLeads(): Promise<AdminReferralLead[]> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) throw new Error("Supabase não configurado");
+  const { data, error } = await supabase
+    .from("referral_leads")
+    .select("id, name, contact, created_at, referrer_client_id, converted_client_id, discount_applied_at, disqualified_at")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    contact: row.contact,
+    createdAt: row.created_at,
+    referrerClientId: row.referrer_client_id,
+    convertedClientId: row.converted_client_id,
+    status: row.discount_applied_at
+      ? "rewarded"
+      : row.disqualified_at
+        ? "disqualified"
+        : row.converted_client_id
+          ? "converted"
+          : "pending",
+  }));
+}
+
+export async function markConverted(leadId: string, convertedClientId: string): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) throw new Error("Supabase não configurado");
+  const { data: lead, error: fetchError } = await supabase
+    .from("referral_leads")
+    .select("discount_applied_at")
+    .eq("id", leadId)
+    .maybeSingle();
+  if (fetchError) throw new Error(fetchError.message);
+  if (!lead) throw new Error("lead_nao_encontrado");
+  if (lead.discount_applied_at) throw new Error("lead_ja_premiado");
+
+  const { error } = await supabase
+    .from("referral_leads")
+    .update({ converted_client_id: convertedClientId })
+    .eq("id", leadId);
+  if (error) throw new Error(error.message);
+}
+
 export async function createReferralLead(referrerClientId: string, name: string, contact: string): Promise<void> {
   const supabase = getSupabaseAdmin();
   if (!supabase) throw new Error("Supabase não configurado");

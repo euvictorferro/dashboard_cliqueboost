@@ -198,3 +198,24 @@ export async function deleteFile(fileId: string): Promise<void> {
     throw new Error(`google_drive_delete_failed: ${text}`);
   }
 }
+
+export async function renameFile(fileId: string, name: string): Promise<void> {
+  const accessToken = await getAccessToken();
+  await driveFetch(`files/${fileId}?fields=id`, accessToken, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+}
+
+// ponytail: baixa o arquivo inteiro pra memória — vídeos de post são curtos (poucos MB a
+// dezenas de MB), cabe tranquilo. Upgrade se algum dia entrar vídeo de horas: streaming
+// direto pro provedor de transcrição em vez de bufferizar aqui.
+export async function downloadFile(fileId: string): Promise<Buffer> {
+  const accessToken = await getAccessToken();
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) throw new Error(`google_drive_download_failed: ${res.status}`);
+  return Buffer.from(await res.arrayBuffer());
+}

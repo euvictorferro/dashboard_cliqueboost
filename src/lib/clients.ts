@@ -1,3 +1,5 @@
+import { getSupabaseAdmin } from "./supabase";
+
 export type Client = {
   id: string;
   name: string;
@@ -22,3 +24,37 @@ export const CLIENTS: Client[] = [
   { id: "tiago", name: "Tiago Zamboni", adsActive: false, instagramBusinessId: "17841401844913174", clickupListId: "901713981087", trelloBoardId: "6a15e2cce98811c102520e22" },
   { id: "bela", name: "Bela Castro", adsActive: false, instagramBusinessId: "17841445125553950", clickupListId: "901711532881", trelloBoardId: "68f4f4c34ad83399f540858a" },
 ];
+
+// ponytail: cache de módulo com TTL de 60s — clientes mudam raramente; evita uma query
+// por request. Invalidação é o TTL, sem pub/sub.
+let cache: { clients: Client[]; at: number } | null = null;
+const CACHE_TTL_MS = 60_000;
+
+type ClientRow = {
+  id: string; name: string; instagram_business_id: string | null;
+  clickup_list_id: string | null; trello_board_id: string | null;
+  ad_account_id: string | null; ads_active: boolean;
+};
+
+export async function getClients(): Promise<Client[]> {
+  if (cache && Date.now() - cache.at < CACHE_TTL_MS) return cache.clients;
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return CLIENTS; // fail-safe: sem env, comporta como antes
+  const { data, error } = await supabase
+    .from("clients").select("*").eq("active", true).order("name");
+  if (error || !data || data.length === 0) return CLIENTS; // fail-safe: migration não rodou
+  const clients = (data as ClientRow[]).map((r) => ({
+    id: r.id, name: r.name,
+    instagramBusinessId: r.instagram_business_id ?? undefined,
+    clickupListId: r.clickup_list_id ?? undefined,
+    trelloBoardId: r.trello_board_id ?? undefined,
+    adAccountId: r.ad_account_id ?? undefined,
+    adsActive: r.ads_active,
+  }));
+  cache = { clients, at: Date.now() };
+  return clients;
+}
+
+export async function getClient(id: string): Promise<Client | null> {
+  return (await getClients()).find((c) => c.id === id) ?? null;
+}

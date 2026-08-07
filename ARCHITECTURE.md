@@ -59,3 +59,10 @@ docs/superpowers/ROADMAP-plataforma.md  # Roadmap do produto
 - `lib/clients.ts` é hardcoded (1 agência = Clique Boost). O plano de longo prazo é multi-tenant (`agency_id` → `client_id` → `user_id`) para vender a outras agências.
 - ~21 avisos de lint da regra `react-hooks/set-state-in-effect` (não afetam produção).
 - "Esqueci a senha" no login é um `mailto:` — sem fluxo de reset automatizado ainda.
+- **RLS não é enforcada no banco (por decisão, não esquecimento).** As 15 tabelas têm
+  `enable row level security` sem policies (deny-by-default pela anon key). MAS todo acesso a
+  dados usa a Service Role Key (`getSupabaseAdmin`), que **ignora RLS**. A isolação entre
+  clientes é feita na aplicação: `proxy.ts` (checa clientId no path) + `verifyClientSession`
+  em cada rota. Escrever policies hoje seria inócuo — elas nunca executam sob service role.
+  RLS real exige migrar a camada de dados pra JWT de usuário (`@supabase/ssr`), o que só paga
+  o custo junto com a virada multi-tenant. Fazer as duas coisas juntas.

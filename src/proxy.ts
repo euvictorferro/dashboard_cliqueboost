@@ -5,7 +5,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySession, SESSION_COOKIE_NAME } from "@/lib/session";
 
-const PUBLIC_PATHS = ["/login", "/api/auth/login", "/sair", "/api/auth/logout"];
+// ponytail: qualquer rota nova (página OU API) fora do padrão /[client]/... precisa
+// entrar aqui, senão o proxy trata o primeiro segmento do path como clientId e bloqueia
+// visitantes sem sessão.
+const PUBLIC_PATHS = ["/login", "/api/auth/login", "/sair", "/api/auth/logout", "/api/referrals"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

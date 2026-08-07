@@ -13,8 +13,8 @@ export async function POST(request: Request) {
 
   const url = process.env.SUPABASE_URL;
   const anonKey = process.env.SUPABASE_ANON_KEY;
-  if (!url || !anonKey) {
-    console.error("[auth] SUPABASE_URL/SUPABASE_ANON_KEY não configurados");
+  if (!url || !anonKey || !process.env.SESSION_SECRET) {
+    console.error("[auth] SUPABASE_URL/SUPABASE_ANON_KEY/SESSION_SECRET não configurados");
     return Response.json({ error: "invalid_credentials" }, { status: 401 });
   }
 

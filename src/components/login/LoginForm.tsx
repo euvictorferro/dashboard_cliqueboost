@@ -69,6 +69,10 @@ export function LoginForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, rememberMe }),
       });
+      if (res.status === 429) {
+        setError("Muitas tentativas. Espera alguns minutos e tenta de novo.");
+        return;
+      }
       if (!res.ok) {
         setError("Email ou senha inválidos.");
         return;

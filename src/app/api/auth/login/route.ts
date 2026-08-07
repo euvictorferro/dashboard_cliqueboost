@@ -3,6 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { signSession, SESSION_COOKIE_NAME, SESSION_COOKIE_MAX_AGE } from "@/lib/session";
 
+// Anti brute force: no máximo 10 tentativas por IP a cada 15 min.
+const LOGIN_MAX_ATTEMPTS = 10;
+const LOGIN_WINDOW_SECONDS = 15 * 60;
+
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const email = body?.email;
@@ -19,14 +23,28 @@ export async function POST(request: Request) {
     return Response.json({ error: "invalid_credentials" }, { status: 401 });
   }
 
+  const admin = getSupabaseAdmin();
+  if (!admin) return Response.json({ error: "invalid_credentials" }, { status: 401 });
+
+  // Vercel popula x-forwarded-for; o primeiro IP é o do cliente. Sem header (ambiente estranho),
+  // cai num balde único "unknown" — conservador, mas nunca deixa de limitar.
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+  const { data: attempts, error: rlError } = await admin.rpc("record_login_attempt", {
+    p_ip: ip,
+    p_window_seconds: LOGIN_WINDOW_SECONDS,
+  });
+  // Fail-closed só se a checagem der erro de verdade; se passar do limite, 429.
+  if (rlError) {
+    console.error("[auth] falha no rate limit de login:", rlError);
+  } else if (typeof attempts === "number" && attempts > LOGIN_MAX_ATTEMPTS) {
+    return Response.json({ error: "too_many_attempts" }, { status: 429 });
+  }
+
   const anon = createClient(url, anonKey, { auth: { persistSession: false } });
   const { data: authData, error: authError } = await anon.auth.signInWithPassword({ email, password });
   if (authError || !authData.user) {
     return Response.json({ error: "invalid_credentials" }, { status: 401 });
   }
-
-  const admin = getSupabaseAdmin();
-  if (!admin) return Response.json({ error: "invalid_credentials" }, { status: 401 });
 
   const { data: account } = await admin
     .from("client_accounts")

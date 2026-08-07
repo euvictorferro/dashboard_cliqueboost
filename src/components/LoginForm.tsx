@@ -75,26 +75,28 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4" noValidate>
-      <div className="flex flex-col gap-1.5">
+      <div className="login-animate login-animate-delay-1 flex flex-col gap-1.5">
         <label htmlFor="login-email" className="text-sm font-medium text-foreground">
           Email
         </label>
-        <input
-          id="login-email"
-          type="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="rounded-[var(--radius)] border border-border bg-card px-3.5 py-2.5 text-sm text-card-foreground shadow-[var(--shadow-soft)] outline-none transition-colors focus-visible:border-brand-primary focus-visible:ring-2 focus-visible:ring-brand-primary/30"
-        />
+        <div className="rounded-2xl border border-border bg-foreground/[0.03] backdrop-blur-sm transition-colors focus-within:border-brand-primary/70 focus-within:bg-brand-primary/[0.06]">
+          <input
+            id="login-email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full bg-transparent px-4 py-3 text-sm text-foreground outline-none"
+          />
+        </div>
       </div>
 
-      <div className="flex flex-col gap-1.5">
+      <div className="login-animate login-animate-delay-2 flex flex-col gap-1.5">
         <label htmlFor="login-password" className="text-sm font-medium text-foreground">
           Senha
         </label>
-        <div className="relative">
+        <div className="relative rounded-2xl border border-border bg-foreground/[0.03] backdrop-blur-sm transition-colors focus-within:border-brand-primary/70 focus-within:bg-brand-primary/[0.06]">
           <input
             id="login-password"
             type={showPassword ? "text" : "password"}
@@ -102,7 +104,7 @@ export function LoginForm() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-[var(--radius)] border border-border bg-card px-3.5 py-2.5 pr-10 text-sm text-card-foreground shadow-[var(--shadow-soft)] outline-none transition-colors focus-visible:border-brand-primary focus-visible:ring-2 focus-visible:ring-brand-primary/30"
+            className="w-full bg-transparent px-4 py-3 pr-11 text-sm text-foreground outline-none"
           />
           <button
             type="button"
@@ -124,7 +126,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="mt-1 flex items-center justify-center gap-2 rounded-[var(--radius)] py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-soft)] transition-opacity hover:opacity-95 disabled:opacity-60"
+        className="login-animate login-animate-delay-3 mt-1 flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold text-white shadow-[var(--shadow-soft)] transition-opacity hover:opacity-95 disabled:opacity-60"
         style={{ background: "linear-gradient(135deg, hsl(var(--brand-primary)), hsl(var(--brand-accent)))" }}
       >
         {loading && <SpinnerIcon />}

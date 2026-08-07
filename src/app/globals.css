@@ -117,3 +117,38 @@ body {
     animation-delay: 0.35s;
   }
 }
+
+/* ponytail: entrada em cascata do formulário de login — cada elemento sobe e aparece com um
+   pequeno atraso a mais que o anterior. Sem preferência de movimento reduzido, tudo já aparece
+   visível e no lugar (fallback seguro por padrão). */
+@keyframes login-fade-up {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-animate {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .login-animate {
+    opacity: 0;
+    transform: translateY(10px);
+    animation: login-fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .login-animate-delay-1 {
+    animation-delay: 0.05s;
+  }
+
+  .login-animate-delay-2 {
+    animation-delay: 0.12s;
+  }
+
+  .login-animate-delay-3 {
+    animation-delay: 0.19s;
+  }
+}

@@ -15,7 +15,7 @@ export default function LoginPage() {
             <p className="text-sm text-muted-foreground">Tudo o que sua marca precisa, em um só lugar.</p>
           </div>
 
-          <div className="mb-6">
+          <div className="login-animate mb-6">
             <h2 className="text-xl font-semibold text-foreground">Entrar</h2>
             <p className="mt-1 text-sm text-muted-foreground">Entra com o email e senha que a Clique Boost te passou.</p>
           </div>

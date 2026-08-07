@@ -1,9 +1,14 @@
 import Link from "next/link";
 import { Globe } from "@/components/layout/Globe";
+import { Logo } from "@/components/layout/Logo";
 
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center">
+      <Link href="/login" className="absolute left-6 top-6">
+        <Logo width={120} height={32} />
+      </Link>
+
       <div className="login-animate mb-10 flex items-center justify-center gap-4 md:gap-6">
         <span className="select-none text-7xl font-bold text-foreground/80 md:text-8xl">4</span>
 

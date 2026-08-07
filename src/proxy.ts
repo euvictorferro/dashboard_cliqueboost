@@ -66,7 +66,11 @@ export function proxy(request: NextRequest) {
     ? pathname.split("/")[3] // /api/<recurso>/<clientId>/...
     : pathname.split("/")[1]; // /<clientId>/...
 
-  if (!session || (clientIdInPath && session.clientId !== clientIdInPath)) {
+  const hasClientSession = session && (!clientIdInPath || session.clientId === clientIdInPath);
+  // Admin logado enxerga (e edita) o dashboard de qualquer cliente — visão espelho.
+  const hasAdminSession = verifyAdminSession(request.cookies.get(ADMIN_SESSION_COOKIE_NAME)?.value) !== null;
+
+  if (!hasClientSession && !hasAdminSession) {
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }

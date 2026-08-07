@@ -3,8 +3,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { TaskComment, TaskItem, TaskListMember, TaskStatus } from "@/lib/clickup";
-import { AssigneeAvatars } from "./AssigneeAvatars";
-import { CommentsIcon, DescriptionIcon } from "./icons";
+import { AssigneeAvatars } from "@/components/ui/AssigneeAvatars";
+import { CommentsIcon, DescriptionIcon } from "@/components/ui/icons";
 
 function formatDate(value: number | null): string | null {
   if (value === null) return null;

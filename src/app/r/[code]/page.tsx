@@ -1,8 +1,8 @@
 // src/app/r/[code]/page.tsx
 import { notFound } from "next/navigation";
 import { CLIENTS } from "@/lib/clients";
-import { Logo } from "@/components/Logo";
-import { ReferralLeadForm } from "@/components/ReferralLeadForm";
+import { Logo } from "@/components/layout/Logo";
+import { ReferralLeadForm } from "@/components/referral/ReferralLeadForm";
 
 export default async function ReferralPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;

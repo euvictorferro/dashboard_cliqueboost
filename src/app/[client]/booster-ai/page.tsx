@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { CLIENTS } from "@/lib/clients";
-import { AccessDenied } from "@/components/AccessDenied";
-import { AppFrame } from "@/components/AppFrame";
-import { BoosterAiPageClient } from "@/components/BoosterAiPageClient";
+import { AccessDenied } from "@/components/layout/AccessDenied";
+import { AppFrame } from "@/components/layout/AppFrame";
+import { BoosterAiPageClient } from "@/components/booster-ai/BoosterAiPageClient";
 import { verifyClientSession } from "@/lib/access";
 
 export default async function ClientBoosterAiPage({

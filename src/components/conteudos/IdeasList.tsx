@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { ContentCard as ContentCardData } from "@/lib/trello";
-import { ContentCardModal } from "./ContentCardModal";
+import { ContentCardModal } from "@/components/conteudos/ContentCardModal";
 
 export function IdeasList({
   cards,

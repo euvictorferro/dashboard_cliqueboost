@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChangeEvent, RefObject } from "react";
-import { ContaField } from "./ContaField";
+import { ContaField } from "@/components/conta/ContaField";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 

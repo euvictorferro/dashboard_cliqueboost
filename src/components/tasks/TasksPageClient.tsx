@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import type { TaskItem, TaskStatus } from "@/lib/clickup";
-import { TasksTable } from "./TasksTable";
+import { TasksTable } from "@/components/tasks/TasksTable";
 
 type ErrorKind = "no_list" | "fetch_failed";
 

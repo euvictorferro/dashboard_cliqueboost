@@ -12,14 +12,14 @@ import {
   type OrganicSnapshot,
   type OrganicWindowSnapshot,
 } from "@/lib/metrics";
-import { DateRangeFilter } from "./DateRangeFilter";
-import type { CompareWindows } from "./CompareRangePicker";
-import { MetricCard } from "./MetricCard";
-import { ReachBarChart } from "./ReachBarChart";
-import { TopVideosList } from "./TopVideosList";
-import { AdsPanel } from "./AdsPanel";
-import { ExportPdfButton } from "./ExportPdfButton";
-import { AudiencePanel } from "./AudiencePanel";
+import { DateRangeFilter } from "@/components/dashboard/DateRangeFilter";
+import type { CompareWindows } from "@/components/dashboard/CompareRangePicker";
+import { MetricCard } from "@/components/dashboard/MetricCard";
+import { ReachBarChart } from "@/components/dashboard/ReachBarChart";
+import { TopVideosList } from "@/components/dashboard/TopVideosList";
+import { AdsPanel } from "@/components/dashboard/AdsPanel";
+import { ExportPdfButton } from "@/components/dashboard/ExportPdfButton";
+import { AudiencePanel } from "@/components/dashboard/AudiencePanel";
 
 type Tab = "organic" | "ads";
 

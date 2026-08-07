@@ -5,8 +5,8 @@ import { useState } from "react";
 import type { ContentCard as ContentCardData } from "@/lib/trello";
 import { getContentFormat, FORMAT_SOLID_CLASSES } from "@/lib/contentFormat";
 import { getTimeZoneDateParts, isSameTZDay, formatTZTime } from "@/lib/clientTime";
-import { useTimeZone } from "./TimeZoneContext";
-import { ContentLabelPills } from "./ContentLabelPills";
+import { useTimeZone } from "@/components/layout/TimeZoneContext";
+import { ContentLabelPills } from "@/components/conteudos/ContentLabelPills";
 
 const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 

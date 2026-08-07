@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { CLIENTS } from "@/lib/clients";
-import { Logo } from "@/components/Logo";
+import { Logo } from "@/components/layout/Logo";
 
 // Índice interno — cada cliente acessa direto pelo próprio link (/[client]), não por aqui.
 export default function Home() {

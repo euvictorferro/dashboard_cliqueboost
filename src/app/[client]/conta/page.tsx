@@ -1,9 +1,9 @@
 // src/app/[client]/conta/page.tsx
 import { notFound } from "next/navigation";
 import { CLIENTS } from "@/lib/clients";
-import { AccessDenied } from "@/components/AccessDenied";
-import { AppFrame } from "@/components/AppFrame";
-import { ContaPageClient } from "@/components/ContaPageClient";
+import { AccessDenied } from "@/components/layout/AccessDenied";
+import { AppFrame } from "@/components/layout/AppFrame";
+import { ContaPageClient } from "@/components/conta/ContaPageClient";
 import { verifyClientSession } from "@/lib/access";
 
 export default async function ClientContaPage({

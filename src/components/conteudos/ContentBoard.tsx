@@ -3,8 +3,8 @@
 
 import { useState } from "react";
 import type { ContentCard as ContentCardData, ContentList } from "@/lib/trello";
-import { ContentCard } from "./ContentCard";
-import { ContentCardModal } from "./ContentCardModal";
+import { ContentCard } from "@/components/conteudos/ContentCard";
+import { ContentCardModal } from "@/components/conteudos/ContentCardModal";
 
 function AddCardForm({ listId, onAdd }: { listId: string; onAdd: (listId: string, name: string) => Promise<void> }) {
   const [adding, setAdding] = useState(false);

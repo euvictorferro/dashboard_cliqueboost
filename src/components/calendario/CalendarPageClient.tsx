@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ContentList } from "@/lib/trello";
-import { CalendarView } from "./CalendarView";
+import { CalendarView } from "@/components/calendario/CalendarView";
 
 type ErrorKind = "no_board" | "fetch_failed";
 

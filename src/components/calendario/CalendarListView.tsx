@@ -4,8 +4,8 @@
 import type { ContentCard as ContentCardData } from "@/lib/trello";
 import { getContentFormat, FORMAT_DOT_CLASSES } from "@/lib/contentFormat";
 import { formatTZTime, getTimeZoneDateParts } from "@/lib/clientTime";
-import { useTimeZone } from "./TimeZoneContext";
-import { ContentLabelPills } from "./ContentLabelPills";
+import { useTimeZone } from "@/components/layout/TimeZoneContext";
+import { ContentLabelPills } from "@/components/conteudos/ContentLabelPills";
 
 const WEEKDAY_LABELS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 const MONTH_LABELS = [

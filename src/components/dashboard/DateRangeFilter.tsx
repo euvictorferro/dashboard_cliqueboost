@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { DATE_RANGES, type DateRangeId } from "@/lib/metrics";
-import { CompareRangePicker, type CompareWindows } from "./CompareRangePicker";
+import { CompareRangePicker, type CompareWindows } from "@/components/dashboard/CompareRangePicker";
 
 function ChevronIcon() {
   return (

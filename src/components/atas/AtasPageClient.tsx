@@ -3,8 +3,8 @@
 
 import { useEffect, useState } from "react";
 import type { CallNote } from "@/lib/callNotes";
-import { AtasList } from "./AtasList";
-import { CallScheduler } from "./CallScheduler";
+import { AtasList } from "@/components/atas/AtasList";
+import { CallScheduler } from "@/components/atas/CallScheduler";
 
 export function AtasPageClient({ clientId }: { clientId: string;  }) {
   const [notes, setNotes] = useState<CallNote[] | null>(null);

@@ -7,7 +7,7 @@ import ReactMarkdown from "react-markdown";
 import type { CallNote } from "@/lib/callNotes";
 import { formatCallDateHeader } from "@/lib/formatCallDate";
 import { formatTZTime } from "@/lib/clientTime";
-import { useTimeZone } from "./TimeZoneContext";
+import { useTimeZone } from "@/components/layout/TimeZoneContext";
 
 type Status = "loading" | "error" | "not_found" | "success";
 type ExtractStatus = "idle" | "extracting" | "done" | "already_extracted" | "error";

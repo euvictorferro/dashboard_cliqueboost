@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { getAudienceSnapshot, type AudienceSnapshot, type AudienceTimeframeId } from "@/lib/audience";
 import type { ReachBreakdown } from "@/lib/metrics";
-import { AudienceTimeframeFilter } from "./AudienceTimeframeFilter";
-import { SlicePieChart } from "./SlicePieChart";
-import { AgeBarChart } from "./AgeBarChart";
-import { GeoRankList } from "./GeoRankList";
-import { InfoTooltip } from "./InfoTooltip";
+import { AudienceTimeframeFilter } from "@/components/dashboard/AudienceTimeframeFilter";
+import { SlicePieChart } from "@/components/dashboard/SlicePieChart";
+import { AgeBarChart } from "@/components/dashboard/AgeBarChart";
+import { GeoRankList } from "@/components/dashboard/GeoRankList";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 function AudienceCard({
   title,

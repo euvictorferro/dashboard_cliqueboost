@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { InfoTooltip } from "./InfoTooltip";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 function DownloadIcon() {
   return (

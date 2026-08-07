@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import type { ContentList } from "@/lib/trello";
 import type { Competitor } from "@/lib/competitors";
-import { IdeasList } from "./IdeasList";
-import { CompetitorsSection } from "./CompetitorsSection";
+import { IdeasList } from "@/components/conteudos/IdeasList";
+import { CompetitorsSection } from "@/components/dashboard/CompetitorsSection";
 
 type ErrorKind = "no_board" | "fetch_failed";
 

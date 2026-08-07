@@ -2,8 +2,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Field } from "./ContentCardModal";
-import { AttachmentIcon, TrashIcon } from "./icons";
+import { Field } from "@/components/conteudos/ContentCardModal";
+import { AttachmentIcon, TrashIcon } from "@/components/ui/icons";
 import type { ContentVideo } from "@/lib/googleDrive";
 
 const MAX_VIDEOS_PER_POST = 20;

@@ -1,5 +1,5 @@
 import { LineChart, Line, ResponsiveContainer } from "recharts";
-import { InfoTooltip } from "./InfoTooltip";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 function Sparkline({ data, dataB }: { data: { value: number }[]; dataB?: { value: number }[] }) {
   if (!dataB) {

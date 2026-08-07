@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Logo } from "./Logo";
-import { AccountCard } from "./AccountCard";
+import { Logo } from "@/components/layout/Logo";
+import { AccountCard } from "@/components/layout/AccountCard";
 
 function DashboardIcon() {
   return (

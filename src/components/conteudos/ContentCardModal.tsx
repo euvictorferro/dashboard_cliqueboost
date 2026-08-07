@@ -13,10 +13,10 @@ import type {
   ContentChecklistItem,
   ContentLabel,
 } from "@/lib/trello";
-import { renderMarkdown } from "./markdown";
-import { AssigneeAvatars } from "./AssigneeAvatars";
-import { AttachmentIcon, ChecklistIcon, CommentsIcon, DescriptionIcon, DownloadIcon, LinkIcon, TrashIcon } from "./icons";
-import { VideoUploadField } from "./ContentCardVideoField";
+import { renderMarkdown } from "@/components/ui/markdown";
+import { AssigneeAvatars } from "@/components/ui/AssigneeAvatars";
+import { AttachmentIcon, ChecklistIcon, CommentsIcon, DescriptionIcon, DownloadIcon, LinkIcon, TrashIcon } from "@/components/ui/icons";
+import { VideoUploadField } from "@/components/conteudos/ContentCardVideoField";
 
 type LightboxTarget = { name: string; imageUrl: string; downloadUrl: string };
 

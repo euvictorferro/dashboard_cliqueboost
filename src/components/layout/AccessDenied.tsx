@@ -1,4 +1,4 @@
-import { Logo } from "./Logo";
+import { Logo } from "@/components/layout/Logo";
 
 export function AccessDenied() {
   return (

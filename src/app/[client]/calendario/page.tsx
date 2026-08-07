@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import { CLIENTS } from "@/lib/clients";
-import { AccessDenied } from "@/components/AccessDenied";
-import { AppFrame } from "@/components/AppFrame";
-import { CalendarPageClient } from "@/components/CalendarPageClient";
-import { TimeZoneProvider } from "@/components/TimeZoneContext";
+import { AccessDenied } from "@/components/layout/AccessDenied";
+import { AppFrame } from "@/components/layout/AppFrame";
+import { CalendarPageClient } from "@/components/calendario/CalendarPageClient";
+import { TimeZoneProvider } from "@/components/layout/TimeZoneContext";
 import { verifyClientSession } from "@/lib/access";
 import { fetchClientSettings } from "@/lib/clientSettings";
 

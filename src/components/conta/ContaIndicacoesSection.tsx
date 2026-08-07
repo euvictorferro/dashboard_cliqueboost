@@ -1,6 +1,6 @@
 "use client";
 
-import { ContaField } from "./ContaField";
+import { ContaField } from "@/components/conta/ContaField";
 
 export type ReferralLead = { id: string; name: string; contact: string; createdAt: string };
 

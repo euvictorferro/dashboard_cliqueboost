@@ -4,12 +4,12 @@
 import { useMemo, useState } from "react";
 import type { ContentCard as ContentCardData, ContentLabel } from "@/lib/trello";
 import { getTimeZoneDateParts } from "@/lib/clientTime";
-import { useTimeZone } from "./TimeZoneContext";
-import { ContentCardModal } from "./ContentCardModal";
-import { CalendarMonthView } from "./CalendarMonthView";
-import { CalendarWeekView } from "./CalendarWeekView";
-import { CalendarDayView } from "./CalendarDayView";
-import { CalendarListView } from "./CalendarListView";
+import { useTimeZone } from "@/components/layout/TimeZoneContext";
+import { ContentCardModal } from "@/components/conteudos/ContentCardModal";
+import { CalendarMonthView } from "@/components/calendario/CalendarMonthView";
+import { CalendarWeekView } from "@/components/calendario/CalendarWeekView";
+import { CalendarDayView } from "@/components/calendario/CalendarDayView";
+import { CalendarListView } from "@/components/calendario/CalendarListView";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -20,7 +20,7 @@ import {
   SearchIcon,
   XIcon,
   FilterIcon,
-} from "./CalendarIcons";
+} from "@/components/calendario/CalendarIcons";
 
 type ViewMode = "month" | "week" | "day" | "list";
 

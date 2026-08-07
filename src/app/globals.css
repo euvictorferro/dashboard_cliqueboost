@@ -151,4 +151,15 @@ body {
   .login-animate-delay-3 {
     animation-delay: 0.19s;
   }
+
+  .login-animate-delay-4 {
+    animation-delay: 0.26s;
+  }
+}
+
+.custom-checkbox {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 0.3rem;
+  accent-color: hsl(var(--brand-primary));
 }

@@ -1,5 +1,5 @@
 import { ADS_METRICS, WHATSAPP_LINK, getAdsSnapshot } from "@/lib/ads";
-import { MetricCard } from "./MetricCard";
+import { MetricCard } from "@/components/dashboard/MetricCard";
 
 export function AdsPanel({ clientId, active }: { clientId: string; active: boolean }) {
   if (!active) {

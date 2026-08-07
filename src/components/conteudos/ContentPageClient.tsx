@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ContentList } from "@/lib/trello";
-import { ContentBoard } from "./ContentBoard";
+import { ContentBoard } from "@/components/conteudos/ContentBoard";
 
 type ErrorKind = "no_board" | "fetch_failed";
 

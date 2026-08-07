@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getInitials, colorFromName } from "@/lib/avatar";
-import { UserIcon, ClockIcon, CreditCardIcon, LinkIcon, LockIcon } from "./ContaIcons";
+import { UserIcon, ClockIcon, CreditCardIcon, LinkIcon, LockIcon } from "@/components/conta/ContaIcons";
 
 export type ContaSection = "perfil" | "fuso" | "faturamento" | "indicacoes" | "seguranca";
 

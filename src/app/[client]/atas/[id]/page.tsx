@@ -1,10 +1,10 @@
 // src/app/[client]/atas/[id]/page.tsx
 import { notFound } from "next/navigation";
 import { CLIENTS } from "@/lib/clients";
-import { AccessDenied } from "@/components/AccessDenied";
-import { AppFrame } from "@/components/AppFrame";
-import { AtaDetailPageClient } from "@/components/AtaDetailPageClient";
-import { TimeZoneProvider } from "@/components/TimeZoneContext";
+import { AccessDenied } from "@/components/layout/AccessDenied";
+import { AppFrame } from "@/components/layout/AppFrame";
+import { AtaDetailPageClient } from "@/components/atas/AtaDetailPageClient";
+import { TimeZoneProvider } from "@/components/layout/TimeZoneContext";
 import { verifyClientSession } from "@/lib/access";
 import { fetchClientSettings } from "@/lib/clientSettings";
 

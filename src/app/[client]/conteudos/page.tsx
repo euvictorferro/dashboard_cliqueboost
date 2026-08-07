@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { CLIENTS } from "@/lib/clients";
-import { AccessDenied } from "@/components/AccessDenied";
-import { AppFrame } from "@/components/AppFrame";
-import { ContentPageClient } from "@/components/ContentPageClient";
+import { AccessDenied } from "@/components/layout/AccessDenied";
+import { AppFrame } from "@/components/layout/AppFrame";
+import { ContentPageClient } from "@/components/conteudos/ContentPageClient";
 import { verifyClientSession } from "@/lib/access";
 
 export default async function ClientContentPage({

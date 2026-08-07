@@ -4,7 +4,7 @@
 import type { ContentCard as ContentCardData } from "@/lib/trello";
 import { getContentFormat, FORMAT_SOLID_CLASSES } from "@/lib/contentFormat";
 import { getTimeZoneDateParts, isSameTZDay } from "@/lib/clientTime";
-import { useTimeZone } from "./TimeZoneContext";
+import { useTimeZone } from "@/components/layout/TimeZoneContext";
 
 const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const MONTH_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];

@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ContaSidebar } from "./ContaSidebar";
-import { ContaPerfilSection } from "./ContaPerfilSection";
-import { ContaFusoSection } from "./ContaFusoSection";
-import { ContaFaturamentoSection, type Payment } from "./ContaFaturamentoSection";
-import { ContaIndicacoesSection, type ReferralLead } from "./ContaIndicacoesSection";
-import { ContaSegurancaSection } from "./ContaSegurancaSection";
+import { ContaSidebar } from "@/components/conta/ContaSidebar";
+import { ContaPerfilSection } from "@/components/conta/ContaPerfilSection";
+import { ContaFusoSection } from "@/components/conta/ContaFusoSection";
+import { ContaFaturamentoSection, type Payment } from "@/components/conta/ContaFaturamentoSection";
+import { ContaIndicacoesSection, type ReferralLead } from "@/components/conta/ContaIndicacoesSection";
+import { ContaSegurancaSection } from "@/components/conta/ContaSegurancaSection";
 
 type Status = "loading" | "error" | "ready";
 type SaveStatus = "idle" | "saving" | "saved" | "error";

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Logo } from "@/components/Logo";
+import { Logo } from "@/components/layout/Logo";
 
 export default function SairPage() {
   const router = useRouter();

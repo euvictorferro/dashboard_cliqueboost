@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { CallNote } from "@/lib/callNotes";
 import { formatCallDateHeader } from "@/lib/formatCallDate";
 import { getTimeZoneDateParts, formatTZTime } from "@/lib/clientTime";
-import { useTimeZone } from "./TimeZoneContext";
+import { useTimeZone } from "@/components/layout/TimeZoneContext";
 
 function FileTextIcon() {
   return (

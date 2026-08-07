@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { CLIENTS } from "@/lib/clients";
-import { Sidebar, type ActiveKey } from "./Sidebar";
-import { Header } from "./Header";
-import { CmdK } from "./CmdK";
-import { RatingPopup } from "./RatingPopup";
+import { Sidebar, type ActiveKey } from "@/components/layout/Sidebar";
+import { Header } from "@/components/layout/Header";
+import { CmdK } from "@/components/layout/CmdK";
+import { RatingPopup } from "@/components/layout/RatingPopup";
 
 function todayKey(): string {
   const now = new Date();

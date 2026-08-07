@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CLIENTS } from "@/lib/clients";
 import { getInitials, colorFromName } from "@/lib/avatar";
-import { useTheme } from "./ThemeProvider";
-import { BugReportModal } from "./BugReportModal";
+import { useTheme } from "@/components/layout/ThemeProvider";
+import { BugReportModal } from "@/components/layout/BugReportModal";
 
 const THEME_ORDER = ["light", "dark", "system"] as const;
 type Theme = (typeof THEME_ORDER)[number];

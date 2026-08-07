@@ -4,8 +4,8 @@
 import { useState } from "react";
 import type { ContentCard as ContentCardData } from "@/lib/trello";
 import { getDueDateDisplay } from "@/lib/dateDisplay";
-import { AssigneeAvatars } from "./AssigneeAvatars";
-import { AttachmentIcon, ChecklistIcon, ClockIcon, DescriptionIcon } from "./icons";
+import { AssigneeAvatars } from "@/components/ui/AssigneeAvatars";
+import { AttachmentIcon, ChecklistIcon, ClockIcon, DescriptionIcon } from "@/components/ui/icons";
 
 export function ContentCard({
   card,

@@ -2,12 +2,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useTimeZone } from "./TimeZoneContext";
+import { useTimeZone } from "@/components/layout/TimeZoneContext";
 import { CLIENTS } from "@/lib/clients";
 import { getTimeZoneDateParts, formatTZTime } from "@/lib/clientTime";
 import { formatCallDateHeader } from "@/lib/formatCallDate";
 import { googleCalendarUrl, outlookCalendarUrl, icsDataUrl } from "@/lib/calendarLinks";
-import { ChevronLeftIcon, ChevronRightIcon } from "./CalendarIcons";
+import { ChevronLeftIcon, ChevronRightIcon } from "@/components/calendario/CalendarIcons";
 
 type CallInfo = { id: string; scheduledAt: number };
 type Status = "loading" | "error" | "ready";

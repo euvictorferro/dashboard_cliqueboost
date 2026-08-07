@@ -1,5 +1,5 @@
 import type { TopPost } from "@/lib/metrics";
-import { InfoTooltip } from "./InfoTooltip";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 function PostRow({ post, max }: { post: TopPost; max: number }) {
   return (

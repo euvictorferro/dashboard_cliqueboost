@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Competitor, CompetitorPost } from "@/lib/competitors";
-import { AddCompetitorModal } from "./AddCompetitorModal";
-import { CompetitorProfileModal } from "./CompetitorProfileModal";
+import { AddCompetitorModal } from "@/components/dashboard/AddCompetitorModal";
+import { CompetitorProfileModal } from "@/components/dashboard/CompetitorProfileModal";
 
 const PLATFORM_LABELS: Record<Competitor["platform"], string> = {
   instagram: "Instagram",

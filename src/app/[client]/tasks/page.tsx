@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { CLIENTS } from "@/lib/clients";
-import { AccessDenied } from "@/components/AccessDenied";
-import { AppFrame } from "@/components/AppFrame";
-import { TasksPageClient } from "@/components/TasksPageClient";
+import { AccessDenied } from "@/components/layout/AccessDenied";
+import { AppFrame } from "@/components/layout/AppFrame";
+import { TasksPageClient } from "@/components/tasks/TasksPageClient";
 import { verifyClientSession } from "@/lib/access";
 
 export default async function ClientTasksPage({

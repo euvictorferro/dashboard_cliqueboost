@@ -3,8 +3,8 @@
 
 import { useState } from "react";
 import type { TaskItem, TaskStatus } from "@/lib/clickup";
-import { TaskRow } from "./TaskRow";
-import { TaskDetailModal } from "./TaskDetailModal";
+import { TaskRow } from "@/components/tasks/TaskRow";
+import { TaskDetailModal } from "@/components/tasks/TaskDetailModal";
 
 function ChevronIcon({ open }: { open: boolean }) {
   return (

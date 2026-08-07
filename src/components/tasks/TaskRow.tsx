@@ -3,9 +3,9 @@
 
 import type { TaskItem } from "@/lib/clickup";
 import { getDueDateDisplay } from "@/lib/dateDisplay";
-import { AssigneeAvatars } from "./AssigneeAvatars";
-import { StatusIcon } from "./StatusIcon";
-import { PriorityFlag } from "./PriorityFlag";
+import { AssigneeAvatars } from "@/components/ui/AssigneeAvatars";
+import { StatusIcon } from "@/components/tasks/StatusIcon";
+import { PriorityFlag } from "@/components/tasks/PriorityFlag";
 
 export function TaskRow({ task, onClick }: { task: TaskItem; onClick: () => void }) {
   const dueDisplay = task.dueDate !== null ? getDueDateDisplay(task.dueDate) : null;

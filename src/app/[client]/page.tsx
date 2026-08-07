@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { CLIENTS } from "@/lib/clients";
-import { Dashboard } from "@/components/Dashboard";
-import { AccessDenied } from "@/components/AccessDenied";
-import { AppFrame } from "@/components/AppFrame";
+import { Dashboard } from "@/components/dashboard/Dashboard";
+import { AccessDenied } from "@/components/layout/AccessDenied";
+import { AppFrame } from "@/components/layout/AppFrame";
 import { verifyClientSession } from "@/lib/access";
 
 export default async function ClientPage({

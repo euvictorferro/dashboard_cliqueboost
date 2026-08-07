@@ -7,6 +7,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const email = body?.email;
   const password = body?.password;
+  const rememberMe = body?.rememberMe !== false;
   if (typeof email !== "string" || typeof password !== "string") {
     return Response.json({ error: "invalid_credentials" }, { status: 401 });
   }
@@ -37,9 +38,12 @@ export async function POST(request: Request) {
   }
 
   const response = Response.json({ clientId: account.client_id });
+  // rememberMe=false: cookie de sessão do navegador (some ao fechar), sem Max-Age.
+  // O exp de 7 dias dentro do JWT continua sendo a trava real no servidor.
+  const maxAge = rememberMe ? `; Max-Age=${SESSION_COOKIE_MAX_AGE}` : "";
   response.headers.append(
     "Set-Cookie",
-    `${SESSION_COOKIE_NAME}=${signSession(account.client_id)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_COOKIE_MAX_AGE}${
+    `${SESSION_COOKIE_NAME}=${signSession(account.client_id)}; Path=/; HttpOnly; SameSite=Lax${maxAge}${
       process.env.NODE_ENV === "production" ? "; Secure" : ""
     }`
   );

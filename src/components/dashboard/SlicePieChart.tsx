@@ -1,5 +1,5 @@
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import { InfoTooltip } from "./InfoTooltip";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 const PALETTE = ["#7c3aed", "#0080ff", "#00c896", "#ff5c4d", "#8b5cf6", "#c4b5fd"];
 

@@ -4,26 +4,23 @@ import { CLIENTS } from "@/lib/clients";
 import { AccessDenied } from "@/components/AccessDenied";
 import { AppFrame } from "@/components/AppFrame";
 import { ContaPageClient } from "@/components/ContaPageClient";
-import { verifyClientToken } from "@/lib/access";
+import { verifyClientSession } from "@/lib/access";
 
 export default async function ClientContaPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ client: string }>;
-  searchParams: Promise<{ key?: string }>;
 }) {
   const { client } = await params;
-  const { key } = await searchParams;
   const found = CLIENTS.find((c) => c.id === client);
   if (!found) notFound();
 
-  const authorized = await verifyClientToken(found.id, key);
+  const authorized = await verifyClientSession(found.id);
   if (!authorized) return <AccessDenied />;
 
   return (
-    <AppFrame clientId={found.id} accessKey={key!} active="conta" pageLabel="Conta">
-      <ContaPageClient clientId={found.id} clientName={found.name} accessKey={key!} />
+    <AppFrame clientId={found.id} active="conta" pageLabel="Conta">
+      <ContaPageClient clientId={found.id} clientName={found.name} />
     </AppFrame>
   );
 }

@@ -3,26 +3,23 @@ import { CLIENTS } from "@/lib/clients";
 import { Dashboard } from "@/components/Dashboard";
 import { AccessDenied } from "@/components/AccessDenied";
 import { AppFrame } from "@/components/AppFrame";
-import { verifyClientToken } from "@/lib/access";
+import { verifyClientSession } from "@/lib/access";
 
 export default async function ClientPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ client: string }>;
-  searchParams: Promise<{ key?: string }>;
 }) {
   const { client } = await params;
-  const { key } = await searchParams;
   const found = CLIENTS.find((c) => c.id === client);
   if (!found) notFound();
 
-  const authorized = await verifyClientToken(found.id, key);
+  const authorized = await verifyClientSession(found.id);
   if (!authorized) return <AccessDenied />;
 
   return (
-    <AppFrame clientId={found.id} accessKey={key!} active="dashboard" pageLabel="Dashboard">
-      <Dashboard client={found} accessKey={key!} />
+    <AppFrame clientId={found.id} active="dashboard" pageLabel="Dashboard">
+      <Dashboard client={found} />
     </AppFrame>
   );
 }

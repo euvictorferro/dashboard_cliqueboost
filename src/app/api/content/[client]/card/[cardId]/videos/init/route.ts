@@ -43,6 +43,7 @@ export async function POST(
   }
 
   const clientName = CLIENTS.find((c) => c.id === clientId)?.name ?? clientId;
+  const origin = request.headers.get("origin") ?? request.nextUrl.origin;
 
   try {
     const clientFolderId = await findOrCreateClientFolder(clientName);
@@ -57,7 +58,7 @@ export async function POST(
       await addLinkAttachment(cardId, postFolder.webViewLink);
     }
 
-    const uploadUrl = await initResumableUpload(postFolder.id, fileName, mimeType, fileSize);
+    const uploadUrl = await initResumableUpload(postFolder.id, fileName, mimeType, fileSize, origin);
     return Response.json({ uploadUrl });
   } catch (err) {
     console.error(`[content] falha ao iniciar upload de vídeo no card ${cardId}:`, err);

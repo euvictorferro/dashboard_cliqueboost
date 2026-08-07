@@ -1,23 +1,20 @@
 // src/lib/googleDrive.ts
-// ponytail: server-only — nunca importar isto de um componente "use client" (usa a chave da service account).
-import { createSign } from "node:crypto";
-
+// ponytail: server-only — nunca importar isto de um componente "use client" (usa credenciais OAuth).
+//
+// Usa OAuth (refresh token da conta pessoal do Victor), não service account: contas de serviço
+// não têm cota de armazenamento própria no Drive (erro "storageQuotaExceeded" ao subir arquivo,
+// mesmo dentro de uma pasta compartilhada) — só funcionam pra metadata (listar/criar pasta), não
+// pra upload de conteúdo real. Upgrade se algum dia migrar pra Google Workspace: trocar por um
+// Shared Drive + voltar pra service account, que aí tem cota da organização.
 export type ContentVideo = { id: string; name: string; size: number; webViewLink: string };
 
 export function hasGoogleDriveCredentials(): boolean {
-  return Boolean(process.env.GOOGLE_SERVICE_ACCOUNT_KEY) && Boolean(process.env.GOOGLE_DRIVE_CLIENTS_FOLDER_ID);
-}
-
-function base64url(input: Buffer | string): string {
-  return Buffer.from(input).toString("base64url");
-}
-
-function getServiceAccount(): { client_email: string; private_key: string } {
-  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-  if (!raw) throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY não configurada");
-  const parsed = JSON.parse(raw);
-  if (!parsed.client_email || !parsed.private_key) throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY inválida");
-  return { client_email: parsed.client_email, private_key: parsed.private_key };
+  return (
+    Boolean(process.env.GOOGLE_OAUTH_CLIENT_ID) &&
+    Boolean(process.env.GOOGLE_OAUTH_CLIENT_SECRET) &&
+    Boolean(process.env.GOOGLE_OAUTH_REFRESH_TOKEN) &&
+    Boolean(process.env.GOOGLE_DRIVE_CLIENTS_FOLDER_ID)
+  );
 }
 
 let cachedToken: { token: string; expiresAt: number } | null = null;
@@ -26,32 +23,26 @@ async function getAccessToken(): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
   if (cachedToken && cachedToken.expiresAt - now > 300) return cachedToken.token;
 
-  const { client_email, private_key } = getServiceAccount();
-  const header = base64url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
-  const claim = base64url(
-    JSON.stringify({
-      iss: client_email,
-      scope: "https://www.googleapis.com/auth/drive",
-      aud: "https://oauth2.googleapis.com/token",
-      iat: now,
-      exp: now + 3600,
-    })
-  );
-  const signingInput = `${header}.${claim}`;
-  const signature = createSign("RSA-SHA256").update(signingInput).sign(private_key, "base64url");
-  const jwt = `${signingInput}.${signature}`;
+  const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_OAUTH_REFRESH_TOKEN;
+  if (!clientId || !clientSecret || !refreshToken) {
+    throw new Error("GOOGLE_OAUTH_CLIENT_ID/GOOGLE_OAUTH_CLIENT_SECRET/GOOGLE_OAUTH_REFRESH_TOKEN não configurados");
+  }
 
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion: jwt,
+      grant_type: "refresh_token",
+      refresh_token: refreshToken,
+      client_id: clientId,
+      client_secret: clientSecret,
     }),
   });
   const json = await res.json();
   if (!res.ok) throw new Error(`google_drive_auth_failed: ${JSON.stringify(json)}`);
-  cachedToken = { token: json.access_token, expiresAt: now + 3600 };
+  cachedToken = { token: json.access_token, expiresAt: now + json.expires_in };
   return cachedToken.token;
 }
 
@@ -165,9 +156,13 @@ export async function initResumableUpload(
   folderId: string,
   fileName: string,
   mimeType: string,
-  fileSize: number
+  fileSize: number,
+  origin: string
 ): Promise<string> {
   const accessToken = await getAccessToken();
+  // ponytail: o Drive só habilita CORS numa sessão resumível se a requisição que a CRIA já
+  // tiver o header Origin do navegador que vai fazer o PUT depois — sem isso o upload direto
+  // do navegador é bloqueado por CORS (testado ao vivo).
   const res = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable", {
     method: "POST",
     headers: {
@@ -175,6 +170,7 @@ export async function initResumableUpload(
       "Content-Type": "application/json; charset=UTF-8",
       "X-Upload-Content-Type": mimeType,
       "X-Upload-Content-Length": String(fileSize),
+      Origin: origin,
     },
     body: JSON.stringify({ name: fileName, parents: [folderId] }),
   });

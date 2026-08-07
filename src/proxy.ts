@@ -19,7 +19,10 @@ export function proxy(request: NextRequest) {
     pathname.startsWith("/api/webhooks/") ||
     pathname.startsWith("/_next/") ||
     pathname === "/" ||
-    pathname === "/icon.png"
+    // ponytail: qualquer arquivo estático de public/ (logo-*.png, icon.png, futuros assets) —
+    // sem isso o proxy trata o nome do arquivo como clientId e bloqueia o asset pra quem não
+    // tem sessão (bug real encontrado ao construir a tela de login: logo quebrado nela mesma).
+    /\.[a-zA-Z0-9]+$/.test(pathname)
   ) {
     return NextResponse.next();
   }

@@ -92,3 +92,28 @@ body {
   color: var(--color-foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
 }
+
+/* ponytail: usado só pela tela de login (linha de crescimento ambiente no painel de destaque) —
+   desenha a linha uma vez na carga; sem preferência de movimento reduzido, a linha já fica
+   totalmente visível e estática (fallback seguro por padrão). */
+@keyframes login-draw-line {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.login-hero-line {
+  stroke-dasharray: 700;
+  stroke-dashoffset: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .login-hero-line {
+    stroke-dashoffset: 700;
+    animation: login-draw-line 1.8s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+  }
+
+  .login-hero-line--accent {
+    animation-delay: 0.35s;
+  }
+}

@@ -42,6 +42,7 @@ export function VideoUploadField({
   const [videos, setVideos] = useState<ContentVideo[] | null>(null);
   const [progress, setProgress] = useState<Record<string, number>>({});
   const [uploading, setUploading] = useState(false);
+  const [identifyingTakes, setIdentifyingTakes] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -119,6 +120,18 @@ export function VideoUploadField({
       setUploading(false);
       setProgress({});
       if (fileInputRef.current) fileInputRef.current.value = "";
+
+      setIdentifyingTakes(true);
+      fetch(`/api/content/${clientId}/card/${cardId}/videos/match-takes?key=${encodeURIComponent(accessKey)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cardName }),
+      })
+        .then(() => refreshVideos())
+        .catch(() => {
+          // ponytail: falha silenciosa — vídeos ficam com nome original, sem travar a UI de upload.
+        })
+        .finally(() => setIdentifyingTakes(false));
     }
   }
 
@@ -161,6 +174,7 @@ export function VideoUploadField({
         onChange={(e) => e.target.files && handleFilesSelected(e.target.files)}
       />
       {error && <p className="mb-2 text-xs text-red-500">{error}</p>}
+      {identifyingTakes && <p className="mb-2 text-xs text-muted-foreground">Identificando takes...</p>}
       {Object.entries(progress).map(([name, percent]) => (
         <div key={name} className="mb-1 text-xs text-muted-foreground">
           {name}: {percent}%

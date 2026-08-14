@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Logo } from "@/components/layout/Logo";
 import { AccountCard } from "@/components/layout/AccountCard";
+import { isProductionEnv } from "@/lib/env";
 
 function DashboardIcon() {
   return (
@@ -126,6 +127,11 @@ const SOCIAL_MEDIA_ITEMS: NavItemDef[] = [
 
 const SOCIAL_MEDIA_KEYS: ActiveKey[] = ["conteudos", "calendario", "bunker"];
 
+// ponytail: Bunker fica em backlog — some da navegação em produção, continua visível em preview.
+function visibleSocialMediaItems(): NavItemDef[] {
+  return isProductionEnv() ? SOCIAL_MEDIA_ITEMS.filter((item) => item.key !== "bunker") : SOCIAL_MEDIA_ITEMS;
+}
+
 function NavLink({
   clientId,
   item,
@@ -206,7 +212,7 @@ export function Sidebar({
 
             {socialOpen && (
               <div className="ml-3 flex flex-col gap-1 border-l border-border pl-3">
-                {SOCIAL_MEDIA_ITEMS.map((item) => (
+                {visibleSocialMediaItems().map((item) => (
                   <NavLink key={item.href} clientId={clientId} item={item} isActive={active === item.key} />
                 ))}
               </div>

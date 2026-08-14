@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CLIENTS } from "@/lib/clients";
+import { isProductionEnv } from "@/lib/env";
 import { getInitials, colorFromName } from "@/lib/avatar";
 import { useTheme } from "@/components/layout/ThemeProvider";
 import { BugReportModal } from "@/components/layout/BugReportModal";
@@ -99,12 +100,15 @@ export function AccountCard({
     >
       {open && !bugModalOpen && (
         <div className="absolute bottom-full left-0 w-full rounded-lg border border-border bg-card p-2 shadow-[var(--shadow-soft)]">
-          <Link
-            href={`/${clientId}/conta`}
-            className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-card-foreground hover:bg-muted"
-          >
-            Ajustes
-          </Link>
+          {/* ponytail: Conta fica em backlog — some do menu em produção, continua visível em preview. */}
+          {!isProductionEnv() && (
+            <Link
+              href={`/${clientId}/conta`}
+              className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-card-foreground hover:bg-muted"
+            >
+              Ajustes
+            </Link>
+          )}
 
           <button
             type="button"

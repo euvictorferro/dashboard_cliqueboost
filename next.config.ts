@@ -12,6 +12,12 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // ponytail: expõe o ambiente da Vercel (production/preview/development) pro client bundle —
+  // NODE_ENV não serve pra essa distinção (é "production" tanto em Preview quanto em Production
+  // na Vercel). Usado pra esconder páginas em backlog (Bunker, Conta) só em produção.
+  env: {
+    NEXT_PUBLIC_VERCEL_ENV: process.env.VERCEL_ENV,
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

@@ -139,6 +139,9 @@ async function clickupGet(path: string) {
     headers: { Authorization: process.env.CLICKUP_API_TOKEN! },
     cache: "no-store",
   });
+  // ponytail: checa o status HTTP antes de tentar ler JSON — erro sem corpo JSON válido
+  // (rate limit, 5xx, etc.) senão quebra dentro do res.json() com uma mensagem opaca.
+  if (!res.ok) throw new Error(await res.text());
   const json = await res.json();
   if (json.err) throw new Error(json.err);
   return json;
@@ -162,6 +165,7 @@ export async function fetchClientTasks(listId: string): Promise<TaskItem[]> {
     headers: { Authorization: process.env.CLICKUP_API_TOKEN! },
     cache: "no-store",
   });
+  if (!res.ok) throw new Error(await res.text());
   const json = await res.json();
   if (json.err) throw new Error(json.err);
 

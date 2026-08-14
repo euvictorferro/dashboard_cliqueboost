@@ -1,23 +1,39 @@
-import Link from "next/link";
-import { CLIENTS } from "@/lib/clients";
-import { Logo } from "@/components/layout/Logo";
+import type { Metadata } from "next";
+import { LanguageProvider } from "@/components/landing/LanguageProvider";
+import { Header } from "@/components/landing/Header";
+import { Hero } from "@/components/landing/Hero";
+import { PainPoints } from "@/components/landing/PainPoints";
+import { PromiseSection } from "@/components/landing/Promise";
+import { Services } from "@/components/landing/Services";
+import { Process } from "@/components/landing/Process";
+import { Testimonials } from "@/components/landing/Testimonials";
+import { TechDifferentiator } from "@/components/landing/TechDifferentiator";
+import { Faq } from "@/components/landing/Faq";
+import { ApplicationForm } from "@/components/landing/ApplicationForm";
+import { Footer } from "@/components/landing/Footer";
 
-// Índice interno — cada cliente acessa direto pelo próprio link (/[client]), não por aqui.
-export default function Home() {
+export const metadata: Metadata = {
+  title: "Clique Boost — Marketing 360 for Brokers",
+  description:
+    "Full-service marketing for U.S. real estate and insurance brokers: content, paid traffic, design, and strategy — so you can focus on selling.",
+};
+
+export default function LandingPage() {
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-sm flex-col justify-center gap-3 px-4 py-16">
-      <Logo />
-      <p className="mb-1 mt-4 text-xs font-medium uppercase tracking-wide text-brand-accent">Interno</p>
-      <h1 className="mb-2 text-xl font-semibold text-foreground">Dashboards de clientes</h1>
-      {CLIENTS.map((c) => (
-        <Link
-          key={c.id}
-          href={`/${c.id}`}
-          className="rounded-[var(--radius-card)] bg-card px-4 py-3 text-sm font-medium text-card-foreground shadow-[var(--shadow-soft)] hover:text-brand-primary"
-        >
-          {c.name}
-        </Link>
-      ))}
-    </div>
+    <LanguageProvider>
+      <Header />
+      <main>
+        <Hero />
+        <PainPoints />
+        <PromiseSection />
+        <Services />
+        <Process />
+        <Testimonials />
+        <TechDifferentiator />
+        <Faq />
+        <ApplicationForm />
+      </main>
+      <Footer />
+    </LanguageProvider>
   );
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Logo } from "@/components/layout/Logo";
 import { AccountCard } from "@/components/layout/AccountCard";
+import { ReferralPromoCard } from "@/components/layout/ReferralPromoCard";
 import { isProductionEnv } from "@/lib/env";
 
 function DashboardIcon() {
@@ -226,6 +227,7 @@ export function Sidebar({
         </div>
 
         <div className="px-4 pb-4">
+          <ReferralPromoCard clientId={clientId} />
           <AccountCard clientId={clientId} pageLabel={pageLabel} />
         </div>
       </div>

@@ -33,11 +33,12 @@ export const ORGANIC_METRICS: Record<
   },
   lostFollowers: {
     label: "Seguidores perdidos",
-    description: "Quantidade de pessoas que deixaram de seguir o perfil no período selecionado.",
+    description:
+      "Aproximação, não contagem exata — o Instagram não informa perdas separadas de ganhos. Só conta como \"perdido\" um dia em que o saldo do dia foi negativo; se o cliente ganhou e perdeu seguidores no mesmo dia mas fechou no positivo, essa perda não aparece aqui. \"Seguidores líquidos\" é o número confiável.",
   },
   netFollowers: {
     label: "Seguidores líquidos",
-    description: "Resultado final de seguidores: novos seguidores menos seguidores perdidos.",
+    description: "Resultado final de seguidores no período — soma exata dos ganhos e perdas dia a dia, direto do Instagram.",
   },
   reach: {
     label: "Alcance",

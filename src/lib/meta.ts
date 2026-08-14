@@ -69,7 +69,30 @@ async function safeGraphGet(path: string, params: Record<string, string>) {
   }
 }
 
+// ponytail: sonda temporária — a Graph API tem uma métrica separada (follows_and_unfollows,
+// breakdown=follow_type) que devolveria ganhos/perdas reais em vez da aproximação atual
+// (ver lostFollowers em fetchChunk), mas a doc oficial não deu um formato de resposta confiável
+// pra confirmar antes de implementar de verdade. Só loga a resposta bruta pra confirmar o
+// formato real contra uma conta de produção — não muda nada do que é mostrado ainda. Remover
+// depois de confirmar o formato e implementar o parsing certo.
+async function probeFollowsAndUnfollows(igId: string, since: number, until: number) {
+  try {
+    const raw = await graphGet(`${igId}/insights`, {
+      metric: "follows_and_unfollows",
+      metric_type: "total_value",
+      period: "day",
+      breakdown: "follow_type",
+      since: String(since),
+      until: String(until),
+    });
+    console.error(`[meta][probe follows_and_unfollows] ${igId}:`, JSON.stringify(raw));
+  } catch (err) {
+    console.error(`[meta][probe follows_and_unfollows] falhou pra ${igId}:`, err instanceof Error ? err.message : err);
+  }
+}
+
 async function fetchChunk(igId: string, since: number, until: number) {
+  probeFollowsAndUnfollows(igId, since, until);
   const [reachRes, followerRes, totalsRes, viewsRes] = await Promise.all([
     safeGraphGet(`${igId}/insights`, { metric: "reach", period: "day", since: String(since), until: String(until) }),
     safeGraphGet(`${igId}/insights`, {

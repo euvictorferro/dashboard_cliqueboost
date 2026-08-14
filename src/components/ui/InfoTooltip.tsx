@@ -20,8 +20,10 @@ export function InfoTooltip({
       <span className="flex h-4 w-4 cursor-default items-center justify-center rounded-full border border-muted-foreground/50 text-[10px] leading-none text-muted-foreground">
         i
       </span>
+      {/* ponytail: cor fixa (não bg-foreground/text-background) — esses tokens invertem no dark
+          mode, o que deixaria o tooltip claro em vez de escuro. Tooltip sempre escuro, nos dois temas. */}
       <span
-        className={`pointer-events-none absolute z-10 w-48 rounded-md bg-foreground px-2.5 py-1.5 text-xs text-background opacity-0 shadow-lg transition-opacity group-hover:opacity-100 ${POSITION_CLASSES[position]}`}
+        className={`pointer-events-none absolute z-10 w-56 rounded-md bg-neutral-900 px-2.5 py-1.5 text-xs text-neutral-100 opacity-0 shadow-lg transition-opacity group-hover:opacity-100 ${POSITION_CLASSES[position]}`}
       >
         {text}
       </span>

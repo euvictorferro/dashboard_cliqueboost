@@ -69,13 +69,14 @@ export function proxy(request: NextRequest) {
 
   // rotas com [client] na URL: /tiago/..., /api/.../tiago/... — client_id é sempre o
   // primeiro segmento depois de /api/<recurso>/ ou o primeiro segmento da URL nas páginas.
-  // /api/auth/update-credentials foge do padrão (o client_id vem da sessão, não da URL).
-  const clientIdInPath =
-    pathname === "/api/auth/update-credentials"
-      ? undefined
-      : pathname.startsWith("/api/")
-        ? pathname.split("/")[3] // /api/<recurso>/<clientId>/...
-        : pathname.split("/")[1]; // /<clientId>/...
+  // /api/auth/update-credentials e /api/auth/session fogem do padrão (client_id vem da
+  // sessão, não da URL).
+  const NO_CLIENT_IN_PATH_APIS = ["/api/auth/update-credentials", "/api/auth/session"];
+  const clientIdInPath = NO_CLIENT_IN_PATH_APIS.includes(pathname)
+    ? undefined
+    : pathname.startsWith("/api/")
+      ? pathname.split("/")[3] // /api/<recurso>/<clientId>/...
+      : pathname.split("/")[1]; // /<clientId>/...
 
   const hasClientSession = session && (!clientIdInPath || session.clientId === clientIdInPath);
   // Admin logado enxerga (e edita) o dashboard de qualquer cliente — visão espelho.
@@ -88,16 +89,10 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Conta temporária (email/senha provisórios criados por nós): trava em /atualizar-conta até
-  // o cliente trocar as credenciais — nem admin em visão espelho pula essa etapa por ele.
-  const updateAccountPath = `/${clientIdInPath}/atualizar-conta`;
-  const isUpdateAccountRoute = pathname === updateAccountPath || pathname === "/api/auth/update-credentials";
-  if (session?.mustResetCredentials && !isUpdateAccountRoute) {
-    if (pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "must_reset_credentials" }, { status: 403 });
-    }
-    return NextResponse.redirect(new URL(updateAccountPath, request.url));
-  }
+  // ponytail: conta temporária (email/senha provisórios criados por nós) — a troca obrigatória
+  // é um popup em cima do dashboard (AppFrame → UpdateCredentialsModal), não um bloqueio de
+  // rota aqui. Gate só de UX, não de segurança: dá pra chamar outras APIs por baixo do modal
+  // via devtools. Upgrade pra bloqueio real (como antes) se algum dia isso importar.
 
   return NextResponse.next();
 }

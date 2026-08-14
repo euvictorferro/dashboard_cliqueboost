@@ -81,8 +81,8 @@ export function LoginForm() {
         setError("Email ou senha inválidos.");
         return;
       }
-      const { clientId, mustResetCredentials } = await res.json();
-      router.push(mustResetCredentials ? `/${clientId}/atualizar-conta` : `/${clientId}`);
+      const { clientId } = await res.json();
+      router.push(`/${clientId}`);
     } catch {
       setError("Email ou senha inválidos.");
     } finally {

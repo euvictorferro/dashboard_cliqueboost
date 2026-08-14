@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { ChatMessage } from "@/lib/chatMessages";
 import { CLIENTS } from "@/lib/clients";
 import { getInitials, colorFromName } from "@/lib/avatar";
+import { renderMarkdown } from "@/components/ui/markdown";
 
 function ArrowUpIcon() {
   return (
@@ -38,6 +39,14 @@ function CopyIcon() {
   );
 }
 
+function CheckIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <path d="M2.5 7.5l3 3 6-6.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function RetryIcon() {
   return (
     <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -59,6 +68,7 @@ export function BoosterAiPageClient({ clientId }: { clientId: string;  }) {
   const [focused, setFocused] = useState(false);
   const [sending, setSending] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const expanded = focused || input.trim() !== "";
 
@@ -140,8 +150,14 @@ export function BoosterAiPageClient({ clientId }: { clientId: string;  }) {
     send(userText);
   }
 
-  function copy(text: string) {
-    navigator.clipboard?.writeText(text).catch(() => {});
+  function copy(text: string, index: number) {
+    navigator.clipboard
+      ?.writeText(text)
+      .then(() => {
+        setCopiedIndex(index);
+        setTimeout(() => setCopiedIndex((cur) => (cur === index ? null : cur)), 2000);
+      })
+      .catch(() => {});
   }
 
   const reversedMessages = [...messages].reverse();
@@ -236,18 +252,31 @@ export function BoosterAiPageClient({ clientId }: { clientId: string;  }) {
                         m.role === "user" ? "bg-brand-primary text-white" : "bg-card text-card-foreground"
                       }`}
                     >
-                      {m.content || (m.role === "assistant" && sending ? "..." : "")}
+                      {m.content
+                        ? m.role === "assistant"
+                          ? renderMarkdown(m.content)
+                          : m.content
+                        : m.role === "assistant" && sending
+                          ? "..."
+                          : ""}
                     </div>
                     {m.role === "assistant" && m.content && !sending && (
                       <div className="flex gap-1">
                         <button
                           type="button"
-                          onClick={() => copy(m.content)}
-                          aria-label="Copiar"
-                          title="Copiar"
-                          className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-card-foreground"
+                          onClick={() => copy(m.content, i)}
+                          aria-label={copiedIndex === i ? "Copiado" : "Copiar"}
+                          title={copiedIndex === i ? "Copiado" : "Copiar"}
+                          className="flex h-6 items-center justify-center gap-1 rounded px-1 text-muted-foreground hover:bg-muted hover:text-card-foreground"
                         >
-                          <CopyIcon />
+                          {copiedIndex === i ? (
+                            <>
+                              <CheckIcon />
+                              <span className="text-xs">Copiado</span>
+                            </>
+                          ) : (
+                            <CopyIcon />
+                          )}
                         </button>
                         {messages[i - 1]?.role === "user" && (
                           <button

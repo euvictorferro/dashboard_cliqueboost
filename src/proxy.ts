@@ -33,6 +33,14 @@ export function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
+  // ponytail: landing page pública (src/app/page.tsx) é pra o domínio apex (cliqueboost.io),
+  // que ainda não está no ar — enquanto isso, "/" em qualquer domínio (dash.cliqueboost.io
+  // incluso) manda direto pro login, que é a porta de entrada real hoje. Reverter quando o
+  // domínio apex existir e passar a rotear por host.
+  if (pathname === "/") {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
   // Árvore do admin: sessão própria, nada a ver com a de cliente abaixo.
   if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
     if (ADMIN_PUBLIC_PATHS.some((p) => pathname === p)) return NextResponse.next();
@@ -49,7 +57,6 @@ export function proxy(request: NextRequest) {
     pathname.startsWith("/r/") ||
     pathname.startsWith("/api/webhooks/") ||
     pathname.startsWith("/_next/") ||
-    pathname === "/" ||
     // ponytail: qualquer arquivo estático de public/ (logo-*.png, icon.png, futuros assets) —
     // sem isso o proxy trata o nome do arquivo como clientId e bloqueia o asset pra quem não
     // tem sessão (bug real encontrado ao construir a tela de login: logo quebrado nela mesma).

@@ -28,7 +28,7 @@ export function ReferralPromoCard({ clientId }: { clientId: string }) {
         </span>
         <span className="min-w-0">
           <span className="block text-xs font-semibold text-card-foreground">Compartilhe a Clique</span>
-          <span className="block truncate text-[11px] text-muted-foreground">Economize até $300 na assinatura</span>
+          <span className="block truncate text-[11px] text-muted-foreground">Economize até 60%</span>
         </span>
       </button>
       {open && <ReferralShareModal clientId={clientId} onClose={() => setOpen(false)} />}

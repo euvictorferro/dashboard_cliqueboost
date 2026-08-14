@@ -139,7 +139,7 @@ export function CallScheduler({ clientId }: { clientId: string;  }) {
   const showPicker = !activeCall || rescheduling;
 
   return (
-    <div className="mb-6 w-full overflow-hidden rounded-lg border border-border bg-card">
+    <div className="w-full overflow-hidden rounded-lg border border-border bg-card">
       {!showPicker && activeCall ? (
         <div className="flex flex-col items-center gap-4 p-8 text-center">
           <span className="text-brand-success">
@@ -204,10 +204,10 @@ export function CallScheduler({ clientId }: { clientId: string;  }) {
           <div className="border-b border-border p-4">
             <h2 className="text-sm font-bold text-card-foreground">Agende sua call</h2>
           </div>
-          <div className="flex flex-col items-start md:flex-row md:justify-center">
-            <div className="p-6">
+          <div className="flex flex-col items-start">
+            <div className="w-full p-6">
               {visibleMonth && (
-                <div className="w-[280px]">
+                <div className="w-full max-w-[280px]">
                   <div className="mb-3 flex items-center justify-between">
                     <p className="text-sm font-semibold text-card-foreground">
                       {MONTH_LABELS[visibleMonth.getMonth()]} {visibleMonth.getFullYear()}
@@ -269,7 +269,7 @@ export function CallScheduler({ clientId }: { clientId: string;  }) {
               {freeSlots.length === 0 && <p className="text-xs text-muted-foreground">Nenhum horário livre nos próximos dias.</p>}
             </div>
 
-            <div className="flex flex-col gap-2 border-t border-border p-4 md:w-64 md:border-l md:border-t-0">
+            <div className="flex w-full flex-col gap-2 border-t border-border p-4">
               <div className="grid max-h-72 grid-cols-2 gap-1.5 overflow-y-auto pr-1">
                 {(selectedDayKey ? (slotsByDay.get(selectedDayKey) ?? []) : []).map((slot) => (
                   <button

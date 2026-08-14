@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { CLIENTS } from "@/lib/clients";
 import { fetchClientBoard, hasTrelloCredentials } from "@/lib/trello";
 import { verifyClientSession } from "@/lib/access";
+import { DEMO_CLIENT_ID, DEMO_CONTENT_LISTS } from "@/lib/demoData";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ client: string }> }) {
   const { client: clientId } = await params;
@@ -13,6 +14,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   if (!(await verifyClientSession(clientId))) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  if (clientId === DEMO_CLIENT_ID) {
+    return Response.json({ lists: DEMO_CONTENT_LISTS });
   }
 
   if (!client.trelloBoardId) {

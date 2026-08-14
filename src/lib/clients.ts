@@ -23,6 +23,10 @@ export const CLIENTS: Client[] = [
   { id: "nelson", name: "Nelson", adsActive: false, instagramBusinessId: "17841433504082304", adAccountId: "959090240381783", clickupListId: "901711532905", trelloBoardId: "6a62cc0c3349ba1222b431e0" },
   { id: "tiago", name: "Tiago Zamboni", adsActive: false, instagramBusinessId: "17841401844913174", clickupListId: "901713981087", trelloBoardId: "6a15e2cce98811c102520e22" },
   { id: "bela", name: "Bela Castro", adsActive: false, instagramBusinessId: "17841445125553950", clickupListId: "901711532881", trelloBoardId: "68f4f4c34ad83399f540858a" },
+  // ponytail: conta de demonstração pro Victor gravar vídeo/apresentação pros clientes — sem
+  // instagramBusinessId (cai no mock de métricas já existente), tasks/conteúdos mockados em
+  // demoData.ts (ver DEMO_CLIENT_ID), ads mockado por padrão via adsActive:true.
+  { id: "demo", name: "Conta Demo", adsActive: true },
 ];
 
 // ponytail: cache de módulo com TTL de 60s — clientes mudam raramente; evita uma query

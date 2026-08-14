@@ -12,7 +12,7 @@ O esquema simples de indicação (card "Compartilhe a Clique" na sidebar, modal 
 1. **Indicador (quem indica):** ganha 20% de desconto numa fatura por cada indicação convertida. Empilha até **3 indicações por fatura/ciclo de cobrança** → desconto máximo de **60%** numa fatura. O contador de "quantas indicações contaram nessa fatura" reseta a cada novo ciclo — indicações além da 3ª no mesmo ciclo não geram desconto adicional naquele ciclo, mas seguem contando normalmente em ciclos futuros (não é limite vitalício).
 2. **Indicado (quem foi indicado):** ganha **20% de desconto fixo, uma única vez, na primeira fatura**. Não empilha sob nenhuma circunstância (nem se, hipoteticamente, mais de um link levasse ao mesmo novo cliente).
 3. **Valor mínimo pra qualificar:** o plano contratado pela pessoa indicada precisa custar **pelo menos US$400** (o plano Starter, o mais básico da Clique Boost) — essa é a condição de qualificação tanto pro desconto do indicador quanto pro desconto do indicado.
-4. **Validade:** programa **permanente**, sem data de expiração.
+4. **Validade:** programa **por tempo indeterminado**, sem data de expiração definida.
 
 ## Fora de escopo deste documento (fica pro "workflow completo")
 

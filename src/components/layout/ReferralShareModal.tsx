@@ -46,11 +46,27 @@ function InstagramIcon() {
   );
 }
 
+function ChevronDownIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 12 12"
+      fill="none"
+      aria-hidden="true"
+      className={`transition-transform ${open ? "rotate-180" : ""}`}
+    >
+      <path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 const SHARE_MESSAGE = "Dá uma olhada na Clique Boost, a agência que cuida do meu marketing:";
 
 export function ReferralShareModal({ clientId, onClose }: { clientId: string; onClose: () => void }) {
   const [copied, setCopied] = useState(false);
   const [shareHint, setShareHint] = useState<string | null>(null);
+  const [rulesOpen, setRulesOpen] = useState(false);
   const referralLink = typeof window !== "undefined" ? `${window.location.origin}/r/${clientId}` : "";
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(referralLink)}`;
 
@@ -150,10 +166,37 @@ export function ReferralShareModal({ clientId, onClose }: { clientId: string; on
         </div>
         {shareHint && <p className="mb-4 text-center text-xs text-brand-accent">{shareHint}</p>}
 
-        <p className="rounded-md bg-muted p-3 text-xs text-muted-foreground">
-          Indique e ganhe <strong className="text-card-foreground">20% de desconto na próxima fatura</strong> quando
-          sua indicação assinar um plano a partir de US$ 350.
-        </p>
+        <div className="rounded-md bg-muted p-3">
+          <p className="text-xs text-muted-foreground">
+            Indique e ganhe <strong className="text-card-foreground">até 20% de desconto</strong> quando sua
+            indicação fechar a partir do plano Starter.
+          </p>
+          <button
+            type="button"
+            onClick={() => setRulesOpen((v) => !v)}
+            className="mt-2 flex items-center gap-1 text-xs font-semibold text-brand-primary hover:underline"
+          >
+            Ver regras da campanha
+            <ChevronDownIcon open={rulesOpen} />
+          </button>
+          {rulesOpen && (
+            <ul className="mt-3 list-disc space-y-1.5 pl-4 text-xs text-muted-foreground">
+              <li>
+                Você ganha <strong className="text-card-foreground">20% de desconto numa fatura</strong> pra cada
+                indicação que fechar — empilha até <strong className="text-card-foreground">3 indicações por fatura</strong>{" "}
+                (máximo de 60% de desconto numa fatura só).
+              </li>
+              <li>
+                Quem você indicou também ganha{" "}
+                <strong className="text-card-foreground">20% de desconto fixo na primeira fatura</strong>.
+              </li>
+              <li>
+                Vale pra indicações que fecharem a partir do plano Starter (o plano mais básico da Clique Boost).
+              </li>
+              <li>Programa por tempo indeterminado, sem data pra acabar.</li>
+            </ul>
+          )}
+        </div>
       </div>
     </div>,
     document.body

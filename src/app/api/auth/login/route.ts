@@ -48,20 +48,20 @@ export async function POST(request: Request) {
 
   const { data: account } = await admin
     .from("client_accounts")
-    .select("client_id")
+    .select("client_id, must_reset_credentials")
     .eq("user_id", authData.user.id)
     .maybeSingle();
   if (!account) {
     return Response.json({ error: "invalid_credentials" }, { status: 401 });
   }
 
-  const response = Response.json({ clientId: account.client_id });
+  const response = Response.json({ clientId: account.client_id, mustResetCredentials: account.must_reset_credentials });
   // rememberMe=false: cookie de sessão do navegador (some ao fechar), sem Max-Age.
   // O exp de 7 dias dentro do JWT continua sendo a trava real no servidor.
   const maxAge = rememberMe ? `; Max-Age=${SESSION_COOKIE_MAX_AGE}` : "";
   response.headers.append(
     "Set-Cookie",
-    `${SESSION_COOKIE_NAME}=${signSession(account.client_id)}; Path=/; HttpOnly; SameSite=Lax${maxAge}${
+    `${SESSION_COOKIE_NAME}=${signSession(account.client_id, account.must_reset_credentials)}; Path=/; HttpOnly; SameSite=Lax${maxAge}${
       process.env.NODE_ENV === "production" ? "; Secure" : ""
     }`
   );

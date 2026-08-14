@@ -18,14 +18,18 @@ function sign(payload: string): string {
   return createHmac("sha256", secret).update(payload).digest("base64url");
 }
 
-export function signSession(clientId: string): string {
-  const payload = JSON.stringify({ clientId, exp: Math.floor(Date.now() / 1000) + SESSION_MAX_AGE_SECONDS });
+export function signSession(clientId: string, mustResetCredentials = false): string {
+  const payload = JSON.stringify({
+    clientId,
+    mustResetCredentials,
+    exp: Math.floor(Date.now() / 1000) + SESSION_MAX_AGE_SECONDS,
+  });
   const encodedPayload = base64url(payload);
   const signature = sign(encodedPayload);
   return `${encodedPayload}.${signature}`;
 }
 
-export function verifySession(cookieValue: string | undefined): { clientId: string } | null {
+export function verifySession(cookieValue: string | undefined): { clientId: string; mustResetCredentials: boolean } | null {
   if (!cookieValue) return null;
   const [encodedPayload, signature] = cookieValue.split(".");
   if (!encodedPayload || !signature) return null;
@@ -45,7 +49,9 @@ export function verifySession(cookieValue: string | undefined): { clientId: stri
     const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8"));
     if (typeof payload.clientId !== "string" || typeof payload.exp !== "number") return null;
     if (payload.exp < Math.floor(Date.now() / 1000)) return null;
-    return { clientId: payload.clientId };
+    // ponytail: sessões assinadas antes desta flag existir não têm o campo — trata como
+    // false (sem reset pendente) em vez de quebrar sessões já ativas.
+    return { clientId: payload.clientId, mustResetCredentials: payload.mustResetCredentials === true };
   } catch {
     return null;
   }

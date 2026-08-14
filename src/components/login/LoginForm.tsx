@@ -3,6 +3,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { isProductionEnv } from "@/lib/env";
+import { WHATSAPP_LINK } from "@/lib/ads";
+import { ForgotPasswordModal } from "./ForgotPasswordModal";
 
 function EyeIcon({ size = 18 }: { size?: number }) {
   return (
@@ -58,6 +61,7 @@ export function LoginForm() {
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -77,8 +81,8 @@ export function LoginForm() {
         setError("Email ou senha inválidos.");
         return;
       }
-      const { clientId } = await res.json();
-      router.push(`/${clientId}`);
+      const { clientId, mustResetCredentials } = await res.json();
+      router.push(mustResetCredentials ? `/${clientId}/atualizar-conta` : `/${clientId}`);
     } catch {
       setError("Email ou senha inválidos.");
     } finally {
@@ -142,12 +146,13 @@ export function LoginForm() {
           />
           <span className="text-foreground/90">Manter conectado</span>
         </label>
-        <a
-          href="mailto:contato.cliqueboost@gmail.com?subject=Esqueci%20minha%20senha"
+        <button
+          type="button"
+          onClick={() => setForgotPasswordOpen(true)}
           className="text-brand-primary transition-colors hover:underline"
         >
           Esqueci a senha
-        </a>
+        </button>
       </div>
 
       {error && (
@@ -165,21 +170,31 @@ export function LoginForm() {
         {loading ? "Entrando..." : "Entrar"}
       </button>
 
-      <div className="login-animate login-animate-delay-4 relative flex items-center justify-center">
-        <span className="w-full border-t border-border" />
-        <span className="absolute bg-background px-4 text-sm text-muted-foreground">ou continue com</span>
-      </div>
+      {/* ponytail: Google login desativado (só decorativo, "Em breve") — some de vez em
+          produção pra não sugerir uma feature que não existe pro cliente final. */}
+      {!isProductionEnv() && (
+        <>
+          <div className="login-animate login-animate-delay-4 relative flex items-center justify-center">
+            <span className="w-full border-t border-border" />
+            <span className="absolute bg-background px-4 text-sm text-muted-foreground">ou continue com</span>
+          </div>
 
-      <button
-        type="button"
-        disabled
-        title="Em breve"
-        aria-disabled="true"
-        className="login-animate login-animate-delay-4 flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-2xl border border-border py-4 text-sm text-muted-foreground opacity-60"
-      >
-        <GoogleIcon />
-        Continuar com Google
-      </button>
+          <button
+            type="button"
+            disabled
+            title="Em breve"
+            aria-disabled="true"
+            className="login-animate login-animate-delay-4 flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-2xl border border-border py-4 text-sm text-muted-foreground opacity-60"
+          >
+            <GoogleIcon />
+            Continuar com Google
+          </button>
+        </>
+      )}
+
+      {forgotPasswordOpen && (
+        <ForgotPasswordModal whatsappLink={WHATSAPP_LINK} onClose={() => setForgotPasswordOpen(false)} />
+      )}
     </form>
   );
 }

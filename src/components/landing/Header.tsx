@@ -11,7 +11,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        <Logo width={140} height={38} />
+        <Logo width={140} height={38} alt="Clique Boost" />
         <div className="flex items-center gap-3">
           <button
             type="button"

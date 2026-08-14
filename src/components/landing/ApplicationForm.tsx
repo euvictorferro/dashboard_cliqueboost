@@ -50,6 +50,7 @@ export function ApplicationForm() {
               required
               className="w-full rounded-[var(--radius-card)] border border-border bg-card px-3 py-2 text-card-foreground"
             >
+              <option value="" disabled selected hidden></option>
               {copy.form.nicheOptions.map((option) => (
                 <option key={option} value={option}>
                   {option}

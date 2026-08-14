@@ -16,8 +16,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   // (localStorage não existe no server).
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (saved === "en" || saved === "pt") setLocale(saved);
   }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = locale === "pt" ? "pt-BR" : "en";
+  }, [locale]);
 
   function toggleLocale() {
     setLocale((prev) => {

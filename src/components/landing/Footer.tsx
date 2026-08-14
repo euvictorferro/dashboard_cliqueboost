@@ -11,7 +11,7 @@ export function Footer() {
   return (
     <footer className="border-t border-border px-4 py-10">
       <div className="mx-auto flex max-w-5xl flex-col items-center gap-4 text-center">
-        <Logo width={120} height={32} />
+        <Logo width={120} height={32} alt="Clique Boost" />
         <p className="max-w-sm text-sm text-muted-foreground">{copy.footer.tagline}</p>
         <p className="text-sm text-muted-foreground">
           {copy.footer.contactLabel}:{" "}

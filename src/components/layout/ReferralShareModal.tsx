@@ -184,7 +184,9 @@ export function ReferralShareModal({ clientId, onClose }: { clientId: string; on
               <li>
                 Você ganha <strong className="text-card-foreground">20% de desconto numa fatura</strong> pra cada
                 indicação que fechar — empilha até <strong className="text-card-foreground">3 indicações por fatura</strong>{" "}
-                (máximo de 60% de desconto numa fatura só).
+                (máximo de 60% de desconto numa fatura só). 1 indicação = 20%, 2 = 40%, 3 = 60%. Uma 4ª indicação no
+                mesmo mês não soma desconto além dos 60% — o teto já foi atingido nas 3 primeiras. O contador zera a
+                cada fatura, então indicações novas em meses seguintes contam de novo desde o início.
               </li>
               <li>
                 Quem você indicou também ganha{" "}

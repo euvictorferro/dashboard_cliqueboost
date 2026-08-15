@@ -34,7 +34,9 @@ export function ReachBarChart({
                 style={{ height: `${Math.max(4, (d.value / max) * 100)}%` }}
               />
             </div>
-            <div className="pointer-events-none absolute bottom-full mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-xs text-background group-hover:block">
+            {/* ponytail: cor fixa, não bg-foreground/text-background — esses tokens invertem no
+                dark mode (mesmo bug já corrigido no InfoTooltip). */}
+            <div className="pointer-events-none absolute bottom-full mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-neutral-900 px-2 py-1 text-xs text-neutral-100 group-hover:block">
               {d.value.toLocaleString("pt-BR")}
             </div>
           </div>

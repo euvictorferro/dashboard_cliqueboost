@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { addChecklistItem, deleteChecklistItem, hasTrelloCredentials } from "@/lib/trello";
 import { verifyClientSession } from "@/lib/access";
+import { DEMO_CLIENT_ID } from "@/lib/demoData";
 
 export async function POST(
   request: NextRequest,
@@ -10,6 +11,9 @@ export async function POST(
 
   if (!(await verifyClientSession(clientId))) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
+  }
+  if (clientId === DEMO_CLIENT_ID) {
+    return Response.json({ ok: true, item: { id: `demo-ci-${Date.now()}`, name: "", checked: false, checklistId: "" } });
   }
   if (!hasTrelloCredentials()) {
     console.error("[content] TRELLO_API_KEY/TRELLO_TOKEN não configurados (checklist add item)");
@@ -38,6 +42,9 @@ export async function DELETE(
 
   if (!(await verifyClientSession(clientId))) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
+  }
+  if (clientId === DEMO_CLIENT_ID) {
+    return Response.json({ ok: true, item: { id: `demo-ci-${Date.now()}`, name: "", checked: false, checklistId: "" } });
   }
   if (!hasTrelloCredentials()) {
     console.error("[content] TRELLO_API_KEY/TRELLO_TOKEN não configurados (checklist delete item)");

@@ -1,9 +1,11 @@
 import { NextRequest } from "next/server";
 import { addLabelToCard, hasTrelloCredentials, removeLabelFromCard } from "@/lib/trello";
 import { verifyClientSession } from "@/lib/access";
+import { DEMO_CLIENT_ID } from "@/lib/demoData";
 
 async function auth(clientId: string) {
   if (!(await verifyClientSession(clientId))) return { error: "unauthorized" as const, status: 401 };
+  if (clientId === DEMO_CLIENT_ID) return "demo" as const;
   if (!hasTrelloCredentials()) {
     console.error("[content] TRELLO_API_KEY/TRELLO_TOKEN não configurados (labels)");
     return { error: "fetch_failed" as const, status: 502 };
@@ -17,6 +19,7 @@ export async function POST(
 ) {
   const { client: clientId, cardId } = await params;
   const authError = await auth(clientId);
+  if (authError === "demo") return Response.json({ ok: true });
   if (authError) return Response.json({ error: authError.error }, { status: authError.status });
 
   const { labelId } = await request.json();
@@ -37,6 +40,7 @@ export async function DELETE(
 ) {
   const { client: clientId, cardId } = await params;
   const authError = await auth(clientId);
+  if (authError === "demo") return Response.json({ ok: true });
   if (authError) return Response.json({ error: authError.error }, { status: authError.status });
 
   const { labelId } = await request.json();

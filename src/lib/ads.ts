@@ -19,15 +19,13 @@ export type AdsCreative = {
   results: number;
   cpa: number;
   ctr: number;
+  thumbnailUrl: string | null;
 };
 
 export type AdsSnapshot = {
   metrics: Record<AdsMetricKey, number>;
   reach: number;
   impressions: number;
-  // Orçamento restante quando a conta tem um teto de gasto configurado (spend_cap). Contas com
-  // cartão de crédito ilimitado não têm teto — nesse caso o campo vem undefined e o card some.
-  remainingBudget: number | null;
   spendTrend: AdsTrendPoint[];
   clicksTrend: AdsTrendPoint[];
   roasTrend: AdsTrendPoint[];
@@ -72,13 +70,12 @@ export function getAdsSnapshot(clientId: string): AdsSnapshot {
     metrics: { spend: 1200, cpa: 42, cpc: 1.8, cpr: 38, cpm: 24, clicks: 667, roas: 3.4, results: 29 },
     reach: 15420,
     impressions: 48900,
-    remainingBudget: null,
     spendTrend,
     clicksTrend,
     roasTrend,
     creatives: [
-      { name: "Criativo — Depoimento Cliente", spend: 720, results: 19, cpa: 37.9, ctr: 3.2 },
-      { name: "Criativo — Antes e Depois", spend: 480, results: 10, cpa: 48, ctr: 2.1 },
+      { name: "Criativo — Depoimento Cliente", spend: 720, results: 19, cpa: 37.9, ctr: 3.2, thumbnailUrl: null },
+      { name: "Criativo — Antes e Depois", spend: 480, results: 10, cpa: 48, ctr: 2.1, thumbnailUrl: null },
     ],
   };
 }

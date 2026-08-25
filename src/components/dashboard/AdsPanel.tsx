@@ -5,6 +5,8 @@ import { ADS_METRICS, WHATSAPP_LINK, type AdsSnapshot, type AdsMetricKey, type A
 import type { DateRangeId } from "@/lib/metrics";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { ReachBarChart } from "@/components/dashboard/ReachBarChart";
+import { SlicePieChart } from "@/components/dashboard/SlicePieChart";
+import { CreativePreviewModal } from "@/components/dashboard/CreativePreviewModal";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 type AdsResponse =
@@ -22,6 +24,24 @@ function formatMoney(value: number, currency: string): string {
 }
 
 const MAIN_METRICS: AdsMetricKey[] = ["cpa", "clicks", "cpc", "cpm", "roas", "cpr"];
+
+function ToggleGroup<T extends string>({ options, value, onChange }: { options: { id: T; label: string }[]; value: T; onChange: (v: T) => void }) {
+  return (
+    <div className="flex gap-1 rounded-full bg-muted p-0.5">
+      {options.map((opt) => (
+        <button
+          key={opt.id}
+          onClick={() => onChange(opt.id)}
+          className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+            value === opt.id ? "bg-card text-card-foreground shadow-sm" : "text-muted-foreground"
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function LoadingGrid() {
   return (
@@ -61,52 +81,85 @@ function LockedPanel() {
   );
 }
 
-// Funil de conversão: alcance -> cliques no link -> resultados, com o % de queda entre etapas.
+// Funil de conversão em formato de trapézio de verdade: cada etapa mais estreita que a
+// anterior, na proporção real dos valores (não só uma barra horizontal).
+function FunnelShape({ stages }: { stages: { label: string; value: number }[] }) {
+  const max = Math.max(1, stages[0]?.value ?? 1);
+  const widthPct = (v: number) => Math.max(14, (v / max) * 100);
+
+  return (
+    <div className="mx-auto flex w-full max-w-sm flex-col items-center gap-2">
+      {stages.map((stage, i) => {
+        const top = widthPct(stage.value);
+        const bottom = i < stages.length - 1 ? widthPct(stages[i + 1].value) : top;
+        const leftTop = (100 - top) / 2;
+        const leftBottom = (100 - bottom) / 2;
+        const clipPath = `polygon(${leftTop}% 0, ${100 - leftTop}% 0, ${100 - leftBottom}% 100%, ${leftBottom}% 100%)`;
+        const prev = i > 0 ? stages[i - 1].value : null;
+        const dropPct = prev && prev > 0 ? (stage.value / prev) * 100 : null;
+
+        return (
+          <div key={stage.label} className="w-full">
+            <div
+              className="mx-auto flex h-14 w-full items-center justify-center text-center text-white"
+              style={{ clipPath, background: `hsl(var(--brand-primary) / ${1 - i * 0.22})` }}
+            >
+              <div className="pointer-events-none px-2">
+                <p className="text-sm font-semibold leading-tight">{stage.value.toLocaleString("pt-BR")}</p>
+              </div>
+            </div>
+            <p className="mt-1 text-center text-xs text-muted-foreground">
+              {stage.label}
+              {dropPct !== null && <span className="ml-1">({dropPct.toFixed(1)}%)</span>}
+            </p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function ConversionFunnel({ reach, clicks, results }: { reach: number; clicks: number; results: number }) {
+  const [view, setView] = useState<"funnel" | "pizza">("funnel");
   const stages = [
     { label: "Alcance", value: reach },
     { label: "Cliques no link", value: clicks },
     { label: "Resultados", value: results },
   ];
-  const max = stages[0].value || 1;
 
   return (
-    <div className="rounded-[var(--radius-card)] bg-card p-5 shadow-[var(--shadow-soft)]">
-      <div className="mb-4 flex items-center gap-1.5 text-sm text-muted-foreground">
-        <span>Funil de conversão</span>
-        <InfoTooltip text="Mostra quantas pessoas foram alcançadas, quantas clicaram no link e quantas viraram resultado (lead, venda ou conversa) no período." />
+    <div className="flex h-full flex-col rounded-[var(--radius-card)] bg-card p-5 shadow-[var(--shadow-soft)]">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <span>Funil de conversão</span>
+          <InfoTooltip text="Mostra quantas pessoas foram alcançadas, quantas clicaram no link e quantas viraram resultado (lead, venda ou conversa) no período." />
+        </div>
+        <ToggleGroup
+          options={[
+            { id: "funnel", label: "Funil" },
+            { id: "pizza", label: "Pizza" },
+          ]}
+          value={view}
+          onChange={setView}
+        />
       </div>
-      <div className="space-y-3">
-        {stages.map((stage, i) => {
-          const prev = i > 0 ? stages[i - 1].value : null;
-          const dropPct = prev && prev > 0 ? (stage.value / prev) * 100 : null;
-          const widthPct = Math.max((stage.value / max) * 100, stage.value > 0 ? 4 : 0);
-          return (
-            <div key={stage.label}>
-              <div className="mb-1 flex items-baseline justify-between text-sm">
-                <span className="font-medium text-card-foreground">{stage.label}</span>
-                <span className="tabular-nums text-muted-foreground">
-                  {stage.value.toLocaleString("pt-BR")}
-                  {dropPct !== null && <span className="ml-2 text-xs">({dropPct.toFixed(1)}%)</span>}
-                </span>
-              </div>
-              <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-brand-primary transition-all"
-                  style={{ width: `${widthPct}%` }}
-                />
-              </div>
-            </div>
-          );
-        })}
+      <div className="flex flex-1 items-center">
+        {view === "funnel" ? (
+          <FunnelShape stages={stages} />
+        ) : (
+          <div className="w-full">
+            <SlicePieChart label="" data={stages.map((s) => ({ name: s.label, value: s.value }))} />
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 // Lista de criativos ordenada por desempenho — o primeiro (melhor) ganha destaque visual.
-// Com um único criativo rodando, mostra ele sozinho já destacado.
-function CreativesList({ creatives, currency }: { creatives: AdsCreative[]; currency: string }) {
+// Clicar em um abre o preview (imagem do anúncio + métricas). Com um único criativo rodando,
+// mostra ele sozinho já destacado.
+function CreativesList({ creatives, currency, onSelect }: { creatives: AdsCreative[]; currency: string; onSelect: (c: AdsCreative) => void }) {
   if (creatives.length === 0) return null;
 
   return (
@@ -114,9 +167,10 @@ function CreativesList({ creatives, currency }: { creatives: AdsCreative[]; curr
       <h3 className="mb-4 text-sm font-medium text-muted-foreground">Criativos</h3>
       <div className="space-y-3">
         {creatives.map((c, i) => (
-          <div
+          <button
             key={c.name + i}
-            className={`rounded-[var(--radius-card)] border p-4 ${
+            onClick={() => onSelect(c)}
+            className={`w-full rounded-[var(--radius-card)] border p-4 text-left transition-colors hover:bg-muted/50 ${
               i === 0 ? "border-brand-primary bg-brand-primary/5" : "border-border"
             }`}
           >
@@ -134,7 +188,7 @@ function CreativesList({ creatives, currency }: { creatives: AdsCreative[]; curr
               <span>CPA: <span className="font-medium text-card-foreground">{c.results > 0 ? formatMoney(c.cpa, currency) : "—"}</span></span>
               <span>CTR: <span className="font-medium text-card-foreground">{c.ctr.toFixed(1)}%</span></span>
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </div>
@@ -143,6 +197,8 @@ function CreativesList({ creatives, currency }: { creatives: AdsCreative[]; curr
 
 export function AdsPanel({ clientId, range }: { clientId: string; range: DateRangeId }) {
   const [data, setData] = useState<AdsResponse | null>(null);
+  const [chartMode, setChartMode] = useState<"bar" | "line">("bar");
+  const [selectedCreative, setSelectedCreative] = useState<AdsCreative | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -182,19 +238,12 @@ export function AdsPanel({ clientId, range }: { clientId: string; range: DateRan
     return <LockedPanel />;
   }
 
-  const { metrics, reach, impressions, remainingBudget, spendTrend, creatives, currency } = data;
+  const { metrics, reach, impressions, spendTrend, creatives, currency } = data;
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <MetricCard label={ADS_METRICS.spend.label} description={ADS_METRICS.spend.description} value={formatMoney(metrics.spend, currency)} />
-        {remainingBudget !== null && (
-          <MetricCard
-            label="Saldo disponível"
-            description="Orçamento restante até o teto de gasto configurado nessa conta de anúncios."
-            value={formatMoney(remainingBudget, currency)}
-          />
-        )}
         {MAIN_METRICS.map((key) => (
           <MetricCard
             key={key}
@@ -205,26 +254,38 @@ export function AdsPanel({ clientId, range }: { clientId: string; range: DateRan
         ))}
       </div>
 
-      <div className="rounded-[var(--radius-card)] bg-card p-5 shadow-[var(--shadow-soft)]">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
-          <h3 className="text-sm font-medium text-muted-foreground">{ADS_METRICS.spend.label} por dia</h3>
-          <div className="flex gap-6 text-sm">
-            <span className="text-muted-foreground">
-              Alcance <span className="font-semibold text-card-foreground">{reach.toLocaleString("pt-BR")}</span>
-            </span>
-            <span className="text-muted-foreground">
-              Impressões <span className="font-semibold text-card-foreground">{impressions.toLocaleString("pt-BR")}</span>
-            </span>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="flex flex-col rounded-[var(--radius-card)] bg-card p-5 shadow-[var(--shadow-soft)]">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground">{ADS_METRICS.spend.label} por dia</h3>
+              <div className="mt-1 flex gap-4 text-xs text-muted-foreground">
+                <span>Alcance <span className="font-semibold text-card-foreground">{reach.toLocaleString("pt-BR")}</span></span>
+                <span>Impressões <span className="font-semibold text-card-foreground">{impressions.toLocaleString("pt-BR")}</span></span>
+              </div>
+            </div>
+            <ToggleGroup
+              options={[
+                { id: "bar", label: "Barra" },
+                { id: "line", label: "Linha" },
+              ]}
+              value={chartMode}
+              onChange={setChartMode}
+            />
+          </div>
+          <div className="h-48 flex-1">
+            <ReachBarChart data={spendTrend} mode={chartMode} />
           </div>
         </div>
-        <div className="h-56">
-          <ReachBarChart data={spendTrend} />
-        </div>
+
+        <ConversionFunnel reach={reach} clicks={metrics.clicks} results={metrics.results} />
       </div>
 
-      <ConversionFunnel reach={reach} clicks={metrics.clicks} results={metrics.results} />
+      <CreativesList creatives={creatives} currency={currency} onSelect={setSelectedCreative} />
 
-      <CreativesList creatives={creatives} currency={currency} />
+      {selectedCreative && (
+        <CreativePreviewModal creative={selectedCreative} currency={currency} onClose={() => setSelectedCreative(null)} />
+      )}
     </div>
   );
 }

@@ -6,10 +6,6 @@ import { DATE_RANGES, type DateRangeId } from "./metrics";
 
 const GRAPH_API = "https://graph.facebook.com/v21.0";
 
-// Sentinela que a Meta usa quando a conta não tem teto de gasto configurado (cartão de
-// crédito ilimitado). Qualquer spend_cap abaixo disso é um teto de verdade.
-const NO_SPEND_CAP_THRESHOLD = 1_000_000_000_00; // 1 bilhão em centavos
-
 export function hasMetaCredentials() {
   return Boolean(process.env.META_SYSTEM_USER_TOKEN);
 }
@@ -84,12 +80,21 @@ export async function fetchAdsSnapshotLive(adAccountId: string, range: DateRange
   const preset = rangeToPreset(range);
   const insightFields = "spend,clicks,cpc,cpm,impressions,reach,actions,purchase_roas";
 
-  const [account, totals, daily, byAd] = await Promise.all([
-    graphGet(`act_${adAccountId}`, { fields: "currency,spend_cap,amount_spent" }),
+  const [account, totals, daily, byAd, adCreatives] = await Promise.all([
+    graphGet(`act_${adAccountId}`, { fields: "currency" }),
     graphGet(`act_${adAccountId}/insights`, { fields: insightFields, date_preset: preset }),
     graphGet(`act_${adAccountId}/insights`, { fields: "spend,clicks,date_start", date_preset: preset, time_increment: "1", limit: "100" }),
-    graphGet(`act_${adAccountId}/insights`, { fields: "spend,clicks,impressions,actions,ad_name", date_preset: preset, level: "ad", limit: "50" }),
+    graphGet(`act_${adAccountId}/insights`, { fields: "spend,clicks,impressions,actions,ad_name,ad_id", date_preset: preset, level: "ad", limit: "50" }),
+    // Preview do criativo: só o endpoint de Ads (não o de insights) expõe a imagem/thumbnail.
+    graphGet(`act_${adAccountId}/ads`, { fields: "id,creative{thumbnail_url}", limit: "50" }),
   ]);
+
+  const thumbnailByAdId = new Map<string, string | null>(
+    (adCreatives.data ?? []).map((a: { id: string; creative?: { thumbnail_url?: string } }) => [
+      a.id,
+      a.creative?.thumbnail_url ?? null,
+    ])
+  );
 
   const t: InsightsRow = totals.data?.[0] ?? {};
   const spend = Number(t.spend ?? 0);
@@ -108,16 +113,8 @@ export async function fetchAdsSnapshotLive(adAccountId: string, range: DateRange
     results,
   };
 
-  // spend_cap vem em centavos e só existe de verdade quando a conta tem teto configurado —
-  // acima do limiar, é a forma da Meta dizer "sem teto" (cartão ilimitado).
-  const spendCapCents = Number(account.spend_cap ?? 0);
-  const remainingBudget =
-    spendCapCents > 0 && spendCapCents < NO_SPEND_CAP_THRESHOLD
-      ? spendCapCents / 100 - Number(account.amount_spent ?? 0) / 100
-      : null;
-
   const dailyRows: InsightsRow[] = daily.data ?? [];
-  const adRows: (InsightsRow & { ad_name?: string })[] = byAd.data ?? [];
+  const adRows: (InsightsRow & { ad_name?: string; ad_id?: string })[] = byAd.data ?? [];
   const creatives: AdsCreative[] = adRows
     .map((r) => {
       const adSpend = Number(r.spend ?? 0);
@@ -129,6 +126,7 @@ export async function fetchAdsSnapshotLive(adAccountId: string, range: DateRange
         results: adResults,
         cpa: adResults > 0 ? adSpend / adResults : 0,
         ctr: impressions > 0 ? (Number(r.clicks ?? 0) / impressions) * 100 : 0,
+        thumbnailUrl: r.ad_id ? (thumbnailByAdId.get(r.ad_id) ?? null) : null,
       };
     })
     .sort((a, b) => b.results - a.results || a.cpa - b.cpa);
@@ -137,7 +135,6 @@ export async function fetchAdsSnapshotLive(adAccountId: string, range: DateRange
     metrics,
     reach: Number(t.reach ?? 0),
     impressions: Number(t.impressions ?? 0),
-    remainingBudget,
     spendTrend: toTrend(dailyRows, "spend"),
     clicksTrend: toTrend(dailyRows, "clicks"),
     // ponytail: ROAS diário exigiria mais uma chamada por dia útil de dado — o sparkline de

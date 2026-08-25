@@ -3,10 +3,22 @@ import { LineChart, Line, ResponsiveContainer } from "recharts";
 export function ReachBarChart({
   data,
   dataB,
+  mode = "bar",
 }: {
   data: { date: string; value: number }[];
   dataB?: { date: string; value: number }[];
+  mode?: "bar" | "line";
 }) {
+  if (mode === "line" && !dataB) {
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+          <Line type="monotone" dataKey="value" stroke="hsl(var(--brand-accent))" strokeWidth={2} dot={false} />
+        </LineChart>
+      </ResponsiveContainer>
+    );
+  }
+
   if (dataB) {
     // ponytail: mesma garantia de tamanho igual do MetricCard — CompareRangePicker força A e B
     // a terem a mesma duração.

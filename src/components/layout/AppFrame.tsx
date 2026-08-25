@@ -7,6 +7,7 @@ import { Header } from "@/components/layout/Header";
 import { CmdK } from "@/components/layout/CmdK";
 import { RatingPopup } from "@/components/layout/RatingPopup";
 import { BoosterAiWidget } from "@/components/layout/BoosterAiWidget";
+import { OnboardingTour } from "@/components/layout/OnboardingTour";
 import { UpdateCredentialsModal } from "@/components/login/UpdateCredentialsModal";
 
 function todayKey(): string {
@@ -28,17 +29,21 @@ export function AppFrame({
   const [collapsed, setCollapsed] = useState(false);
   const [pendingMonthRef, setPendingMonthRef] = useState<string | null>(null);
   const [mustResetCredentials, setMustResetCredentials] = useState(false);
+  // null = ainda não sabemos (sessão não carregou) — evita o tour começar sozinho com um
+  // valor padrão errado antes de confirmar com o servidor se o cliente já viu ou não.
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null);
   const client = CLIENTS.find((c) => c.id === clientId);
 
-  // ponytail: checa uma vez por carregamento se a conta é temporária — sem realtime, se o
-  // admin mudar a flag no meio da sessão o cliente só vê o popup no próximo load.
+  // ponytail: checa uma vez por carregamento se a conta é temporária e se já viu o tour —
+  // sem realtime, se o admin mudar a flag no meio da sessão o cliente só vê no próximo load.
   useEffect(() => {
     fetch("/api/auth/session")
       .then((res) => (res.ok ? res.json() : null))
-      .then((data: { mustResetCredentials: boolean } | null) => {
+      .then((data: { mustResetCredentials: boolean; hasSeenOnboarding: boolean } | null) => {
         if (data?.mustResetCredentials) setMustResetCredentials(true);
+        setHasSeenOnboarding(data?.hasSeenOnboarding ?? true);
       })
-      .catch(() => {});
+      .catch(() => setHasSeenOnboarding(true));
   }, [clientId]);
 
   const dismissedKey = `rating-dismissed-${clientId}`;
@@ -91,6 +96,9 @@ export function AppFrame({
       </div>
       <CmdK clientId={clientId} />
       {active !== "booster-ai" && !mustResetCredentials && <BoosterAiWidget clientId={clientId} />}
+      {!mustResetCredentials && hasSeenOnboarding !== null && (
+        <OnboardingTour clientId={clientId} active={active} hasSeenOnboarding={hasSeenOnboarding} />
+      )}
       {mustResetCredentials && <UpdateCredentialsModal onDone={() => setMustResetCredentials(false)} />}
       {pendingMonthRef && (
         <RatingPopup

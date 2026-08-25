@@ -71,9 +71,9 @@ export function proxy(request: NextRequest) {
 
   // rotas com [client] na URL: /tiago/..., /api/.../tiago/... — client_id é sempre o
   // primeiro segmento depois de /api/<recurso>/ ou o primeiro segmento da URL nas páginas.
-  // /api/auth/update-credentials e /api/auth/session fogem do padrão (client_id vem da
-  // sessão, não da URL).
-  const NO_CLIENT_IN_PATH_APIS = ["/api/auth/update-credentials", "/api/auth/session"];
+  // /api/auth/update-credentials, /api/auth/session e /api/auth/onboarding fogem do padrão
+  // (client_id vem da sessão, não da URL).
+  const NO_CLIENT_IN_PATH_APIS = ["/api/auth/update-credentials", "/api/auth/session", "/api/auth/onboarding"];
   const clientIdInPath = NO_CLIENT_IN_PATH_APIS.includes(pathname)
     ? undefined
     : pathname.startsWith("/api/")

@@ -126,7 +126,7 @@ export function Dashboard({ client }: { client: Client;  }) {
   return (
     <div className="mx-auto w-full max-w-[1600px] px-6 pt-6 pb-10 sm:px-10">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <nav className="flex w-fit gap-1 rounded-xl bg-card p-1 shadow-[var(--shadow-soft)]">
+        <nav data-tour="dashboard-tabs" className="flex w-fit gap-1 rounded-xl bg-card p-1 shadow-[var(--shadow-soft)]">
           {([
             ["organic", "Orgânico"],
             ["ads", "Ads"],
@@ -173,7 +173,7 @@ export function Dashboard({ client }: { client: Client;  }) {
 
       {tab === "organic" && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[repeat(3,minmax(0,1fr))_1.6fr]">
+          <div data-tour="dashboard-metrics" className="grid grid-cols-1 gap-4 lg:grid-cols-[repeat(3,minmax(0,1fr))_1.6fr]">
             <MetricCard
               label={ORGANIC_METRICS.newFollowers.label}
               description={ORGANIC_METRICS.newFollowers.description}

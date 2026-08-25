@@ -155,7 +155,11 @@ export function BoosterAiPageClient({ clientId }: { clientId: string;  }) {
               Pergunte sobre sua conta, conteúdos, métricas, tasks ou atas — sei de tudo sobre nossa parceria.
             </p>
           </div>
-          <form onSubmit={submitForm} className="w-full max-w-xl rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-soft)]">
+          <form
+            onSubmit={submitForm}
+            data-tour="booster-ai-composer"
+            className="w-full max-w-xl rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-soft)]"
+          >
             {composerFields}
           </form>
         </div>
@@ -232,6 +236,7 @@ export function BoosterAiPageClient({ clientId }: { clientId: string;  }) {
           <form
             onSubmit={submitForm}
             onClick={() => textareaRef.current?.focus()}
+            data-tour="booster-ai-composer"
             className={`mt-4 w-full border border-border bg-card shadow-[var(--shadow-soft)] transition-[border-radius] focus-within:border-brand-primary/40 ${
               expanded ? "cursor-text rounded-3xl px-4 pb-2.5 pt-3" : "cursor-text rounded-full px-4 py-2.5"
             }`}

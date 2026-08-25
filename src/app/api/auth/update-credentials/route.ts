@@ -48,7 +48,7 @@ export async function POST(request: Request) {
   const response = Response.json({ ok: true });
   response.headers.append(
     "Set-Cookie",
-    `${SESSION_COOKIE_NAME}=${signSession(session.clientId, false)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_COOKIE_MAX_AGE}${
+    `${SESSION_COOKIE_NAME}=${signSession(session.clientId, false, session.hasSeenOnboarding)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_COOKIE_MAX_AGE}${
       process.env.NODE_ENV === "production" ? "; Secure" : ""
     }`
   );

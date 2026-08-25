@@ -52,7 +52,11 @@ export function TasksPageClient({ clientId }: { clientId: string;  }) {
         </p>
       )}
       {!error && !tasks && <p className="text-sm text-muted-foreground">Carregando...</p>}
-      {!error && tasks && <TasksTable tasks={tasks} statuses={statuses} clientId={clientId} />}
+      {!error && tasks && (
+        <div data-tour="tasks-board">
+          <TasksTable tasks={tasks} statuses={statuses} clientId={clientId} />
+        </div>
+      )}
     </div>
   );
 }

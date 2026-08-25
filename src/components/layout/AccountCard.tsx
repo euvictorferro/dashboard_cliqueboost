@@ -7,6 +7,7 @@ import { isProductionEnv } from "@/lib/env";
 import { getInitials, colorFromName } from "@/lib/avatar";
 import { useTheme } from "@/components/layout/ThemeProvider";
 import { BugReportModal } from "@/components/layout/BugReportModal";
+import { TOUR_START_EVENT } from "@/lib/onboardingTour";
 
 const THEME_ORDER = ["light", "dark", "system"] as const;
 type Theme = (typeof THEME_ORDER)[number];
@@ -119,6 +120,17 @@ export function AccountCard({
             className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-card-foreground hover:bg-muted"
           >
             Reportar bug
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              window.dispatchEvent(new Event(TOUR_START_EVENT));
+            }}
+            className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-card-foreground hover:bg-muted"
+          >
+            Rever tour
           </button>
 
           <div className="flex items-center justify-between px-3 py-2">

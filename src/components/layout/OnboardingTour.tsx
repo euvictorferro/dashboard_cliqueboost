@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ActiveKey } from "@/components/layout/Sidebar";
 import {
@@ -28,6 +28,8 @@ export function OnboardingTour({ clientId, active, hasSeenOnboarding }: { client
   const router = useRouter();
   const [step, setStep] = useState<number | null>(null);
   const [rect, setRect] = useState<Rect | null>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const [tooltipSize, setTooltipSize] = useState({ width: 288, height: 140 }); // w-72 + chute inicial
 
   // Decide se o tour está rodando: começa sozinho no primeiro acesso (sem registro nenhum no
   // localStorage ainda e o servidor confirma que o cliente nunca viu), ou retoma de onde parou
@@ -96,6 +98,16 @@ export function OnboardingTour({ clientId, active, hasSeenOnboarding }: { client
     return () => cancelAnimationFrame(raf);
   }, [currentStep, onThisPage]);
 
+  // Mede o card de verdade (o texto de cada passo tem tamanho diferente) — sem isso, o cálculo
+  // de posição só podia chutar uma altura fixa, e chutar errado jogava o card pra fora da tela
+  // (aconteceu com os boards de Conteúdos/Calendário, que ocupam quase a tela toda: não sobra
+  // espaço nem acima nem abaixo do "cálculo ingênuo", e o card saía por cima da página).
+  useLayoutEffect(() => {
+    if (!tooltipRef.current) return;
+    const r = tooltipRef.current.getBoundingClientRect();
+    setTooltipSize({ width: r.width, height: r.height });
+  }, [currentStep, rect]);
+
   function endTour() {
     window.localStorage.removeItem(TOUR_ACTIVE_KEY);
     window.localStorage.removeItem(TOUR_STEP_KEY);
@@ -130,10 +142,27 @@ export function OnboardingTour({ clientId, active, hasSeenOnboarding }: { client
   const spotLeft = rect.left - PADDING;
   const spotWidth = rect.width + PADDING * 2;
   const spotHeight = rect.height + PADDING * 2;
+  const GAP = 12;
+  const VIEWPORT_MARGIN = 12;
 
-  const tooltipBelow = spotTop + spotHeight + 160 < window.innerHeight;
-  const tooltipTop = tooltipBelow ? spotTop + spotHeight + 12 : Math.max(12, spotTop - 12);
-  const tooltipLeft = Math.min(Math.max(spotLeft, 12), window.innerWidth - 300);
+  // Preferência: abaixo do alvo, senão acima. Quando o alvo é maior que a tela (boards grandes
+  // como Conteúdos/Calendário) não cabe em nenhum dos dois — nesse caso trava o card dentro da
+  // janela visível em vez de deixar ele vazar pra fora por cima ou por baixo.
+  const fitsBelow = spotTop + spotHeight + GAP + tooltipSize.height + VIEWPORT_MARGIN <= window.innerHeight;
+  const fitsAbove = spotTop - GAP - tooltipSize.height >= VIEWPORT_MARGIN;
+
+  let tooltipTop: number;
+  if (fitsBelow) {
+    tooltipTop = spotTop + spotHeight + GAP;
+  } else if (fitsAbove) {
+    tooltipTop = spotTop - GAP - tooltipSize.height;
+  } else {
+    tooltipTop = Math.min(
+      Math.max(VIEWPORT_MARGIN, spotTop),
+      window.innerHeight - tooltipSize.height - VIEWPORT_MARGIN
+    );
+  }
+  const tooltipLeft = Math.min(Math.max(spotLeft, VIEWPORT_MARGIN), window.innerWidth - tooltipSize.width - VIEWPORT_MARGIN);
 
   return (
     <div className="fixed inset-0 z-[150]">
@@ -150,8 +179,9 @@ export function OnboardingTour({ clientId, active, hasSeenOnboarding }: { client
       />
 
       <div
+        ref={tooltipRef}
         className="absolute w-72 rounded-[var(--radius-card)] bg-card p-4 shadow-[var(--shadow-soft)] transition-all duration-200"
-        style={{ top: tooltipTop, left: tooltipLeft, transform: tooltipBelow ? undefined : "translateY(-100%)" }}
+        style={{ top: tooltipTop, left: tooltipLeft }}
       >
         <p className="mb-1 text-sm font-semibold text-card-foreground">{currentStep.title}</p>
         <p className="mb-3 text-xs text-muted-foreground">{currentStep.text}</p>

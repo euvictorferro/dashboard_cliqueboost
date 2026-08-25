@@ -6,6 +6,7 @@ import { Sidebar, type ActiveKey } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { CmdK } from "@/components/layout/CmdK";
 import { RatingPopup } from "@/components/layout/RatingPopup";
+import { BoosterAiWidget } from "@/components/layout/BoosterAiWidget";
 import { UpdateCredentialsModal } from "@/components/login/UpdateCredentialsModal";
 
 function todayKey(): string {
@@ -89,6 +90,7 @@ export function AppFrame({
         </div>
       </div>
       <CmdK clientId={clientId} />
+      {active !== "booster-ai" && !mustResetCredentials && <BoosterAiWidget clientId={clientId} />}
       {mustResetCredentials && <UpdateCredentialsModal onDone={() => setMustResetCredentials(false)} />}
       {pendingMonthRef && (
         <RatingPopup

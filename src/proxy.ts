@@ -9,7 +9,9 @@ import { verifyAdminSession, ADMIN_SESSION_COOKIE_NAME } from "@/lib/adminSessio
 // ponytail: qualquer rota nova (página OU API) fora do padrão /[client]/... precisa
 // entrar aqui, senão o proxy trata o primeiro segmento do path como clientId e bloqueia
 // visitantes sem sessão.
-const PUBLIC_PATHS = ["/login", "/api/auth/login", "/sair", "/api/auth/logout", "/api/referrals", "/internal"];
+// ponytail: /internal saiu daqui de propósito — listava todos os clientes pra qualquer
+// visitante. Sem entrada no PUBLIC_PATHS, o proxy exige sessão; admin acessa via visão espelho.
+const PUBLIC_PATHS = ["/login", "/api/auth/login", "/sair", "/api/auth/logout", "/api/referrals"];
 
 const ADMIN_PUBLIC_PATHS = ["/admin/login", "/api/admin/auth/login", "/api/admin/auth/logout", "/api/admin/auth/google"];
 

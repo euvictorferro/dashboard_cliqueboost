@@ -2,8 +2,15 @@
 import { NextRequest } from "next/server";
 import { CLIENTS } from "@/lib/clients";
 import { createReferralLead } from "@/lib/referralLeads";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export async function POST(request: NextRequest) {
+  // Rota pública — sem limite vira alvo de spam de leads. 5 envios por IP a cada 15 min.
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+  if (!(await checkRateLimit(`referral-lead:${ip}`, 900, 5))) {
+    return Response.json({ error: "too_many_attempts" }, { status: 429 });
+  }
+
   const body = await request.json().catch(() => null);
   const referrerClientId = body?.referrerClientId;
   const name = body?.name;

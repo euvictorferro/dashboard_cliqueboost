@@ -6,6 +6,7 @@ import type { DateRangeId } from "@/lib/metrics";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { ReachBarChart } from "@/components/dashboard/ReachBarChart";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { FunnelChart } from "@/components/ui/funnel-chart";
 import { CreativePreviewModal } from "@/components/dashboard/CreativePreviewModal";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
@@ -83,45 +84,23 @@ function LockedPanel() {
   );
 }
 
-// Funil de conversão em formato de trapézio de verdade: cada etapa mais estreita que a
-// anterior, na proporção real dos valores (não só uma barra horizontal).
+const FUNNEL_HEIGHT_PX = 244; // mesma altura pras duas visualizações — trocar entre elas não pode encolher o bloco.
+
 function FunnelShape({ stages }: { stages: { label: string; value: number }[] }) {
-  const max = Math.max(1, stages[0]?.value ?? 1);
-  const widthPct = (v: number) => Math.max(14, (v / max) * 100);
-
   return (
-    <div className="mx-auto flex w-full max-w-sm flex-col items-center gap-2">
-      {stages.map((stage, i) => {
-        const top = widthPct(stage.value);
-        const bottom = i < stages.length - 1 ? widthPct(stages[i + 1].value) : top;
-        const leftTop = (100 - top) / 2;
-        const leftBottom = (100 - bottom) / 2;
-        const clipPath = `polygon(${leftTop}% 0, ${100 - leftTop}% 0, ${100 - leftBottom}% 100%, ${leftBottom}% 100%)`;
-        const prev = i > 0 ? stages[i - 1].value : null;
-        const dropPct = prev && prev > 0 ? (stage.value / prev) * 100 : null;
-
-        return (
-          <div key={stage.label} className="w-full">
-            <div
-              className="mx-auto flex h-14 w-full items-center justify-center text-center text-white"
-              style={{ clipPath, background: `hsl(var(--brand-primary) / ${1 - i * 0.22})` }}
-            >
-              <div className="pointer-events-none px-2">
-                <p className="text-sm font-semibold leading-tight">{stage.value.toLocaleString("pt-BR")}</p>
-              </div>
-            </div>
-            <p className="mt-1 text-center text-xs text-muted-foreground">
-              {stage.label}
-              {dropPct !== null && <span className="ml-1">({dropPct.toFixed(1)}%)</span>}
-            </p>
-          </div>
-        );
-      })}
+    <div className="mx-auto flex w-full max-w-sm items-center" style={{ height: FUNNEL_HEIGHT_PX }}>
+      <FunnelChart
+        data={stages.map((s) => ({ label: s.label, value: s.value }))}
+        orientation="vertical"
+        color="hsl(var(--brand-primary))"
+        layers={3}
+        grid={false}
+        formatValue={(v) => v.toLocaleString("pt-BR")}
+        style={{ aspectRatio: "auto", height: FUNNEL_HEIGHT_PX }}
+      />
     </div>
   );
 }
-
-const FUNNEL_HEIGHT_PX = 244; // altura real do FunnelShape (3 etapas + legendas) — a pizza usa a mesma, pra não encolher o bloco ao trocar de visualização.
 const PIE_COLORS = ["hsl(var(--brand-primary))", "hsl(var(--brand-accent))", "hsl(var(--brand-success))"];
 
 function FunnelPie({ stages }: { stages: { label: string; value: number }[] }) {

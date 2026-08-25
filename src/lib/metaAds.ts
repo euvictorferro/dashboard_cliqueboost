@@ -85,15 +85,15 @@ export async function fetchAdsSnapshotLive(adAccountId: string, range: DateRange
     graphGet(`act_${adAccountId}/insights`, { fields: insightFields, date_preset: preset }),
     graphGet(`act_${adAccountId}/insights`, { fields: "spend,clicks,date_start", date_preset: preset, time_increment: "1", limit: "100" }),
     graphGet(`act_${adAccountId}/insights`, { fields: "spend,clicks,impressions,actions,ad_name,ad_id", date_preset: preset, level: "ad", limit: "50" }),
-    // Preview do criativo: só o endpoint de Ads (não o de insights) expõe a imagem/thumbnail.
-    graphGet(`act_${adAccountId}/ads`, { fields: "id,creative{thumbnail_url}", limit: "50" }),
+    // Preview do criativo: só o endpoint de Ads (não o de insights) expõe imagem e o post
+    // original — effective_object_story_id vira o link "Ver anúncio" com o post de verdade
+    // (inclui vídeo quando o anúncio é vídeo, o que a thumbnail sozinha nunca mostra).
+    graphGet(`act_${adAccountId}/ads`, { fields: "id,creative{thumbnail_url,effective_object_story_id}", limit: "50" }),
   ]);
 
-  const thumbnailByAdId = new Map<string, string | null>(
-    (adCreatives.data ?? []).map((a: { id: string; creative?: { thumbnail_url?: string } }) => [
-      a.id,
-      a.creative?.thumbnail_url ?? null,
-    ])
+  type AdWithCreative = { id: string; creative?: { thumbnail_url?: string; effective_object_story_id?: string } };
+  const creativeByAdId = new Map<string, AdWithCreative["creative"]>(
+    (adCreatives.data ?? []).map((a: AdWithCreative) => [a.id, a.creative])
   );
 
   const t: InsightsRow = totals.data?.[0] ?? {};
@@ -120,13 +120,17 @@ export async function fetchAdsSnapshotLive(adAccountId: string, range: DateRange
       const adSpend = Number(r.spend ?? 0);
       const adResults = pickResult(r.actions);
       const impressions = Number(r.impressions ?? 0);
+      const creative = r.ad_id ? creativeByAdId.get(r.ad_id) : undefined;
+      const storyId = creative?.effective_object_story_id;
       return {
         name: r.ad_name ?? "—",
         spend: adSpend,
         results: adResults,
         cpa: adResults > 0 ? adSpend / adResults : 0,
         ctr: impressions > 0 ? (Number(r.clicks ?? 0) / impressions) * 100 : 0,
-        thumbnailUrl: r.ad_id ? (thumbnailByAdId.get(r.ad_id) ?? null) : null,
+        thumbnailUrl: creative?.thumbnail_url ?? null,
+        // effective_object_story_id vem como "{page_id}_{post_id}" — permalink padrão da Meta.
+        permalinkUrl: storyId ? `https://www.facebook.com/${storyId.replace("_", "/posts/")}` : null,
       };
     })
     .sort((a, b) => b.results - a.results || a.cpa - b.cpa);

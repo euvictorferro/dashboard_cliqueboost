@@ -52,12 +52,30 @@ export function CreativePreviewModal({
           <img
             src={creative.thumbnailUrl}
             alt={creative.name}
-            className="mb-4 w-full rounded-[var(--radius-card)] object-cover"
+            className="mb-3 w-full rounded-[var(--radius-card)] object-cover"
           />
         ) : (
-          <div className="mb-4 flex h-40 w-full items-center justify-center rounded-[var(--radius-card)] bg-muted text-sm text-muted-foreground">
+          <div className="mb-3 flex h-40 w-full items-center justify-center rounded-[var(--radius-card)] bg-muted text-sm text-muted-foreground">
             Preview indisponível
           </div>
+        )}
+
+        {creative.permalinkUrl ? (
+          <a
+            href={creative.permalinkUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mb-4 block rounded-[var(--radius-card)] bg-brand-primary px-4 py-2 text-center text-sm font-medium text-white"
+          >
+            Ver anúncio
+          </a>
+        ) : (
+          // ponytail: sem effective_object_story_id não tem link possível (anúncio pode ter
+          // sido criado direto no Ads Manager, sem post associado) — some o botão em vez de
+          // mostrar um link quebrado.
+          <p className="mb-4 text-center text-xs text-muted-foreground">
+            {creative.thumbnailUrl ? "A imagem acima é a única prévia disponível pra esse anúncio." : ""}
+          </p>
         )}
 
         <div className="grid grid-cols-2 gap-3 text-sm">

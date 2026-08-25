@@ -5,7 +5,7 @@ import { ADS_METRICS, WHATSAPP_LINK, type AdsSnapshot, type AdsMetricKey, type A
 import type { DateRangeId } from "@/lib/metrics";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { ReachBarChart } from "@/components/dashboard/ReachBarChart";
-import { SlicePieChart } from "@/components/dashboard/SlicePieChart";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { CreativePreviewModal } from "@/components/dashboard/CreativePreviewModal";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
@@ -23,7 +23,9 @@ function formatMoney(value: number, currency: string): string {
   return value.toLocaleString("pt-BR", { style: "currency", currency, maximumFractionDigits: 2 });
 }
 
-const MAIN_METRICS: AdsMetricKey[] = ["cpa", "clicks", "cpc", "cpm", "roas", "cpr"];
+// 8 cards no total com "spend" (renderizado à parte) — fecha 2 linhas cheias de 4 no grid,
+// sem sobrar buraco. Se adicionar/remover uma métrica aqui, ajuste em par pra manter simétrico.
+const MAIN_METRICS: AdsMetricKey[] = ["results", "cpa", "clicks", "cpc", "cpm", "roas", "cpr"];
 
 function ToggleGroup<T extends string>({ options, value, onChange }: { options: { id: T; label: string }[]; value: T; onChange: (v: T) => void }) {
   return (
@@ -119,6 +121,36 @@ function FunnelShape({ stages }: { stages: { label: string; value: number }[] })
   );
 }
 
+const FUNNEL_HEIGHT_PX = 244; // altura real do FunnelShape (3 etapas + legendas) — a pizza usa a mesma, pra não encolher o bloco ao trocar de visualização.
+const PIE_COLORS = ["hsl(var(--brand-primary))", "hsl(var(--brand-accent))", "hsl(var(--brand-success))"];
+
+function FunnelPie({ stages }: { stages: { label: string; value: number }[] }) {
+  return (
+    <div className="flex w-full items-center gap-6" style={{ height: FUNNEL_HEIGHT_PX }}>
+      <div className="h-full flex-1">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie data={stages} dataKey="value" nameKey="label" innerRadius="45%" outerRadius="80%" paddingAngle={2}>
+              {stages.map((_, i) => (
+                <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+              ))}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      <ul className="shrink-0 space-y-2">
+        {stages.map((s, i) => (
+          <li key={s.label} className="flex items-center gap-2 text-sm">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
+            <span className="text-muted-foreground">{s.label}</span>
+            <span className="font-medium text-card-foreground">{s.value.toLocaleString("pt-BR")}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function ConversionFunnel({ reach, clicks, results }: { reach: number; clicks: number; results: number }) {
   const [view, setView] = useState<"funnel" | "pizza">("funnel");
   const stages = [
@@ -144,13 +176,7 @@ function ConversionFunnel({ reach, clicks, results }: { reach: number; clicks: n
         />
       </div>
       <div className="flex flex-1 items-center">
-        {view === "funnel" ? (
-          <FunnelShape stages={stages} />
-        ) : (
-          <div className="w-full">
-            <SlicePieChart label="" data={stages.map((s) => ({ name: s.label, value: s.value }))} />
-          </div>
-        )}
+        {view === "funnel" ? <FunnelShape stages={stages} /> : <FunnelPie stages={stages} />}
       </div>
     </div>
   );

@@ -20,6 +20,7 @@ export type AdsCreative = {
   cpa: number;
   ctr: number;
   thumbnailUrl: string | null;
+  permalinkUrl: string | null;
 };
 
 export type AdsSnapshot = {
@@ -74,8 +75,8 @@ export function getAdsSnapshot(clientId: string): AdsSnapshot {
     clicksTrend,
     roasTrend,
     creatives: [
-      { name: "Criativo — Depoimento Cliente", spend: 720, results: 19, cpa: 37.9, ctr: 3.2, thumbnailUrl: null },
-      { name: "Criativo — Antes e Depois", spend: 480, results: 10, cpa: 48, ctr: 2.1, thumbnailUrl: null },
+      { name: "Criativo — Depoimento Cliente", spend: 720, results: 19, cpa: 37.9, ctr: 3.2, thumbnailUrl: null, permalinkUrl: null },
+      { name: "Criativo — Antes e Depois", spend: 480, results: 10, cpa: 48, ctr: 2.1, thumbnailUrl: null, permalinkUrl: null },
     ],
   };
 }

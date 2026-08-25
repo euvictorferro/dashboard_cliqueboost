@@ -93,6 +93,30 @@ export type OrganicSnapshot = OrganicWindowSnapshot & {
   changePct: Record<OrganicMetricKey, number | null>;
 };
 
+// Estado antes do primeiro fetch resolver — zerado de propósito, nunca um número inventado.
+// Antes disso existir, o 1º render usava um mock só pra não deixar a tela em branco, só que
+// esse mock não batia com o dado real que chegava logo em seguida (o número "pulava" de um
+// valor fake pro real). Zero + animação de contagem no lib/useCountUp resolve os dois problemas.
+export const EMPTY_ORGANIC_SNAPSHOT: OrganicSnapshot = {
+  metrics: { newFollowers: 0, lostFollowers: 0, netFollowers: 0, reach: 0, views: 0, comments: 0, likes: 0, saves: 0, shares: 0 },
+  trend: [],
+  viewsTrend: [],
+  likesTrend: [],
+  topPosts: [],
+  reachBreakdown: undefined,
+  changePct: {
+    newFollowers: null,
+    lostFollowers: null,
+    netFollowers: null,
+    reach: null,
+    views: null,
+    comments: null,
+    likes: null,
+    saves: null,
+    shares: null,
+  },
+};
+
 // ponytail: mock determinístico (seed = clientId+range) até a Meta App existir. Trocar por
 // chamada real à Graph API mantendo a mesma forma de retorno (OrganicSnapshot).
 function seededRandom(seed: string) {

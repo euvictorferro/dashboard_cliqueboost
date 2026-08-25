@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { Client } from "@/lib/clients";
 import {
   ORGANIC_METRICS,
+  EMPTY_ORGANIC_SNAPSHOT,
   getOrganicSnapshot,
   getOrganicWindowSnapshot,
   pctChange,
@@ -12,6 +13,7 @@ import {
   type OrganicSnapshot,
   type OrganicWindowSnapshot,
 } from "@/lib/metrics";
+import { useCountUp } from "@/lib/useCountUp";
 import { DateRangeFilter } from "@/components/dashboard/DateRangeFilter";
 import type { CompareWindows } from "@/components/dashboard/CompareRangePicker";
 import { MetricCard } from "@/components/dashboard/MetricCard";
@@ -31,9 +33,11 @@ function formatDateBR(iso: string): string {
 export function Dashboard({ client }: { client: Client;  }) {
   const [range, setRange] = useState<DateRangeId>("30d");
   const [tab, setTab] = useState<Tab>("organic");
-  // ponytail: mock síncrono cobre o 1º render; o fetch troca por dado real (ou mock do servidor) assim que chega.
-  const [snapshot, setSnapshot] = useState<OrganicSnapshot>(() => getOrganicSnapshot(client.id, range));
-  const [snapshotKey, setSnapshotKey] = useState(`${client.id}:${range}`);
+  // Começa zerado (não com um mock) — mostrar um número inventado e trocar pelo real assim que
+  // chega dava a impressão de bug ("carregou 73k, virou 50"). snapshotKey vazio nunca bate com
+  // a key de verdade, então `loading` já nasce true e some só quando o 1º fetch responder.
+  const [snapshot, setSnapshot] = useState<OrganicSnapshot>(EMPTY_ORGANIC_SNAPSHOT);
+  const [snapshotKey, setSnapshotKey] = useState("");
   const loading = snapshotKey !== `${client.id}:${range}`;
 
   const [compareWindows, setCompareWindows] = useState<CompareWindows | null>(null);
@@ -109,6 +113,18 @@ export function Dashboard({ client }: { client: Client;  }) {
   const m = comparing ? compareSnapshots!.a.metrics : snapshot.metrics;
   const c = snapshot.changePct;
 
+  // Sobe animado até o valor real assim que ele chega (0 -> valor no 1º load, ou valor antigo
+  // -> novo ao trocar o período/aba) em vez de trocar o número seco.
+  const animNewFollowers = useCountUp(m.newFollowers);
+  const animLostFollowers = useCountUp(m.lostFollowers);
+  const animNetFollowers = useCountUp(m.netFollowers);
+  const animReach = useCountUp(m.reach);
+  const animViews = useCountUp(m.views);
+  const animComments = useCountUp(m.comments);
+  const animLikes = useCountUp(m.likes);
+  const animSaves = useCountUp(m.saves);
+  const animShares = useCountUp(m.shares);
+
   function compareProp(key: OrganicMetricKey, sparklineKey?: "trend" | "viewsTrend" | "likesTrend") {
     if (!comparing) return undefined;
     const { a, b } = compareSnapshots!;
@@ -177,19 +193,19 @@ export function Dashboard({ client }: { client: Client;  }) {
             <MetricCard
               label={ORGANIC_METRICS.newFollowers.label}
               description={ORGANIC_METRICS.newFollowers.description}
-              value={m.newFollowers.toLocaleString("pt-BR")}
+              value={animNewFollowers.toLocaleString("pt-BR")}
               compare={compareProp("newFollowers")}
             />
             <MetricCard
               label={ORGANIC_METRICS.lostFollowers.label}
               description={ORGANIC_METRICS.lostFollowers.description}
-              value={m.lostFollowers.toLocaleString("pt-BR")}
+              value={animLostFollowers.toLocaleString("pt-BR")}
               compare={compareProp("lostFollowers")}
             />
             <MetricCard
               label={ORGANIC_METRICS.netFollowers.label}
               description={ORGANIC_METRICS.netFollowers.description}
-              value={m.netFollowers.toLocaleString("pt-BR")}
+              value={animNetFollowers.toLocaleString("pt-BR")}
               compare={compareProp("netFollowers")}
             />
 
@@ -215,7 +231,7 @@ export function Dashboard({ client }: { client: Client;  }) {
             <MetricCard
               label={ORGANIC_METRICS.reach.label}
               description={ORGANIC_METRICS.reach.description}
-              value={m.reach.toLocaleString("pt-BR")}
+              value={animReach.toLocaleString("pt-BR")}
               changePct={comparing ? undefined : c.reach}
               sparkline={activeTrend}
               compare={compareProp("reach", "trend")}
@@ -223,7 +239,7 @@ export function Dashboard({ client }: { client: Client;  }) {
             <MetricCard
               label={ORGANIC_METRICS.views.label}
               description={ORGANIC_METRICS.views.description}
-              value={m.views.toLocaleString("pt-BR")}
+              value={animViews.toLocaleString("pt-BR")}
               changePct={comparing ? undefined : c.views}
               sparkline={comparing ? compareSnapshots!.a.viewsTrend : snapshot.viewsTrend}
               compare={compareProp("views", "viewsTrend")}
@@ -231,7 +247,7 @@ export function Dashboard({ client }: { client: Client;  }) {
             <MetricCard
               label={ORGANIC_METRICS.likes.label}
               description={ORGANIC_METRICS.likes.description}
-              value={m.likes.toLocaleString("pt-BR")}
+              value={animLikes.toLocaleString("pt-BR")}
               changePct={comparing ? undefined : c.likes}
               sparkline={comparing ? compareSnapshots!.a.likesTrend : snapshot.likesTrend}
               compare={compareProp("likes", "likesTrend")}
@@ -242,21 +258,21 @@ export function Dashboard({ client }: { client: Client;  }) {
             <MetricCard
               label={ORGANIC_METRICS.comments.label}
               description={ORGANIC_METRICS.comments.description}
-              value={m.comments.toLocaleString("pt-BR")}
+              value={animComments.toLocaleString("pt-BR")}
               changePct={comparing ? undefined : c.comments}
               compare={compareProp("comments")}
             />
             <MetricCard
               label={ORGANIC_METRICS.saves.label}
               description={ORGANIC_METRICS.saves.description}
-              value={m.saves.toLocaleString("pt-BR")}
+              value={animSaves.toLocaleString("pt-BR")}
               changePct={comparing ? undefined : c.saves}
               compare={compareProp("saves")}
             />
             <MetricCard
               label={ORGANIC_METRICS.shares.label}
               description={ORGANIC_METRICS.shares.description}
-              value={m.shares.toLocaleString("pt-BR")}
+              value={animShares.toLocaleString("pt-BR")}
               changePct={comparing ? undefined : c.shares}
               compare={compareProp("shares")}
             />

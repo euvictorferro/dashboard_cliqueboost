@@ -46,7 +46,11 @@ export function ContentPageClient({ clientId }: { clientId: string;  }) {
         </p>
       )}
       {!error && !lists && <p className="mx-6 text-sm text-muted-foreground sm:mx-10">Carregando...</p>}
-      {!error && lists && <ContentBoard lists={lists} clientId={clientId} />}
+      {!error && lists && (
+        <div data-tour="conteudos-board">
+          <ContentBoard lists={lists} clientId={clientId} />
+        </div>
+      )}
     </div>
   );
 }

@@ -48,7 +48,11 @@ export function CalendarPageClient({ clientId }: { clientId: string;  }) {
         </p>
       )}
       {!error && !lists && <p className="text-sm text-muted-foreground">Carregando...</p>}
-      {!error && lists && <CalendarView cards={cards} clientId={clientId} />}
+      {!error && lists && (
+        <div data-tour="calendario-view">
+          <CalendarView cards={cards} clientId={clientId} />
+        </div>
+      )}
     </div>
   );
 }

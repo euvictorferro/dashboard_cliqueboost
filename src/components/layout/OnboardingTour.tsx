@@ -9,6 +9,8 @@ import {
   TOUR_ACTIVE_KEY,
   TOUR_STEP_KEY,
   TOUR_START_EVENT,
+  TOUR_OPEN_SOCIAL_EVENT,
+  TOUR_TARGETS_INSIDE_SOCIAL_MENU,
 } from "@/lib/onboardingTour";
 
 type Rect = { top: number; left: number; width: number; height: number };
@@ -64,6 +66,14 @@ export function OnboardingTour({ clientId, active, hasSeenOnboarding }: { client
 
   const currentStep = step !== null ? TOUR_STEPS[step] : null;
   const onThisPage = currentStep?.page === active;
+
+  // Tour aponta pra um item dentro do submenu Social Media, fechado por padrão fora das
+  // páginas dele — manda a Sidebar abrir antes de tentar medir o elemento.
+  useEffect(() => {
+    if (currentStep && onThisPage && TOUR_TARGETS_INSIDE_SOCIAL_MENU.includes(currentStep.target)) {
+      window.dispatchEvent(new Event(TOUR_OPEN_SOCIAL_EVENT));
+    }
+  }, [currentStep, onThisPage]);
 
   // Mede o elemento-alvo e mantém a posição atualizada (resize, scroll, mudanças de layout).
   useEffect(() => {
@@ -135,7 +145,7 @@ export function OnboardingTour({ clientId, active, hasSeenOnboarding }: { client
           left: spotLeft,
           width: spotWidth,
           height: spotHeight,
-          boxShadow: "0 0 0 9999px rgba(15, 15, 20, 0.6)",
+          boxShadow: "0 0 0 9999px rgba(15, 15, 20, 0.35)",
         }}
       />
 

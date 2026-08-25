@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Logo } from "@/components/layout/Logo";
 import { AccountCard } from "@/components/layout/AccountCard";
 import { ReferralPromoCard } from "@/components/layout/ReferralPromoCard";
 import { isProductionEnv } from "@/lib/env";
+import { TOUR_OPEN_SOCIAL_EVENT } from "@/lib/onboardingTour";
 
 function DashboardIcon() {
   return (
@@ -171,6 +172,16 @@ export function Sidebar({
   const isSocialActive = SOCIAL_MEDIA_KEYS.includes(active);
   const [manuallyOpen, setManuallyOpen] = useState(false);
   const socialOpen = isSocialActive || manuallyOpen;
+
+  // Tour de onboarding: abre o submenu Social Media na marra quando o passo aponta pro item
+  // Conteúdos/Calendário e a página atual não é uma delas (submenu ficaria fechado por padrão).
+  useEffect(() => {
+    function handleOpenSocial() {
+      setManuallyOpen(true);
+    }
+    window.addEventListener(TOUR_OPEN_SOCIAL_EVENT, handleOpenSocial);
+    return () => window.removeEventListener(TOUR_OPEN_SOCIAL_EVENT, handleOpenSocial);
+  }, []);
 
   return (
     <nav

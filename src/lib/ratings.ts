@@ -1,17 +1,26 @@
 import { getSupabaseAdmin } from "./supabase";
 
-function lastDayOfMonth(year: number, monthIndex0: number): number {
-  return new Date(year, monthIndex0 + 1, 0).getDate();
-}
-
 function monthRefOf(year: number, monthIndex0: number): string {
   const mm = String(monthIndex0 + 1).padStart(2, "0");
   return `${year}-${mm}-01`;
 }
 
-// Mês alvo = mês corrente, se hoje está nos últimos 3 dias dele e ele ainda não foi avaliado;
-// senão, mês anterior, se ele ainda não foi avaliado (cobre quem não abriu o app nos últimos
-// 3 dias daquele mês). Se ambos já avaliados (ou nenhum se aplica), não há pendência.
+// Último dia útil do mês: começa no último dia do calendário e volta até sair de sáb/dom.
+function lastBusinessDay(year: number, monthIndex0: number): number {
+  let day = new Date(year, monthIndex0 + 1, 0).getDate();
+  let weekday = new Date(year, monthIndex0, day).getDay();
+  while (weekday === 0 || weekday === 6) {
+    day -= 1;
+    weekday = new Date(year, monthIndex0, day).getDay();
+  }
+  return day;
+}
+
+// Só pede avaliação do mês corrente no próprio último dia útil dele, e só se ainda não foi
+// avaliado. ponytail: sem catch-up de meses anteriores — quem não abrir o app nesse dia
+// específico não vê o popup até o último dia útil do mês seguinte. Simplicidade > cobertura
+// total; a versão anterior (últimos 3 dias + fallback pro mês anterior) foi trocada porque
+// ficava pedindo avaliação de um mês já encerrado o mês inteiro seguinte.
 export function computePendingMonth(
   now: Date,
   ratedMonths: string[]
@@ -19,19 +28,11 @@ export function computePendingMonth(
   const rated = new Set(ratedMonths);
   const year = now.getFullYear();
   const monthIndex0 = now.getMonth();
-  const day = now.getDate();
-  const lastDay = lastDayOfMonth(year, monthIndex0);
+  const monthRef = monthRefOf(year, monthIndex0);
 
-  const currentMonthRef = monthRefOf(year, monthIndex0);
-  const isInLastThreeDays = day > lastDay - 3;
-  if (isInLastThreeDays && !rated.has(currentMonthRef))
-    return currentMonthRef;
-
-  const prevMonthIndex0 = monthIndex0 === 0 ? 11 : monthIndex0 - 1;
-  const prevYear = monthIndex0 === 0 ? year - 1 : year;
-  const prevMonthRef = monthRefOf(prevYear, prevMonthIndex0);
-  if (!rated.has(prevMonthRef)) return prevMonthRef;
-
+  if (now.getDate() === lastBusinessDay(year, monthIndex0) && !rated.has(monthRef)) {
+    return monthRef;
+  }
   return null;
 }
 

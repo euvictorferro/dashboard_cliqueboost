@@ -1,10 +1,14 @@
 // src/lib/metaAds.ts
 // Insights de tráfego pago via Meta Marketing API (mesmo System User Token do orgânico —
 // exige a permissão ads_read e a Ad Account atribuída ao system user no Business Manager).
-import type { AdsMetricKey, AdsSnapshot, AdsTrendPoint } from "./ads";
+import type { AdsMetricKey, AdsSnapshot, AdsCreative, AdsTrendPoint } from "./ads";
 import { DATE_RANGES, type DateRangeId } from "./metrics";
 
 const GRAPH_API = "https://graph.facebook.com/v21.0";
+
+// Sentinela que a Meta usa quando a conta não tem teto de gasto configurado (cartão de
+// crédito ilimitado). Qualquer spend_cap abaixo disso é um teto de verdade.
+const NO_SPEND_CAP_THRESHOLD = 1_000_000_000_00; // 1 bilhão em centavos
 
 export function hasMetaCredentials() {
   return Boolean(process.env.META_SYSTEM_USER_TOKEN);
@@ -46,9 +50,9 @@ type InsightsRow = {
   cpc?: string;
   cpm?: string;
   impressions?: string;
+  reach?: string;
   date_start?: string;
   actions?: { action_type: string; value: string }[];
-  cost_per_action_type?: { action_type: string; value: string }[];
   purchase_roas?: { action_type: string; value: string }[];
 };
 
@@ -78,13 +82,13 @@ export type LiveAdsSnapshot = AdsSnapshot & { currency: string };
 
 export async function fetchAdsSnapshotLive(adAccountId: string, range: DateRangeId): Promise<LiveAdsSnapshot> {
   const preset = rangeToPreset(range);
-  const insightFields = "spend,clicks,cpc,cpm,impressions,actions,cost_per_action_type,purchase_roas";
+  const insightFields = "spend,clicks,cpc,cpm,impressions,reach,actions,purchase_roas";
 
   const [account, totals, daily, byAd] = await Promise.all([
-    graphGet(`act_${adAccountId}`, { fields: "currency" }),
+    graphGet(`act_${adAccountId}`, { fields: "currency,spend_cap,amount_spent" }),
     graphGet(`act_${adAccountId}/insights`, { fields: insightFields, date_preset: preset }),
     graphGet(`act_${adAccountId}/insights`, { fields: "spend,clicks,date_start", date_preset: preset, time_increment: "1", limit: "100" }),
-    graphGet(`act_${adAccountId}/insights`, { fields: "actions,ad_name", date_preset: preset, level: "ad", limit: "50" }),
+    graphGet(`act_${adAccountId}/insights`, { fields: "spend,clicks,impressions,actions,ad_name", date_preset: preset, level: "ad", limit: "50" }),
   ]);
 
   const t: InsightsRow = totals.data?.[0] ?? {};
@@ -101,22 +105,45 @@ export async function fetchAdsSnapshotLive(adAccountId: string, range: DateRange
     cpa: results > 0 ? spend / results : 0,
     cpr: results > 0 ? spend / results : 0,
     roas: roasRow ? Number(roasRow.value) : 0,
+    results,
   };
+
+  // spend_cap vem em centavos e só existe de verdade quando a conta tem teto configurado —
+  // acima do limiar, é a forma da Meta dizer "sem teto" (cartão ilimitado).
+  const spendCapCents = Number(account.spend_cap ?? 0);
+  const remainingBudget =
+    spendCapCents > 0 && spendCapCents < NO_SPEND_CAP_THRESHOLD
+      ? spendCapCents / 100 - Number(account.amount_spent ?? 0) / 100
+      : null;
 
   const dailyRows: InsightsRow[] = daily.data ?? [];
   const adRows: (InsightsRow & { ad_name?: string })[] = byAd.data ?? [];
-  const best = adRows
-    .map((r) => ({ name: r.ad_name ?? "—", results: pickResult(r.actions) }))
-    .sort((a, b) => b.results - a.results)[0];
+  const creatives: AdsCreative[] = adRows
+    .map((r) => {
+      const adSpend = Number(r.spend ?? 0);
+      const adResults = pickResult(r.actions);
+      const impressions = Number(r.impressions ?? 0);
+      return {
+        name: r.ad_name ?? "—",
+        spend: adSpend,
+        results: adResults,
+        cpa: adResults > 0 ? adSpend / adResults : 0,
+        ctr: impressions > 0 ? (Number(r.clicks ?? 0) / impressions) * 100 : 0,
+      };
+    })
+    .sort((a, b) => b.results - a.results || a.cpa - b.cpa);
 
   return {
     metrics,
+    reach: Number(t.reach ?? 0),
+    impressions: Number(t.impressions ?? 0),
+    remainingBudget,
     spendTrend: toTrend(dailyRows, "spend"),
     clicksTrend: toTrend(dailyRows, "clicks"),
     // ponytail: ROAS diário exigiria mais uma chamada por dia útil de dado — o sparkline de
     // ROAS reusa o de cliques como proxy visual até alguém pedir ROAS diário de verdade.
     roasTrend: toTrend(dailyRows, "clicks"),
-    bestCreative: best && best.results > 0 ? { name: best.name, result: `${best.results} resultados` } : { name: "—", result: "" },
+    creatives,
     currency: account.currency ?? "BRL",
   };
 }

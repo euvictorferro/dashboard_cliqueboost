@@ -267,7 +267,7 @@ export function Dashboard({ client }: { client: Client;  }) {
           <AudiencePanel clientId={client.id} reachBreakdown={activeReachBreakdown} />
         </div>
       )}
-      {tab === "ads" && <AdsPanel clientId={client.id} active={client.adsActive} />}
+      {tab === "ads" && <AdsPanel clientId={client.id} range={range} />}
     </div>
   );
 }

@@ -72,3 +72,4 @@ docs/superpowers/ROADMAP-plataforma.md  # Roadmap do produto
   o custo junto com a virada multi-tenant. Fazer as duas coisas juntas. A fundação multi-tenant
   (tabela `agencies`, coluna `agency_id` em toda tabela) já começou no Admin Panel Fase 1 —
   policies reais entram módulo a módulo conforme o admin substitui as fontes externas.
+- **`lib/clickup.ts` é código órfão** (Fase 2 de tasks). Após Tasks 9–10 migrarem as rotas de API e UI para dados nativos do banco, nenhuma rota de API (`app/api/*/`) nem componente de cliente (`app/[client]/tasks/`) importa mais este arquivo. Mantido no repo até a Fase 2 estar validada em produção com clientes reais — remover código morto é tarefa de limpeza separada, após confirmação da virada.

@@ -103,7 +103,10 @@ export function TasksAdminPageClient() {
           task={openTask}
           statuses={statuses}
           allTags={allTags}
-          onClose={() => setOpenTask(null)}
+          onClose={() => {
+            setOpenTask(null);
+            refetchTasks();
+          }}
           onDeleted={() => {
             setOpenTask(null);
             refetchTasks();

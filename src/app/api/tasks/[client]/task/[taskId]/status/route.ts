@@ -1,31 +1,23 @@
-import { NextRequest } from "next/server";
-import { hasClickUpCredentials, updateTaskStatus } from "@/lib/clickup";
+// src/app/api/tasks/[client]/task/[taskId]/status/route.ts
+import { CLIENTS } from "@/lib/clients";
 import { verifyClientSession } from "@/lib/access";
+import { getTask, updateTaskStatus } from "@/lib/tasks";
 
 export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ client: string; taskId: string }> },
+  request: Request,
+  { params }: { params: Promise<{ client: string; taskId: string }> }
 ) {
   const { client: clientId, taskId } = await params;
+  const found = CLIENTS.find((c) => c.id === clientId);
+  if (!found) return Response.json({ error: "unknown_client" }, { status: 404 });
+  if (!(await verifyClientSession(clientId))) return Response.json({ error: "unauthorized" }, { status: 401 });
 
-  if (!(await verifyClientSession(clientId))) {
-    return Response.json({ error: "unauthorized" }, { status: 401 });
-  }
-  if (!hasClickUpCredentials()) {
-    console.error("[tasks] CLICKUP_API_TOKEN não configurado (status)");
-    return Response.json({ error: "fetch_failed" }, { status: 502 });
-  }
+  const task = await getTask(taskId);
+  if (!task || task.clientId !== clientId) return Response.json({ error: "not_found" }, { status: 404 });
 
-  const { status } = await request.json();
-  if (typeof status !== "string") {
-    return Response.json({ error: "invalid_body" }, { status: 400 });
-  }
+  const body = await request.json().catch(() => null);
+  if (typeof body?.statusId !== "string") return Response.json({ error: "status_invalido" }, { status: 400 });
 
-  try {
-    await updateTaskStatus(taskId, status);
-    return Response.json({ ok: true });
-  } catch (err) {
-    console.error(`[tasks] falha ao trocar status da task ${taskId}:`, err);
-    return Response.json({ error: "fetch_failed" }, { status: 502 });
-  }
+  await updateTaskStatus(taskId, body.statusId);
+  return Response.json({ ok: true });
 }

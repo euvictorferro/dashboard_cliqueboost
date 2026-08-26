@@ -2,16 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { TaskKanbanColumn } from "@/components/admin/tasks/TaskKanbanColumn";
+import { NewTaskModal } from "@/components/admin/tasks/NewTaskModal";
+import { TaskAdminModal } from "@/components/admin/tasks/TaskAdminModal";
 import type { AdminTask } from "@/components/admin/tasks/TaskCard";
 
 type Status = { id: string; name: string; color: string; position: number };
 type ClientOption = { id: string; name: string; isTest: boolean };
+type Tag = { id: string; name: string; color: string };
 
 export function TasksAdminPageClient() {
   const [clients, setClients] = useState<ClientOption[] | null>(null);
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [statuses, setStatuses] = useState<Status[]>([]);
   const [tasks, setTasks] = useState<AdminTask[] | null>(null);
+  const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [openTask, setOpenTask] = useState<AdminTask | null>(null);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/clients")
@@ -24,14 +30,23 @@ export function TasksAdminPageClient() {
     fetch("/api/admin/task-statuses")
       .then((res) => res.json())
       .then((data: { statuses: Status[] }) => setStatuses(data.statuses));
+    fetch("/api/admin/task-tags")
+      .then((res) => res.json())
+      .then((data: { tags: Tag[] }) => setAllTags(data.tags));
   }, []);
+
+  function refetchTasks() {
+    if (!selectedClient) return;
+    fetch(`/api/admin/tasks?client=${selectedClient}`)
+      .then((res) => res.json())
+      .then((data: { tasks: AdminTask[] }) => setTasks(data.tasks));
+  }
 
   useEffect(() => {
     if (!selectedClient) return;
     setTasks(null);
-    fetch(`/api/admin/tasks?client=${selectedClient}`)
-      .then((res) => res.json())
-      .then((data: { tasks: AdminTask[] }) => setTasks(data.tasks));
+    refetchTasks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClient]);
 
   return (
@@ -49,6 +64,14 @@ export function TasksAdminPageClient() {
             </option>
           ))}
         </select>
+        <button
+          type="button"
+          onClick={() => setCreating(true)}
+          disabled={!selectedClient}
+          className="rounded-md bg-brand-accent px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+        >
+          + Nova task
+        </button>
       </div>
 
       {!tasks && <p className="text-sm text-muted-foreground">Carregando...</p>}
@@ -60,10 +83,32 @@ export function TasksAdminPageClient() {
               name={s.name}
               color={s.color}
               tasks={tasks.filter((t) => t.statusId === s.id)}
-              onOpenTask={() => {}}
+              onOpenTask={(t) => setOpenTask(t)}
             />
           ))}
         </div>
+      )}
+
+      {creating && selectedClient && (
+        <NewTaskModal
+          clientId={selectedClient}
+          statuses={statuses}
+          onClose={() => setCreating(false)}
+          onCreated={() => refetchTasks()}
+        />
+      )}
+
+      {openTask && (
+        <TaskAdminModal
+          task={openTask}
+          statuses={statuses}
+          allTags={allTags}
+          onClose={() => setOpenTask(null)}
+          onDeleted={() => {
+            setOpenTask(null);
+            refetchTasks();
+          }}
+        />
       )}
     </div>
   );

@@ -2,33 +2,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { TaskComment, TaskItem, TaskListMember, TaskStatus } from "@/lib/clickup";
-import { AssigneeAvatars } from "@/components/ui/AssigneeAvatars";
+import type { ClientTask, ClientTaskStatus } from "@/components/tasks/types";
+import { PRIORITY_LABEL, PRIORITY_COLOR } from "@/components/tasks/types";
 import { CommentsIcon, DescriptionIcon } from "@/components/ui/icons";
 
-function formatDate(value: number | null): string | null {
+type Comment = { id: string; body: string; createdAt: string; authorType: "admin" | "client"; authorName: string };
+
+function formatDate(value: string | null): string | null {
   if (value === null) return null;
   return new Date(value).toLocaleDateString("pt-BR");
 }
 
-function formatDuration(ms: number): string {
-  const totalMinutes = Math.round(ms / 60000);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  if (hours === 0) return `${minutes}min`;
-  if (minutes === 0) return `${hours}h`;
-  return `${hours}h ${minutes}min`;
-}
-
-function formatTime(timeEstimate: number | null, timeSpent: number): string {
-  const parts: string[] = [];
-  if (timeEstimate) parts.push(`${formatDuration(timeEstimate)} estimadas`);
-  if (timeSpent) parts.push(`${formatDuration(timeSpent)} registradas`);
-  return parts.length > 0 ? parts.join(" · ") : "Não definido";
-}
-
-function formatRelativeTime(ts: number): string {
-  const diff = Date.now() - ts;
+function formatRelativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
   const minute = 60_000;
   const hour = 3_600_000;
   const day = 86_400_000;
@@ -36,12 +22,7 @@ function formatRelativeTime(ts: number): string {
   if (diff < hour) return `há ${Math.floor(diff / minute)} min`;
   if (diff < day) return `há ${Math.floor(diff / hour)} h`;
   if (diff < day * 30) return `há ${Math.floor(diff / day)} d`;
-  return new Date(ts).toLocaleDateString("pt-BR");
-}
-
-function dateToInputValue(value: number | null): string {
-  if (value === null) return "";
-  return new Date(value).toISOString().slice(0, 10);
+  return new Date(iso).toLocaleDateString("pt-BR");
 }
 
 function CloseIcon() {
@@ -55,12 +36,10 @@ function CloseIcon() {
 function Field({
   label,
   icon,
-  action,
   children,
 }: {
   label: string;
   icon?: React.ReactNode;
-  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -70,7 +49,6 @@ function Field({
           {icon}
           {label}
         </p>
-        {action}
       </div>
       <div className="text-sm text-card-foreground">{children}</div>
     </div>
@@ -89,47 +67,27 @@ function useClickOutside(onOutside: () => void) {
   return ref;
 }
 
-function PlusButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label="Editar"
-      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-dashed border-border text-muted-foreground hover:border-brand-accent hover:text-brand-accent"
-    >
-      +
-    </button>
-  );
-}
-
 function StatusField({
-  status,
-  statusColor,
+  statusId,
+  statuses,
   clientId,
   taskId,
   onChanged,
 }: {
-  status: string;
-  statusColor: string;
+  statusId: string;
+  statuses: ClientTaskStatus[];
   clientId: string;
   taskId: string;
-  onChanged: (status: string, color: string) => void;
+  onChanged: (statusId: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [statuses, setStatuses] = useState<TaskStatus[] | null>(null);
   const [saving, setSaving] = useState(false);
   const ref = useClickOutside(() => setOpen(false));
 
-  useEffect(() => {
-    if (!open || statuses !== null) return;
-    fetch(`/api/tasks/${clientId}/list-meta`)
-      .then((res) => res.json())
-      .then((data: { statuses: TaskStatus[] }) => setStatuses(data.statuses ?? []))
-      .catch(() => setStatuses([]));
-  }, [open, statuses, clientId]);
+  const current = statuses.find((s) => s.id === statusId);
 
-  async function handleSelect(next: TaskStatus) {
-    if (next.status === status) {
+  async function handleSelect(next: ClientTaskStatus) {
+    if (next.id === statusId) {
       setOpen(false);
       return;
     }
@@ -138,10 +96,10 @@ function StatusField({
       const res = await fetch(`/api/tasks/${clientId}/task/${taskId}/status`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: next.status }),
+        body: JSON.stringify({ statusId: next.id }),
       });
       if (!res.ok) throw new Error();
-      onChanged(next.status, next.color);
+      onChanged(next.id);
     } catch (err) {
       console.error("falha ao trocar status da task", err);
     } finally {
@@ -158,293 +116,27 @@ function StatusField({
           onClick={() => setOpen((o) => !o)}
           disabled={saving}
           className="rounded-full px-2.5 py-1 text-xs font-semibold text-white disabled:opacity-50"
-          style={{ backgroundColor: statusColor }}
+          style={{ backgroundColor: current?.color ?? "#94a3b8" }}
         >
-          {status}
+          {current?.name ?? "—"}
         </button>
         {open && (
           <div className="absolute left-0 top-full z-20 mt-1 w-48 rounded-md border border-border bg-card p-1.5 shadow-[var(--shadow-soft)]">
-            {statuses === null && <p className="px-2 py-1.5 text-xs text-muted-foreground">Carregando...</p>}
-            {statuses?.map((s) => (
+            {statuses.map((s) => (
               <button
-                key={s.status}
+                key={s.id}
                 type="button"
                 onClick={() => handleSelect(s)}
                 className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-muted"
               >
                 <span className="h-3.5 w-3.5 shrink-0 rounded-sm" style={{ backgroundColor: s.color }} />
-                <span className="min-w-0 flex-1 truncate">{s.status}</span>
-                {s.status === status && <span className="shrink-0 text-brand-accent">✓</span>}
+                <span className="min-w-0 flex-1 truncate">{s.name}</span>
+                {s.id === statusId && <span className="shrink-0 text-brand-accent">✓</span>}
               </button>
             ))}
           </div>
         )}
       </div>
-    </Field>
-  );
-}
-
-function AssigneesField({
-  assignees,
-  clientId,
-  taskId,
-  onToggle,
-}: {
-  assignees: TaskItem["assignees"];
-  clientId: string;
-  taskId: string;
-  onToggle: (member: TaskListMember, adding: boolean) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [members, setMembers] = useState<TaskListMember[] | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const ref = useClickOutside(() => setOpen(false));
-
-  useEffect(() => {
-    if (!open || members !== null) return;
-    fetch(`/api/tasks/${clientId}/list-meta`)
-      .then((res) => res.json())
-      .then((data: { members: TaskListMember[] }) => setMembers(data.members ?? []))
-      .catch(() => setMembers([]));
-  }, [open, members, clientId]);
-
-  async function handleToggle(member: TaskListMember) {
-    const isAssigned = assignees.some((a) => a.id === member.id);
-    setBusyId(member.id);
-    try {
-      const res = await fetch(`/api/tasks/${clientId}/task/${taskId}/assignees`, {
-        method: isAssigned ? "DELETE" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ memberId: member.id }),
-      });
-      if (!res.ok) throw new Error();
-      onToggle(member, !isAssigned);
-    } catch (err) {
-      console.error("falha ao atualizar responsável da task", err);
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  return (
-    <Field
-      label="Responsáveis"
-      action={
-        <div ref={ref} className="relative">
-          <PlusButton onClick={() => setOpen((o) => !o)} />
-          {open && (
-            <div className="absolute left-0 top-full z-20 mt-1 w-56 rounded-md border border-border bg-card p-1.5 shadow-[var(--shadow-soft)]">
-              {members === null && <p className="px-2 py-1.5 text-xs text-muted-foreground">Carregando...</p>}
-              {members?.length === 0 && <p className="px-2 py-1.5 text-xs text-muted-foreground">Sem membros na lista.</p>}
-              {members?.map((member) => {
-                const isAssigned = assignees.some((a) => a.id === member.id);
-                return (
-                  <button
-                    key={member.id}
-                    type="button"
-                    onClick={() => handleToggle(member)}
-                    disabled={busyId === member.id}
-                    className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-muted ${isAssigned ? "bg-muted/70" : ""} disabled:opacity-50`}
-                  >
-                    {member.avatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- avatar vem de URL externa do ClickUp
-                      <img src={member.avatarUrl} alt="" className="h-5 w-5 shrink-0 rounded-full object-cover" />
-                    ) : (
-                      <span
-                        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-semibold text-white"
-                        style={{ backgroundColor: member.color }}
-                      >
-                        {member.initials}
-                      </span>
-                    )}
-                    <span className="min-w-0 flex-1 truncate">{member.name}</span>
-                    {isAssigned && <span className="shrink-0 text-brand-accent">✓</span>}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      }
-    >
-      {assignees.length === 0 ? (
-        <span className="text-muted-foreground">Sem responsável</span>
-      ) : (
-        <AssigneeAvatars assignees={assignees} size="sm" />
-      )}
-    </Field>
-  );
-}
-
-function DueDateField({
-  dueDate,
-  clientId,
-  taskId,
-  onSaved,
-}: {
-  dueDate: number | null;
-  clientId: string;
-  taskId: string;
-  onSaved: (dueDate: number | null) => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(dateToInputValue(dueDate));
-  const [saving, setSaving] = useState(false);
-
-  async function save() {
-    if (saving) return;
-    setSaving(true);
-    const next = draft ? new Date(`${draft}T00:00:00`).getTime() : null;
-    try {
-      const res = await fetch(`/api/tasks/${clientId}/task/${taskId}/due-date`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dueDate: next }),
-      });
-      if (!res.ok) throw new Error();
-      onSaved(next);
-      setEditing(false);
-    } catch (err) {
-      console.error("falha ao editar data da task", err);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <Field
-      label="Data prevista"
-      action={
-        !editing && (
-          <button
-            type="button"
-            onClick={() => {
-              setDraft(dateToInputValue(dueDate));
-              setEditing(true);
-            }}
-            className="shrink-0 rounded-md border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-muted"
-          >
-            Editar
-          </button>
-        )
-      }
-    >
-      {editing ? (
-        <div className="flex items-center gap-2">
-          <input
-            type="date"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            className="rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none focus:border-brand-accent"
-          />
-          <button
-            type="button"
-            onClick={() => setEditing(false)}
-            className="rounded-md px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={save}
-            disabled={saving}
-            className="rounded-md bg-brand-accent px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
-          >
-            {saving ? "Salvando..." : "Salvar"}
-          </button>
-        </div>
-      ) : (
-        formatDate(dueDate) ?? <span className="text-muted-foreground">Sem prazo</span>
-      )}
-    </Field>
-  );
-}
-
-function DescriptionField({
-  text,
-  clientId,
-  taskId,
-  onSaved,
-}: {
-  text: string;
-  clientId: string;
-  taskId: string;
-  onSaved: (desc: string) => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(text);
-  const [saving, setSaving] = useState(false);
-
-  async function save() {
-    if (saving) return;
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/tasks/${clientId}/task/${taskId}/description`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ desc: draft }),
-      });
-      if (!res.ok) throw new Error();
-      onSaved(draft);
-      setEditing(false);
-    } catch (err) {
-      console.error("falha ao editar descrição da task", err);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <Field
-      label="Descrição"
-      icon={<DescriptionIcon size={14} />}
-      action={
-        !editing && (
-          <button
-            type="button"
-            onClick={() => {
-              setDraft(text);
-              setEditing(true);
-            }}
-            className="shrink-0 rounded-md border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-muted"
-          >
-            Editar
-          </button>
-        )
-      }
-    >
-      {editing ? (
-        <div>
-          <textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            rows={6}
-            autoFocus
-            className="w-full resize-y rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-brand-accent"
-          />
-          <div className="mt-2 flex items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setEditing(false)}
-              className="rounded-md px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted"
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={save}
-              disabled={saving}
-              className="rounded-md bg-brand-accent px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
-            >
-              {saving ? "Salvando..." : "Salvar"}
-            </button>
-          </div>
-        </div>
-      ) : text ? (
-        <p className="whitespace-pre-wrap">{text}</p>
-      ) : (
-        <span className="text-muted-foreground">Sem descrição</span>
-      )}
     </Field>
   );
 }
@@ -456,7 +148,7 @@ function CommentBox({
 }: {
   clientId: string;
   taskId: string;
-  onPosted: (comment: TaskComment) => void;
+  onPosted: (comment: Comment) => void;
 }) {
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
@@ -473,7 +165,7 @@ function CommentBox({
         body: JSON.stringify({ text: text.trim() }),
       });
       if (!res.ok) throw new Error();
-      const data: { comment: TaskComment } = await res.json();
+      const data: { comment: Comment } = await res.json();
       onPosted(data.comment);
       setText("");
     } catch {
@@ -507,10 +199,9 @@ function CommentBox({
   );
 }
 
-function CommentsField({ clientId, task }: { clientId: string; task: TaskItem }) {
-  const [comments, setComments] = useState<TaskComment[] | null>(null);
+function CommentsField({ clientId, task }: { clientId: string; task: ClientTask }) {
+  const [comments, setComments] = useState<Comment[] | null>(null);
   const [failed, setFailed] = useState(false);
-  const [showActivity, setShowActivity] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -521,7 +212,7 @@ function CommentsField({ clientId, task }: { clientId: string; task: TaskItem })
         if (!res.ok) throw new Error("fetch_failed");
         return res.json();
       })
-      .then((data: { comments: TaskComment[] }) => {
+      .then((data: { comments: Comment[] }) => {
         if (!cancelled) setComments(data.comments);
       })
       .catch(() => {
@@ -534,89 +225,48 @@ function CommentsField({ clientId, task }: { clientId: string; task: TaskItem })
 
   return (
     <div>
-      <div className="mb-3 flex flex-nowrap items-center justify-between gap-3">
-        <p className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm font-bold text-card-foreground">
-          <CommentsIcon size={14} />
-          Comentários e atividades
-        </p>
-        {comments !== null && comments.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setShowActivity((s) => !s)}
-            className="shrink-0 rounded-md border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-muted"
-          >
-            {showActivity ? "Fechar atividades" : "Mostrar atividades"}
-          </button>
-        )}
-      </div>
+      <p className="mb-3 flex items-center gap-1.5 text-sm font-bold text-card-foreground">
+        <CommentsIcon size={14} />
+        Comentários
+      </p>
 
       <CommentBox
         clientId={clientId}
         taskId={task.id}
-        onPosted={(comment) => {
-          setComments((prev) => (prev ? [comment, ...prev] : [comment]));
-          setShowActivity(true);
-        }}
+        onPosted={(comment) => setComments((prev) => (prev ? [comment, ...prev] : [comment]))}
       />
 
       <ul className="space-y-4">
-        <li className="flex items-start gap-2.5">
-          {task.creator.avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- avatar vem de URL externa do ClickUp
-            <img src={task.creator.avatarUrl} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
-          ) : (
-            <span
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
-              style={{ backgroundColor: task.creator.color }}
-            >
-              {task.creator.initials}
-            </span>
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="text-sm text-card-foreground">
-              <span className="font-bold text-card-foreground">{task.creator.name}</span> criou essa task
-            </p>
-            <span className="text-[11px] text-muted-foreground">{formatRelativeTime(task.dateCreated)}</span>
-          </div>
-        </li>
-
-        {showActivity && (
-          <>
-            {failed && (
-              <li>
-                <span className="text-sm text-muted-foreground">Não foi possível carregar os comentários.</span>
-              </li>
-            )}
-            {!failed && comments === null && (
-              <li>
-                <span className="text-sm text-muted-foreground">Carregando...</span>
-              </li>
-            )}
-            {!failed &&
-              comments !== null &&
-              comments.map((c) => (
-                <li key={c.id} className="flex items-start gap-2.5">
-                  {c.authorAvatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- avatar vem de URL externa do ClickUp
-                    <img src={c.authorAvatarUrl} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
-                  ) : (
-                    <span
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
-                      style={{ backgroundColor: c.authorColor }}
-                    >
-                      {c.authorInitials}
-                    </span>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm text-card-foreground">
-                      <span className="font-bold text-card-foreground">{c.authorName}</span> {c.text}
-                    </p>
-                    <span className="text-[11px] text-muted-foreground">{formatRelativeTime(c.date)}</span>
-                  </div>
-                </li>
-              ))}
-          </>
+        {failed && (
+          <li>
+            <span className="text-sm text-muted-foreground">Não foi possível carregar os comentários.</span>
+          </li>
         )}
+        {!failed && comments === null && (
+          <li>
+            <span className="text-sm text-muted-foreground">Carregando...</span>
+          </li>
+        )}
+        {!failed && comments !== null && comments.length === 0 && (
+          <li>
+            <span className="text-sm text-muted-foreground">Sem comentários ainda.</span>
+          </li>
+        )}
+        {!failed &&
+          comments !== null &&
+          comments.map((c) => (
+            <li key={c.id} className="flex items-start gap-2.5">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-card-foreground">
+                {c.authorName.slice(0, 1).toUpperCase()}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-card-foreground">
+                  <span className="font-bold text-card-foreground">{c.authorName}</span> {c.body}
+                </p>
+                <span className="text-[11px] text-muted-foreground">{formatRelativeTime(c.createdAt)}</span>
+              </div>
+            </li>
+          ))}
       </ul>
     </div>
   );
@@ -624,18 +274,16 @@ function CommentsField({ clientId, task }: { clientId: string; task: TaskItem })
 
 export function TaskDetailModal({
   task,
+  statuses,
   clientId,
   onClose,
 }: {
-  task: TaskItem;
+  task: ClientTask;
+  statuses: ClientTaskStatus[];
   clientId: string;
   onClose: () => void;
 }) {
-  const [status, setStatus] = useState(task.status);
-  const [statusColor, setStatusColor] = useState(task.statusColor);
-  const [assignees, setAssignees] = useState(task.assignees);
-  const [dueDate, setDueDate] = useState(task.dueDate);
-  const [description, setDescription] = useState(task.description);
+  const [statusId, setStatusId] = useState(task.statusId);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -653,17 +301,6 @@ export function TaskDetailModal({
     };
   }, []);
 
-  function toggleAssigneeLocal(member: TaskListMember, adding: boolean) {
-    setAssignees((prev) =>
-      adding
-        ? [
-            ...prev,
-            { id: member.id, name: member.name, color: member.color, initials: member.initials, avatarUrl: member.avatarUrl },
-          ]
-        : prev.filter((a) => a.id !== member.id),
-    );
-  }
-
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
       <div
@@ -671,7 +308,7 @@ export function TaskDetailModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex shrink-0 items-center justify-between gap-4 border-b border-border px-6 py-3">
-          <h2 className="truncate text-sm font-bold text-card-foreground">{task.name}</h2>
+          <h2 className="truncate text-sm font-bold text-card-foreground">{task.title}</h2>
           <button
             onClick={onClose}
             aria-label="Fechar"
@@ -684,51 +321,30 @@ export function TaskDetailModal({
         <div className="flex min-h-0 flex-1">
           <div className="min-w-0 flex-1 overflow-y-auto">
             <div className="p-7">
-              <h1 className="mb-6 text-xl font-bold text-card-foreground">{task.name}</h1>
+              <h1 className="mb-6 text-xl font-bold text-card-foreground">{task.title}</h1>
 
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-x-10 gap-y-6">
                   <StatusField
-                    status={status}
-                    statusColor={statusColor}
+                    statusId={statusId}
+                    statuses={statuses}
                     clientId={clientId}
                     taskId={task.id}
-                    onChanged={(s, c) => {
-                      setStatus(s);
-                      setStatusColor(c);
-                    }}
-                  />
-
-                  <AssigneesField
-                    assignees={assignees}
-                    clientId={clientId}
-                    taskId={task.id}
-                    onToggle={toggleAssigneeLocal}
-                  />
-
-                  <DueDateField
-                    dueDate={dueDate}
-                    clientId={clientId}
-                    taskId={task.id}
-                    onSaved={setDueDate}
+                    onChanged={setStatusId}
                   />
 
                   <Field label="Prioridade">
-                    {task.priority ? (
-                      <span
-                        className="rounded-full px-2.5 py-1 text-xs font-semibold text-white"
-                        style={{ backgroundColor: task.priority.color }}
-                      >
-                        {task.priority.label}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">Sem prioridade</span>
-                    )}
+                    <span
+                      className="rounded-full px-2.5 py-1 text-xs font-semibold text-white"
+                      style={{ backgroundColor: PRIORITY_COLOR[task.priority] }}
+                    >
+                      {PRIORITY_LABEL[task.priority]}
+                    </span>
                   </Field>
 
-                  {task.startDate !== null && <Field label="Início">{formatDate(task.startDate)}</Field>}
-
-                  <Field label="Tempo">{formatTime(task.timeEstimate, task.timeSpent)}</Field>
+                  <Field label="Prazo">
+                    {formatDate(task.dueAt) ?? <span className="text-muted-foreground">Sem prazo</span>}
+                  </Field>
                 </div>
 
                 <Field label="Tags">
@@ -737,20 +353,40 @@ export function TaskDetailModal({
                   ) : (
                     <div className="flex flex-wrap gap-1.5">
                       {task.tags.map((tag) => (
-                        <span key={tag} className="rounded-full bg-muted px-2.5 py-1 text-xs text-card-foreground">
-                          {tag}
+                        <span
+                          key={tag.id}
+                          className="rounded-full px-2.5 py-1 text-xs font-semibold text-white"
+                          style={{ backgroundColor: tag.color }}
+                        >
+                          {tag.name}
                         </span>
                       ))}
                     </div>
                   )}
                 </Field>
 
-                <DescriptionField
-                  text={description}
-                  clientId={clientId}
-                  taskId={task.id}
-                  onSaved={setDescription}
-                />
+                <Field label="Checklist">
+                  {task.checklist.length === 0 ? (
+                    <span className="text-muted-foreground">Sem itens</span>
+                  ) : (
+                    <ul className="space-y-1.5">
+                      {task.checklist.map((item) => (
+                        <li key={item.id} className="flex items-center gap-2">
+                          <input type="checkbox" checked={item.done} disabled readOnly className="h-3.5 w-3.5 rounded" />
+                          <span className={item.done ? "text-muted-foreground line-through" : ""}>{item.label}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </Field>
+
+                <Field label="Descrição" icon={<DescriptionIcon size={14} />}>
+                  {task.description ? (
+                    <p className="whitespace-pre-wrap">{task.description}</p>
+                  ) : (
+                    <span className="text-muted-foreground">Sem descrição</span>
+                  )}
+                </Field>
               </div>
             </div>
           </div>

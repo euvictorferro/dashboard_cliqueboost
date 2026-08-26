@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import type { TaskItem, TaskStatus } from "@/lib/clickup";
+import type { ClientTask, ClientTaskStatus } from "@/components/tasks/types";
 import { TaskRow } from "@/components/tasks/TaskRow";
 import { TaskDetailModal } from "@/components/tasks/TaskDetailModal";
 
@@ -24,11 +24,13 @@ function ChevronIcon({ open }: { open: boolean }) {
 function TaskSection({
   status,
   tasks,
+  statuses,
   onSelectTask,
 }: {
-  status: TaskStatus;
-  tasks: TaskItem[];
-  onSelectTask: (task: TaskItem) => void;
+  status: ClientTaskStatus;
+  tasks: ClientTask[];
+  statuses: ClientTaskStatus[];
+  onSelectTask: (task: ClientTask) => void;
 }) {
   const [open, setOpen] = useState(true);
 
@@ -37,21 +39,20 @@ function TaskSection({
       <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center gap-2.5 px-4 py-3 text-left">
         <ChevronIcon open={open} />
         <span className="rounded-full px-2.5 py-1 text-xs font-semibold text-white" style={{ backgroundColor: status.color }}>
-          {status.status}
+          {status.name}
         </span>
         <span className="text-xs font-medium text-muted-foreground">{tasks.length}</span>
       </button>
       {open && (
         <div className="pb-1">
-          <div className="grid grid-cols-[minmax(0,1fr)_130px_110px_90px_80px] gap-3 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className="grid grid-cols-[minmax(0,1fr)_130px_110px_80px] gap-3 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             <span className="truncate">Nome</span>
             <span className="truncate">Status</span>
             <span className="truncate">Data</span>
-            <span className="truncate">Responsável</span>
             <span className="truncate">Prioridade</span>
           </div>
           {tasks.map((task) => (
-            <TaskRow key={task.id} task={task} onClick={() => onSelectTask(task)} />
+            <TaskRow key={task.id} task={task} statuses={statuses} onClick={() => onSelectTask(task)} />
           ))}
         </div>
       )}
@@ -64,23 +65,23 @@ export function TasksTable({
   statuses,
   clientId,
 }: {
-  tasks: TaskItem[];
-  statuses: TaskStatus[];
+  tasks: ClientTask[];
+  statuses: ClientTaskStatus[];
   clientId: string;
 }) {
-  const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
+  const [selectedTask, setSelectedTask] = useState<ClientTask | null>(null);
 
-  const tasksByStatus = new Map<string, TaskItem[]>();
+  const tasksByStatus = new Map<string, ClientTask[]>();
   for (const task of tasks) {
-    const existing = tasksByStatus.get(task.status) ?? [];
+    const existing = tasksByStatus.get(task.statusId) ?? [];
     existing.push(task);
-    tasksByStatus.set(task.status, existing);
+    tasksByStatus.set(task.statusId, existing);
   }
   for (const list of tasksByStatus.values()) {
     list.sort((a, b) => {
-      if (a.dueDate === null) return 1;
-      if (b.dueDate === null) return -1;
-      return a.dueDate - b.dueDate;
+      if (a.dueAt === null) return 1;
+      if (b.dueAt === null) return -1;
+      return a.dueAt.localeCompare(b.dueAt);
     });
   }
 
@@ -96,14 +97,20 @@ export function TasksTable({
     <div className="space-y-4">
       {statuses.map((status) => (
         <TaskSection
-          key={status.status}
+          key={status.id}
           status={status}
-          tasks={tasksByStatus.get(status.status) ?? []}
+          tasks={tasksByStatus.get(status.id) ?? []}
+          statuses={statuses}
           onSelectTask={setSelectedTask}
         />
       ))}
       {selectedTask && (
-        <TaskDetailModal task={selectedTask} clientId={clientId} onClose={() => setSelectedTask(null)} />
+        <TaskDetailModal
+          task={selectedTask}
+          statuses={statuses}
+          clientId={clientId}
+          onClose={() => setSelectedTask(null)}
+        />
       )}
     </div>
   );

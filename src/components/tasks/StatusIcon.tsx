@@ -1,18 +1,34 @@
 // src/components/StatusIcon.tsx
-import type { StatusType } from "@/lib/clickup";
+import type { ClientTaskStatus } from "@/components/tasks/types";
 
-// ponytail: 3 variantes visuais por type — bolinha tracejada (não iniciado), meia-lua
-// preenchida (em andamento), bolinha cheia com check (concluído). Cor vem de fora
-// (task.statusColor), já resolvida com o fallback de var(--cu-status-*) em clickup.ts.
-export function StatusIcon({ type, color, size = 12 }: { type: StatusType; color: string; size?: number }) {
-  if (type === "open") {
+// ponytail: task_statuses não carrega mais um "tipo" semântico (open/custom/closed) como no
+// ClickUp — só nome/cor/posição. Infere o estágio pela posição na lista ordenada: primeiro
+// status = não iniciado, último = concluído, qualquer um no meio = em andamento. Fica errado
+// se uma agência tiver só 1 ou 2 statuses no board, mas isso já degrada bem (1 status = sempre
+// "concluído"). Voltar a ter um campo semântico por status é upgrade pra quando isso incomodar.
+export function StatusIcon({
+  statusId,
+  statuses,
+  color,
+  size = 12,
+}: {
+  statusId: string;
+  statuses: ClientTaskStatus[];
+  color: string;
+  size?: number;
+}) {
+  const index = statuses.findIndex((s) => s.id === statusId);
+  const isFirst = index === 0;
+  const isLast = index === statuses.length - 1;
+
+  if (isFirst && !isLast) {
     return (
       <svg width={size} height={size} viewBox="0 0 12 12" fill="none" aria-hidden="true" className="shrink-0">
         <circle cx="6" cy="6" r="5" stroke={color} strokeWidth="1.4" strokeDasharray="2 2" />
       </svg>
     );
   }
-  if (type === "closed") {
+  if (isLast) {
     return (
       <svg width={size} height={size} viewBox="0 0 12 12" fill="none" aria-hidden="true" className="shrink-0">
         <circle cx="6" cy="6" r="5" fill={color} />

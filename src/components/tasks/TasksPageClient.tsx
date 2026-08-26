@@ -2,14 +2,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { TaskItem, TaskStatus } from "@/lib/clickup";
+import type { ClientTask, ClientTaskStatus } from "@/components/tasks/types";
 import { TasksTable } from "@/components/tasks/TasksTable";
 
 type ErrorKind = "no_list" | "fetch_failed";
 
 export function TasksPageClient({ clientId }: { clientId: string;  }) {
-  const [tasks, setTasks] = useState<TaskItem[] | null>(null);
-  const [statuses, setStatuses] = useState<TaskStatus[]>([]);
+  const [tasks, setTasks] = useState<ClientTask[] | null>(null);
+  const [statuses, setStatuses] = useState<ClientTaskStatus[]>([]);
   const [error, setError] = useState<ErrorKind | null>(null);
 
   useEffect(() => {
@@ -23,7 +23,7 @@ export function TasksPageClient({ clientId }: { clientId: string;  }) {
         if (!res.ok) {
           throw new Error(data.error === "no_list_configured" ? "no_list" : "fetch_failed");
         }
-        return data as { tasks: TaskItem[]; statuses: TaskStatus[] };
+        return data as { tasks: ClientTask[]; statuses: ClientTaskStatus[] };
       })
       .then((data) => {
         if (!cancelled) {

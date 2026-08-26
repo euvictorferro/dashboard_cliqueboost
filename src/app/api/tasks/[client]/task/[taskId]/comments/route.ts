@@ -12,6 +12,9 @@ export async function GET(
   if (!found) return Response.json({ error: "unknown_client" }, { status: 404 });
   if (!(await verifyClientSession(clientId))) return Response.json({ error: "unauthorized" }, { status: 401 });
 
+  const task = await getTask(taskId);
+  if (!task || task.clientId !== clientId) return Response.json({ error: "not_found" }, { status: 404 });
+
   const comments = await listComments(taskId);
   return Response.json({ comments });
 }

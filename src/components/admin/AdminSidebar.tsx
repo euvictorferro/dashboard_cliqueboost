@@ -34,11 +34,21 @@ function FaturamentoIcon() {
   );
 }
 
+function TasksIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <rect x="2.5" y="2.5" width="13" height="13" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M5.5 9l2 2 4.5-4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 type NavItemDef = { href: string; label: string; icon: () => React.JSX.Element };
 
 const ITEMS: NavItemDef[] = [
   { href: "/admin/clientes", label: "Clientes", icon: ClientesIcon },
   { href: "/admin/indicacoes", label: "Indicações", icon: IndicacoesIcon },
+  { href: "/admin/tasks", label: "Tasks", icon: TasksIcon },
   { href: "/admin/faturamento", label: "Faturamento", icon: FaturamentoIcon },
 ];
 

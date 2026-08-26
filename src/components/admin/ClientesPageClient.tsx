@@ -14,6 +14,7 @@ type AdminClient = {
   planName: string | null;
   paymentStatus: string | null;
   hasLogin: boolean;
+  isTest: boolean;
 };
 
 type NewClientForm = {
@@ -24,6 +25,7 @@ type NewClientForm = {
   instagramBusinessId: string;
   clickupListId: string;
   trelloBoardId: string;
+  isTest: boolean;
 };
 
 const EMPTY_FORM: NewClientForm = {
@@ -34,6 +36,7 @@ const EMPTY_FORM: NewClientForm = {
   instagramBusinessId: "",
   clickupListId: "",
   trelloBoardId: "",
+  isTest: false,
 };
 
 function StatusChip({ active }: { active: boolean }) {
@@ -248,6 +251,10 @@ export function ClientesPageClient() {
                   onChange={(e) => setForm({ ...form, trelloBoardId: e.target.value })}
                   className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none"
                 />
+                <label className="flex items-center gap-2 text-sm text-foreground">
+                  <input type="checkbox" checked={form.isTest} onChange={(e) => setForm({ ...form, isTest: e.target.checked })} className="custom-checkbox" />
+                  Cliente de teste (não aparece em faturamento/indicações)
+                </label>
                 {createError && <p className="text-xs text-brand-danger">{createError}</p>}
                 <div className="mt-2 flex justify-end gap-2">
                   <button type="button" onClick={() => setShowCreate(false)} className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted">

@@ -16,6 +16,7 @@ type AdminClient = {
   planName: string | null;
   paymentStatus: string | null;
   hasLogin: boolean;
+  isTest: boolean;
 };
 
 export async function GET() {
@@ -52,6 +53,7 @@ export async function GET() {
       planName: s?.plan_name ?? null,
       paymentStatus: s?.payment_status ?? null,
       hasLogin: loginClientIds.has(c.id),
+      isTest: c.is_test,
     };
   });
 
@@ -70,6 +72,7 @@ export async function POST(request: Request) {
   const instagramBusinessId = body?.instagramBusinessId ?? null;
   const clickupListId = body?.clickupListId ?? null;
   const trelloBoardId = body?.trelloBoardId ?? null;
+  const isTest = body?.isTest === true;
 
   if (typeof id !== "string" || !SLUG_RE.test(id)) {
     return Response.json({ error: "id_invalido" }, { status: 400 });
@@ -113,6 +116,7 @@ export async function POST(request: Request) {
     instagram_business_id: instagramBusinessId,
     clickup_list_id: clickupListId,
     trello_board_id: trelloBoardId,
+    is_test: isTest,
   });
   if (clientError) {
     await rollback();

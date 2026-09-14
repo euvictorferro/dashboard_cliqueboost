@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Fraunces } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
@@ -17,6 +17,12 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: "Dashboard Clique Boost",
   description: "Métricas de Meta, Instagram, TikTok e tráfego pago dos clientes Clique Boost",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

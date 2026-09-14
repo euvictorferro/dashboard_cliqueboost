@@ -9,6 +9,8 @@ import { RatingPopup } from "@/components/layout/RatingPopup";
 import { BoosterAiWidget } from "@/components/layout/BoosterAiWidget";
 import { OnboardingTour } from "@/components/layout/OnboardingTour";
 import { UpdateCredentialsModal } from "@/components/login/UpdateCredentialsModal";
+import { BottomTabBar } from "@/components/layout/BottomTabBar";
+import { MobileHeader } from "@/components/layout/MobileHeader";
 
 function todayKey(): string {
   const now = new Date();
@@ -82,16 +84,31 @@ export function AppFrame({
 
   return (
     <div className="flex min-h-full items-start">
-      <div className={`flex min-h-full flex-1 items-start ${mustResetCredentials ? "pointer-events-none blur-sm" : ""}`}>
-        <Sidebar clientId={clientId} active={active} pageLabel={pageLabel} collapsed={collapsed} />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <Header
-            clientName={client?.name ?? clientId}
-            pageLabel={pageLabel}
-            collapsed={collapsed}
-            onToggleCollapse={() => setCollapsed((c) => !c)}
-          />
-          <div className="min-w-0">{children}</div>
+      <div className={`flex min-h-full w-full flex-1 items-start ${mustResetCredentials ? "pointer-events-none blur-sm" : ""}`}>
+        {/* Desktop: sidebar + header, exatamente como antes */}
+        <div className="hidden md:flex md:min-h-full md:flex-1 md:items-start">
+          <Sidebar clientId={clientId} active={active} pageLabel={pageLabel} collapsed={collapsed} />
+          <div className="flex min-w-0 flex-1 flex-col">
+            <Header
+              clientName={client?.name ?? clientId}
+              pageLabel={pageLabel}
+              collapsed={collapsed}
+              onToggleCollapse={() => setCollapsed((c) => !c)}
+            />
+            <div className="min-w-0">{children}</div>
+          </div>
+        </div>
+
+        {/* Mobile: header fixo em cima + tab bar fixa embaixo, tipo Instagram */}
+        <div className="flex min-h-full w-full flex-col md:hidden">
+          <MobileHeader pageLabel={pageLabel} />
+          <main
+            className="min-w-0 flex-1 pt-[52px]"
+            style={{ paddingBottom: "calc(56px + env(safe-area-inset-bottom))" }}
+          >
+            {children}
+          </main>
+          <BottomTabBar clientId={clientId} active={active} />
         </div>
       </div>
       <CmdK clientId={clientId} />

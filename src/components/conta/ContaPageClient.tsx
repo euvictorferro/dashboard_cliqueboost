@@ -7,6 +7,7 @@ import { ContaFusoSection } from "@/components/conta/ContaFusoSection";
 import { ContaFaturamentoSection, type Payment } from "@/components/conta/ContaFaturamentoSection";
 import { ContaIndicacoesSection, type ReferralLead } from "@/components/conta/ContaIndicacoesSection";
 import { ContaSegurancaSection } from "@/components/conta/ContaSegurancaSection";
+import { ContaMobileLinks } from "@/components/conta/ContaMobileLinks";
 
 type Status = "loading" | "error" | "ready";
 type SaveStatus = "idle" | "saving" | "saved" | "error";
@@ -193,6 +194,7 @@ export function ContaPageClient({
             <section id="seguranca">
               <ContaSegurancaSection />
             </section>
+            <ContaMobileLinks clientId={clientId} />
           </div>
         )}
       </div>

@@ -66,7 +66,7 @@ const TABS: TabDef[] = [
 export function BottomTabBar({ clientId, active }: { clientId: string; active: ActiveKey }) {
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-20 flex border-t border-border bg-card"
+      className="fixed inset-x-0 bottom-0 z-20 flex border-t border-border bg-card md:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       {TABS.map((tab) => {

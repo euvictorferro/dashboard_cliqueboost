@@ -56,7 +56,7 @@ export function BoosterAiWidget({ clientId }: { clientId: string }) {
   }
 
   return (
-    <div className="fixed bottom-5 right-5 z-[90] flex flex-col items-end gap-3">
+    <div className="fixed bottom-[calc(72px+env(safe-area-inset-bottom))] right-5 z-[90] flex flex-col items-end gap-3 md:bottom-5">
       {open && (
         <div className="flex h-[28rem] w-80 flex-col overflow-hidden rounded-[var(--radius-card)] bg-card shadow-[var(--shadow-soft)] sm:w-96">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">

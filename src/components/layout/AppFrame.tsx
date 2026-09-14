@@ -85,29 +85,22 @@ export function AppFrame({
   return (
     <div className="flex min-h-full items-start">
       <div className={`flex min-h-full w-full flex-1 items-start ${mustResetCredentials ? "pointer-events-none blur-sm" : ""}`}>
-        {/* Desktop: sidebar + header, exatamente como antes */}
-        <div className="hidden md:flex md:min-h-full md:flex-1 md:items-start">
+        <div className="hidden md:block">
           <Sidebar clientId={clientId} active={active} pageLabel={pageLabel} collapsed={collapsed} />
-          <div className="flex min-w-0 flex-1 flex-col">
+        </div>
+        <div className="flex min-w-0 w-full flex-1 flex-col">
+          <div className="hidden md:block">
             <Header
               clientName={client?.name ?? clientId}
               pageLabel={pageLabel}
               collapsed={collapsed}
               onToggleCollapse={() => setCollapsed((c) => !c)}
             />
-            <div className="min-w-0">{children}</div>
           </div>
-        </div>
-
-        {/* Mobile: header fixo em cima + tab bar fixa embaixo, tipo Instagram */}
-        <div className="flex min-h-full w-full flex-col md:hidden">
           <MobileHeader pageLabel={pageLabel} />
-          <main
-            className="min-w-0 flex-1 pt-[52px]"
-            style={{ paddingBottom: "calc(56px + env(safe-area-inset-bottom))" }}
-          >
+          <div className="min-w-0 pt-[calc(52px+env(safe-area-inset-top))] pb-[calc(56px+env(safe-area-inset-bottom))] md:pt-0 md:pb-0">
             {children}
-          </main>
+          </div>
           <BottomTabBar clientId={clientId} active={active} />
         </div>
       </div>
